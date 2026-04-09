@@ -756,7 +756,7 @@ body {
     <li><a onclick="showPage('home')">Accueil</a></li>
     <li><a onclick="showSection('histoire')">Histoire</a></li>
     <li><a onclick="showSection('services')">Services</a></li>
-    <li><a onclick="showSection('equipe')">Équipe</a></li>
+    <li><a onclick="showSection('équipe')">Équipe</a></li>
     <li><a onclick="showSection('journal-section')">Journal</a></li>
     <li><a onclick="showPage('rdv')">Rendez-vous</a></li>
     <li><a onclick="showPage('postuler')">Recrutement</a></li>
@@ -980,14 +980,14 @@ body {
   </section>
 
   <!-- ÉQUIPE -->
-  <section class="section-hop" id="equipe">
+  <section class="section-hop" id="équipe">
     <div class="section-inner-hop">
       <p class="section-tag-hop">Notre équipe soignante</p>
       <h2 class="section-title-hop">Les <span>Grades Médicaux</span></h2>
       <div class="grades-hop-grid">
         <div class="grade-hop-card"><span class="grade-hop-badge badge-chef">Chef Médecin</span><h3>Direction médicale</h3><p>Responsable de l'hôpital. Toutes les permissions.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-senior">Médecin Senior</span><h3>Spécialiste confirmé</h3><p>Gestion des cas complexes et supervision.</p></div>
-        <div class="grade-hop-card"><span class="grade-hop-badge badge-medecin">Médecin</span><h3>Praticien</h3><p>Consultations et soins généraux.</p></div>
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-médecin">Médecin</span><h3>Praticien</h3><p>Consultations et soins généraux.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-infirmier">Infirmier·ère</span><h3>Soins courants</h3><p>Suivi des patients et assistance médicale.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-stagiaire">Stagiaire médical</span><h3>En formation</h3><p>Apprenti soignant sous supervision.</p></div>
       </div>
@@ -1146,17 +1146,32 @@ body {
       <div class="form-group-hop"><label>Motif du rendez-vous *</label>
         <select id="rdv-motif">
           <option value="">-- Sélectionner --</option>
-          <option>Blessure de combat</option>
-          <option>Empoisonnement / Poison</option>
-          <option>Malédiction / Sceau maudit</option>
-          <option>Épuisement du chakra</option>
-          <option>Maladie ou infection</option>
-          <option>Traumatisme psychologique</option>
-          <option>Consultation préventive</option>
-          <option>Rééducation post-blessure</option>
-          <option>Analyse médicale</option>
-          <option>Urgence critique</option>
-          <option>Autre</option>
+          <optgroup label="⚔️ Soins de combat">
+            <option>Blessure de combat</option>
+            <option>Empoisonnement / Poison</option>
+            <option>Malédiction / Sceau maudit</option>
+            <option>Épuisement du chakra</option>
+            <option>Urgence critique</option>
+            <option>Rééducation post-blessure</option>
+          </optgroup>
+          <optgroup label="🏥 Soins généraux">
+            <option>Maladie ou infection</option>
+            <option>Traumatisme psychologique</option>
+            <option>Consultation préventive</option>
+            <option>Analyse médicale</option>
+            <option>Prise de sang</option>
+            <option>Check-up général</option>
+            <option>Mise à jour du dossier médical</option>
+            <option>Renouvellement d'ordonnance</option>
+            <option>Suivi médical régulier</option>
+            <option>Certificat médical ninja</option>
+          </optgroup>
+          <optgroup label="📋 Administratif">
+            <option>Consultation avec le médecin référent</option>
+            <option>Test de chakra</option>
+            <option>Évaluation médicale (retour de mission)</option>
+            <option>Autre</option>
+          </optgroup>
         </select>
       </div>
       <div class="form-group-hop"><label>Avez-vous des antécédents médicaux ?</label>
@@ -1217,7 +1232,7 @@ body {
         </select>
       </div>
       <div class="form-group-hop"><label>Spécialité médicale souhaitée *</label>
-        <select id="post-specialite">
+        <select id="post-spécialité">
           <option value="">-- Choisir --</option>
           <option>Chakra de guérison</option>
           <option>Médecine d'urgence</option>
@@ -1347,7 +1362,7 @@ async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
 // ============================================================
 const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier·ère', 'Stagiaire médical'];
 const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier·ère':3, 'Stagiaire médical':4, 'Citoyen':9 };
-const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
+const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-médecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
 
 const state = {
   currentUser: null,
@@ -1378,7 +1393,7 @@ async function syncFromSupabase() {
     const candids = await sbGet('candidatures_hop', '?order=id.asc');
     if (Array.isArray(candids)) {
       state.candidatures = candids.map(c => ({
-        id: c.id, nom: c.nom, niveau: c.niveau, specialite: c.specialite,
+        id: c.id, nom: c.nom, niveau: c.niveau, spécialité: c.spécialité,
         motiv: c.motiv || '', casier: c.casier, dispo: c.dispo,
         status: c.status || 'wait', author: c.author, authorDisplay: c.author_display
       }));
@@ -1412,7 +1427,7 @@ async function syncFromSupabase() {
     if (Array.isArray(dossiers) && dossiers.length > 0) {
       const localDossiers = dossiers.map(d => ({
         patient: d.patient, soignant: d.soignant, blessure: d.blessure,
-        gravite: d.gravite, desc: d.description, traitement: d.traitement,
+        gravité: d.gravité, desc: d.description, traitement: d.traitement,
         statut: d.statut, date: d.date, createdBy: d.created_by
       }));
       localStorage.setItem('hop_dossiers', JSON.stringify(localDossiers));
@@ -1661,19 +1676,19 @@ async function submitRdv() {
 async function submitPostuler() {
   const nom  = document.getElementById('post-nom').value.trim();
   const niv  = document.getElementById('post-niveau').value;
-  const spec = document.getElementById('post-specialite').value;
+  const spec = document.getElementById('post-spécialité').value;
   const motiv= document.getElementById('post-motiv').value.trim();
   const cas  = document.getElementById('post-casier').value;
   const dispo= document.getElementById('post-dispo').value;
   if (!nom||!niv||!spec||!motiv||!cas||!dispo) { alert('Veuillez remplir tous les champs.'); return; }
   if (cas==='oui') { alert('Un casier judiciaire disqualifie automatiquement la candidature.'); return; }
   const author = state.currentUser ? state.currentUser.username : nom;
-  await sbPost('candidatures_hop', { nom, niveau: niv, specialite: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom });
+  await sbPost('candidatures_hop', { nom, niveau: niv, spécialité: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom });
   await syncFromSupabase();
   const newId = state.candidatures[state.candidatures.length-1]?.id || Date.now();
   await sbPost('messages_hop', { thread_id:'candid_'+newId, from_user:'system', sender_name:'Système', role:'system', text:'Votre candidature a bien été enregistrée. Elle sera étudiée par le Chef Médecin.', time: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) });
   await syncFromSupabase();
-  document.getElementById('post-nom').value=''; document.getElementById('post-niveau').value=''; document.getElementById('post-specialite').value=''; document.getElementById('post-motiv').value='';
+  document.getElementById('post-nom').value=''; document.getElementById('post-niveau').value=''; document.getElementById('post-spécialité').value=''; document.getElementById('post-motiv').value='';
   const ok = document.getElementById('post-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',4000);
 }
 
@@ -1867,7 +1882,7 @@ function renderRdvsContent(g) {
           <div class="detail-field-hop"><span class="detail-field-label-hop">Antécédents</span><span class="detail-field-val-hop">${r.antecedents==='oui'?'Oui':'Non'}</span></div>
           <div class="detail-field-hop"><span class="detail-field-label-hop">Date souhaitée</span><span class="detail-field-val-hop">${r.date||'NC'}</span></div>
         </div>
-        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actRdv(${r.id},'ok')">✓ Marquer traité</button><button class="btn-sm-hop btn-no-hop" onclick="actRdv(${r.id},'no')">✗ Annuler</button></div>`:''}
+        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actRdv(${r.id},'ok')">✓ Marquer traité</button><button class="btn-sm-hop btn-no-hop" onclick="actRdv(${r.id},'no')">✗ Annulér</button></div>`:''}
         ${buildThreadHop('rdv_'+r.id, state.currentUser.username, state.currentUser.fullname||state.currentUser.username, 'RDV #'+r.id+' — '+r.motif)}
       </div>
     </div>`;
@@ -1910,7 +1925,7 @@ function renderCandidContent(g) {
     html += `<div class="detail-card-hop">
       <div class="detail-card-header-hop" onclick="toggleDetailHop('candid-${c.id}')">
         <div><div class="detail-title-hop">#${c.id} — ${c.nom}</div>
-          <div class="detail-meta-hop"><span style="font-size:11px;background:rgba(139,94,131,0.1);color:var(--hop-mauve2);padding:2px 8px;border-radius:10px">${c.niveau}</span><span style="font-size:11px;color:var(--hop-muted)">${c.specialite||'—'}</span></div>
+          <div class="detail-meta-hop"><span style="font-size:11px;background:rgba(139,94,131,0.1);color:var(--hop-mauve2);padding:2px 8px;border-radius:10px">${c.niveau}</span><span style="font-size:11px;color:var(--hop-muted)">${c.spécialité||'—'}</span></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px"><span class="status-badge-hop ${sc}">${sl}</span><span class="detail-toggle-icon-hop">▼</span></div>
       </div>
@@ -1919,11 +1934,11 @@ function renderCandidContent(g) {
         <div class="detail-grid-hop">
           <div class="detail-field-hop"><span class="detail-field-label-hop">Nom</span><span class="detail-field-val-hop">${c.nom}</span></div>
           <div class="detail-field-hop"><span class="detail-field-label-hop">Niveau</span><span class="detail-field-val-hop">${c.niveau}</span></div>
-          <div class="detail-field-hop"><span class="detail-field-label-hop">Spécialité</span><span class="detail-field-val-hop">${c.specialite||'—'}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Spécialité</span><span class="detail-field-val-hop">${c.spécialité||'—'}</span></div>
           <div class="detail-field-hop"><span class="detail-field-label-hop">Casier</span><span class="detail-field-val-hop">${c.casier==='non'?'Vierge ✓':'Chargé ✗'}</span></div>
           <div class="detail-field-hop"><span class="detail-field-label-hop">Disponibilité</span><span class="detail-field-val-hop">${c.dispo||'—'}</span></div>
         </div>
-        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actCandid(${c.id},'ok')">✓ Accepter</button><button class="btn-sm-hop btn-no-hop" onclick="actCandid(${c.id},'no')">✗ Refuser</button></div>`:''}
+        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actCandid(${c.id},'ok')">✓ Acceptér</button><button class="btn-sm-hop btn-no-hop" onclick="actCandid(${c.id},'no')">✗ Refusér</button></div>`:''}
         ${buildThreadHop('candid_'+c.id, state.currentUser.username, state.currentUser.fullname||state.currentUser.username, 'Candidature #'+c.id+' — '+c.nom)}
       </div>
     </div>`;
@@ -2061,7 +2076,7 @@ function renderAjoutContent(g) {
   if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior'); return; }
   el.innerHTML = `<h2 class="dash-section-title-hop">Ajouter un membre</h2>
     <div class="dash-block-hop" style="padding:1.5rem;max-width:480px">
-      <div id="ajout-ok" style="display:none" class="form-msg-hop success">Membre ajouté avec succès !</div>
+      <div id="ajout-ok" style="display:none" class="form-msg-hop succèss">Membre ajouté avec succès !</div>
       <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="aj-nom" placeholder="Ex: Tsunade Senju"/></div>
       <div class="form-group-hop"><label>Grade médical *</label>
         <select id="aj-grade">${GRADES_MED.map(gd=>`<option value="${gd}">${gd}</option>`).join('')}</select>
@@ -2166,7 +2181,7 @@ function renderCitizenCandid() {
       const sl = c.status==='wait'?'En attente':c.status==='ok'?'Accepté':'Refusé';
       html += `<div class="detail-card-hop">
         <div class="detail-card-header-hop" onclick="toggleDetailHop('candid-cit-${c.id}')">
-          <div><div class="detail-title-hop">Candidature #${c.id} — ${c.specialite||c.niveau}</div></div>
+          <div><div class="detail-title-hop">Candidature #${c.id} — ${c.spécialité||c.niveau}</div></div>
           <div style="display:flex;align-items:center;gap:8px"><span class="status-badge-hop ${sc}">${sl}</span><span class="detail-toggle-icon-hop">▼</span></div>
         </div>
         <div class="detail-card-body-hop" id="candid-cit-body-${c.id}" style="display:none;padding:1.25rem">
@@ -2434,26 +2449,38 @@ syncFromSupabase().then(() => {
 // DOSSIERS MÉDICAUX SECRETS
 // ============================================================
 const BLESSURES = [
+  "-- Choisir (optionnel) --",
+  "--- Blessures de combat ---",
   "Blessure par arme tranchante (katana)",
   "Blessure par arme tranchante (kunai/shuriken)",
   "Blessure par arme contondante",
   "Blessure par arme a feu / projectile",
-  "Brulure (Katon / feu)",
-  "Brulure electrique (Raiton / foudre)",
+  "Brûlure (Katon / feu)",
+  "Brûlure électrique (Raiton / foudre)",
   "Traumatisme par explosion (Doton)",
   "Noyade / Trauma hydraulique (Suiton)",
   "Empoisonnement (poison ninja)",
-  "Malediction / Sceau maudit",
-  "Epuisement du chakra",
-  "Trauma cranien",
+  "Malédiction / Sceau maudit",
+  "Épuisement du chakra",
+  "Trauma crânien",
   "Fracture osseuse",
-  "Hemorragie interne",
+  "Hémorragie interne",
   "Blessure oculaire (dojutsu)",
-  "Morsure de creature / animal",
-  "Infection / Septicemie",
+  "Morsure de créature / animal",
+  "Infection / Septicémie",
   "Traumatisme psychologique",
-  "Blessures multiples combinees",
-  "Autre (preciser dans description)"
+  "Blessures multiples combinées",
+  "--- Soins généraux ---",
+  "Prise de sang",
+  "Check-up général",
+  "Mise a jour du dossier médical",
+  "Suivi médical régulier",
+  "Test de chakra",
+  "Évaluation médicale (retour de mission)",
+  "Certificat médical ninja",
+  "Renouvellement d'ordonnance",
+  "Consultation préventive",
+  "Autre (préciser dans description)"
 ];
 
 function renderDossiersContent(g) {
@@ -2485,11 +2512,11 @@ function renderDossiersContent(g) {
       <div class="form-group-hop" style="margin:0"><label>Type de blessure / motif *</label>
         <select id="dos-blessure">
           <option value="">-- Sélectionner --</option>
-          ${BLESSURES.map(b=>`<option>${b}</option>`).join('')}
+          ${BLESSURES.map(b => b.startsWith('---') ? `<option disabled>${b}</option>` : `<option>${b}</option>`).join('')}
         </select>
       </div>
       <div class="form-group-hop" style="margin:0"><label>Gravité</label>
-        <select id="dos-gravite">
+        <select id="dos-gravité">
           <option value="légère">Légère</option>
           <option value="modérée" selected>Modérée</option>
           <option value="grave">Grave</option>
@@ -2501,28 +2528,28 @@ function renderDossiersContent(g) {
       <textarea id="dos-desc" rows="4" placeholder="Décrivez précisément les blessures, les soins apportés, les médicaments administrés, l'état du patient..."></textarea>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
-      <div class="form-group-hop" style="margin:0"><label>Traitement administré</label>
+      <div class="form-group-hop" style="margin:0"><label>Traitément administré</label>
         <input type="text" id="dos-traitement" placeholder="Ex: Chakra de guérison niveau 3, antidote..."/></div>
       <div class="form-group-hop" style="margin:0"><label>Statut du patient</label>
         <select id="dos-statut">
           <option value="en_traitement">En traitement</option>
-          <option value="gueri">Guéri — Sorti</option>
+          <option value="guéri">Guéri — Sorti</option>
           <option value="surveillance">Sous surveillance</option>
           <option value="critique">État critique</option>
-          <option value="deces">Décédé (RP)</option>
+          <option value="décès">Décédé (RP)</option>
         </select>
       </div>
     </div>
-    <button class="btn-primary" onclick="saveDossier()">💾 Enregistrer le dossier médical</button>
-    <div id="dos-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">Dossier enregistré avec succès !</div>
+    <button class="btn-primary" onclick="saveDossier()">💾 Enregistrér le dossier médical</button>
+    <div id="dos-ok" class="form-msg-hop succèss" style="display:none;margin-top:0.5rem">Dossier enregistré avec succès !</div>
   </div>`;
 
   // List existing dossiers
   if (dossiers.length === 0) {
     html += '<p style="color:var(--hop-muted);text-align:center;padding:1rem">Aucun dossier médical enregistré.</p>';
   } else {
-    const graviteColors = { 'légère':'var(--hop-green)', 'modérée':'var(--hop-gold)', 'grave':'#fb923c', 'critique':'#e74c3c' };
-    const statutLabels = { 'en_traitement':'En traitement', 'gueri':'✓ Guéri', 'surveillance':'Surveillance', 'critique':'⚠ Critique', 'deces':'✝ Décédé (RP)' };
+    const gravitéColors = { 'légère':'var(--hop-green)', 'modérée':'var(--hop-gold)', 'grave':'#fb923c', 'critique':'#e74c3c' };
+    const statutLabels = { 'en_traitement':'En traitement', 'guéri':'✓ Guéri', 'surveillance':'Surveillance', 'critique':'⚠ Critique', 'décès':'✝ Décédé (RP)' };
     html += '<div class="dash-block-hop">';
     dossiers.slice().reverse().forEach((d, i) => {
       const realIdx = dossiers.length - 1 - i;
@@ -2531,13 +2558,13 @@ function renderDossiersContent(g) {
           <div>
             <div class="detail-title-hop">📁 ${d.patient}</div>
             <div class="detail-meta-hop">
-              <span style="font-size:11px;color:${graviteColors[d.gravite]||'var(--hop-muted)'}">● ${d.gravite}</span>
+              <span style="font-size:11px;color:${gravitéColors[d.gravité]||'var(--hop-muted)'}">● ${d.gravité}</span>
               <span style="font-size:11px;color:var(--hop-muted)">${d.blessure}</span>
               <span style="font-size:11px;color:var(--hop-muted)">${d.date}</span>
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="status-badge-hop ${d.statut==='gueri'?'s-ok-hop':d.statut==='deces'?'s-no-hop':'s-wait-hop'}">${statutLabels[d.statut]||d.statut}</span>
+            <span class="status-badge-hop ${d.statut==='guéri'?'s-ok-hop':d.statut==='décès'?'s-no-hop':'s-wait-hop'}">${statutLabels[d.statut]||d.statut}</span>
             <span class="detail-toggle-icon-hop">▼</span>
           </div>
         </div>
@@ -2546,8 +2573,8 @@ function renderDossiersContent(g) {
             <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${d.patient}</span></div>
             <div class="detail-field-hop"><span class="detail-field-label-hop">Soignant</span><span class="detail-field-val-hop">${d.soignant}</span></div>
             <div class="detail-field-hop"><span class="detail-field-label-hop">Blessure</span><span class="detail-field-val-hop">${d.blessure}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${graviteColors[d.gravite]}">${d.gravite}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Traitement</span><span class="detail-field-val-hop">${d.traitement||'—'}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${gravitéColors[d.gravité]}">${d.gravité}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Traitément</span><span class="detail-field-val-hop">${d.traitement||'—'}</span></div>
             <div class="detail-field-hop"><span class="detail-field-label-hop">Statut</span><span class="detail-field-val-hop">${statutLabels[d.statut]||d.statut}</span></div>
           </div>
           <div class="detail-section-hop"><div class="detail-section-label-hop">Description médicale confidentielle</div>
@@ -2568,7 +2595,7 @@ async function saveDossier() {
   const patient   = document.getElementById('dos-patient')?.value.trim();
   const soignant  = document.getElementById('dos-soignant')?.value;
   const blessure  = document.getElementById('dos-blessure')?.value;
-  const gravite   = document.getElementById('dos-gravite')?.value;
+  const gravité   = document.getElementById('dos-gravité')?.value;
   const desc      = document.getElementById('dos-desc')?.value.trim();
   const traitement= document.getElementById('dos-traitement')?.value.trim();
   const statut    = document.getElementById('dos-statut')?.value;
@@ -2576,11 +2603,11 @@ async function saveDossier() {
   if (!patient||!soignant||!blessure||!desc) { alert('Champs obligatoires manquants'); return; }
 
   const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
-  dossiers.push({ patient, soignant, blessure, gravite, desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), createdBy: state.currentUser?.username });
+  dossiers.push({ patient, soignant, blessure, gravité, desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), createdBy: state.currentUser?.username });
   localStorage.setItem('hop_dossiers', JSON.stringify(dossiers));
 
   // Also save to Supabase for persistence across devices
-  await sbPost('dossiers_hop', { patient, soignant, blessure, gravite, description: desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), created_by: state.currentUser?.username });
+  await sbPost('dossiers_hop', { patient, soignant, blessure, gravité, description: desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), created_by: state.currentUser?.username });
 
   document.getElementById('dos-patient').value=''; document.getElementById('dos-soignant').value=''; document.getElementById('dos-blessure').value=''; document.getElementById('dos-desc').value=''; document.getElementById('dos-traitement').value='';
   const ok = document.getElementById('dos-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000);
