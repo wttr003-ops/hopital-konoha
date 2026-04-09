@@ -2028,44 +2028,56 @@ async function changeGradeHop(username, newGrade) {
 // ============================================================
 async function deleteAccount(username, isStaff) {
   const u = state.currentUser;
-  if (gradeRankHop(u.grade) > 1) { alert('Accès refusé — Chef Médecin ou Médecin Senior uniquement.'); return; }
+  if (gradeRankHop(u.grade) > 0) { alert('Accès refusé — Chef Médecin uniquement.'); return; }
 
   const displayName = state.users[username]?.fullname || username;
-  const motif = prompt(`Motif de suppression du dossier de "${displayName}" :\n(Décès RP, départ, autre...)\n\nCe motif sera enregistré dans les logs.`);
-  if (!motif) return;
-  if (!confirm(`Confirmer la suppression définitive de "${displayName}" ?\nMotif : ${motif}`)) return;
+  const motif = prompt(`Motif de suppression du compte de "${displayName}" :\n(Démission, décès RP, renvoi, autre...)\n\nCe motif sera enregistré.`);
+  if (!motif || !motif.trim()) return;
+  if (!confirm(`⚠ SUPPRESSION DÉFINITIVE\n\nCompte : ${displayName}\nMotif : ${motif}\n\nCette action est irréversible. Confirmer ?`)) return;
 
   try {
-    // Delete from Supabase
+    // 1. Delete from Supabase permanently
     await sbDelete('users_hop', `?username=eq.${encodeURIComponent(username)}`);
     await sbDelete('grade_overrides_hop', `?username=eq.${encodeURIComponent(username)}`);
 
-    // Log the deletion in journal
+    // 2. Add to permanent blacklist in Supabase
+    try {
+      await sbPost('deleted_hop', {
+        username,
+        fullname: displayName,
+        motif,
+        deleted_by: u.fullname||u.username,
+        deleted_at: new Date().toISOString()
+      });
+    } catch(e) {}
+
+    // 3. Log in journal
     await sbPost('journal_hop', {
-      titre: `Dossier supprimé — ${displayName}`,
-      contenu: `Le dossier de ${displayName} a été supprimé par ${u.fullname||u.username} (${u.grade}). Motif : ${motif}`,
+      titre: `Compte supprimé — ${displayName}`,
+      contenu: `Le compte de ${displayName} a été supprimé définitivement par ${u.fullname||u.username} (${u.grade}). Motif : ${motif}`,
       type: 'admin',
       auteur: u.fullname||u.username,
       grade: u.grade,
       date: new Date().toLocaleDateString('fr-FR')
     });
 
-    // Save deletion to localStorage blacklist so it doesn't come back
+    // 4. Save to localStorage blacklist
     const blacklist = JSON.parse(localStorage.getItem('hop_deleted') || '[]');
-    if (!blacklist.includes(username)) blacklist.push(username);
-    localStorage.setItem('hop_deleted', JSON.stringify(blacklist));
+    if (!blacklist.includes(username)) { blacklist.push(username); localStorage.setItem('hop_deleted', JSON.stringify(blacklist)); }
 
-    // Remove from local state
+    // 5. Remove from local state immediately
     delete state.users[username];
 
+    // 6. Resync (blacklist will filter them out)
     await syncFromSupabase();
-    alert(`Dossier de "${displayName}" supprimé. Motif enregistré.`);
+
+    alert(`✓ Compte de "${displayName}" supprimé définitivement.\nMotif enregistré dans le journal.`);
     renderMembresContent(u.grade);
     renderAnnuaireContent(u.grade);
     renderLogsContent(u.grade);
   } catch(e) {
     console.error(e);
-    alert('Erreur lors de la suppression.');
+    alert('Erreur lors de la suppression. Réessayez.');
   }
 }
 
@@ -2656,11 +2668,23 @@ async function saveDossier() {
   renderDossiersContent(state.currentUser.grade);
 }
 
-function deleteDossier(index) {
-  if (!confirm('Supprimer ce dossier médical définitivement ?')) return;
+async function deleteDossier(index) {
+  if (!confirm('Supprimer ce dossier médical définitivement ? Cette action est irréversible.')) return;
   const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
+  const dossier = dossiers[index];
+
+  // Delete from Supabase using patient name + date
+  try {
+    if (dossier && dossier.patient) {
+      await sbDelete('dossiers_hop', `?patient=eq.${encodeURIComponent(dossier.patient)}&date=eq.${encodeURIComponent(dossier.date||'')}`);
+    }
+  } catch(e) { console.warn('Supabase delete error:', e); }
+
+  // Remove from localStorage
   dossiers.splice(index, 1);
   localStorage.setItem('hop_dossiers', JSON.stringify(dossiers));
+
+  await syncFromSupabase();
   renderDossiersContent(state.currentUser.grade);
 }
 </script></body></html>
