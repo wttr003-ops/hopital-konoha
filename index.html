@@ -1061,8 +1061,8 @@ body {
         <p class="auth-sub-hop">Accès réservé au personnel médical</p>
         <div class="form-msg-hop error" id="staff-login-err"></div>
         <div class="form-group-hop"><label>Nom et Prénom</label><input type="text" id="staff-login-user" placeholder="Ex: Tsunade Senju"/></div>
-        <div class="form-group-hop"><label>Matricule médical</label>
-          <div style="position:relative"><input type="password" id="staff-login-mat" placeholder="HOP-XXX-0000" style="padding-right:40px"/>
+        <div class="form-group-hop"><label>Mot de passe</label>
+          <div style="position:relative"><input type="password" id="staff-login-mat" placeholder="••••••••" style="padding-right:40px"/>
           <button type="button" onclick="togglePwd('staff-login-mat',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hop-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
         </div>
         <button class="btn-primary btn-full-hop" onclick="doStaffLogin()" style="background:linear-gradient(135deg,var(--hop-mauve2),var(--hop-mauve))">Accès Soignant →</button>
@@ -1965,7 +1965,7 @@ function renderAnnuaireContent(g) {
     html += '</div>';
   }
   html += `<div class="dash-block-hop"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Équipe médicale (${staff.length})</div>`;
-  staff.forEach(([un,u]) => { html += `<div class="membre-row-hop"><div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div><div class="membre-name-hop">${u.fullname||un}<div style="font-size:10px;color:var(--hop-muted)">${u.matricule||''}</div></div><span class="grade-pill-hop ${GRADE_CLASS_HOP[u.grade]||'badge-stagiaire'}">${u.grade}</span></div>`; });
+  staff.forEach(([un,u]) => { html += `<div class="membre-row-hop"><div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div><div class="membre-name-hop">${u.fullname||un}${u.matricule?`<div style="font-size:10px;margin-top:1px"><span style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:3px;padding:1px 6px;font-family:monospace;color:var(--hop-mauve2)">${u.matricule}</span></div>`:''}</div><span class="grade-pill-hop ${GRADE_CLASS_HOP[u.grade]||'badge-stagiaire'}">${u.grade}</span></div>`; });
   html += '</div>';
   el.innerHTML = html;
 }
@@ -1980,7 +1980,10 @@ function renderMembresContent(g) {
   staff.forEach(([un,u]) => {
     html += `<div class="membre-row-hop">
       <div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div>
-      <div class="membre-name-hop" style="flex:1">${u.fullname||un}<div style="font-size:10px;color:var(--hop-muted)">${u.matricule||''}</div></div>
+      <div class="membre-name-hop" style="flex:1">
+        ${u.fullname||un}
+        ${u.matricule ? `<div style="font-size:10px;margin-top:2px"><span style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:4px;padding:1px 8px;font-family:monospace;color:var(--hop-mauve2);letter-spacing:0.5px">${u.matricule}</span></div>` : ''}
+      </div>
       <select class="grade-sel-hop" onchange="changeGradeHop('${un}',this.value)">
         ${[...GRADES_MED,'Citoyen'].map(gd=>`<option value="${gd}" ${u.grade===gd?'selected':''}>${gd}</option>`).join('')}
       </select>
@@ -2095,7 +2098,7 @@ function renderLogsContent(g) {
       <div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div>
       <div style="flex:1"><div class="membre-name-hop">${u.fullname||un}</div><div style="font-size:10px;color:var(--hop-muted)">${u.isStaff?'Personnel médical':'Patient'}</div></div>
       <span class="grade-pill-hop ${GRADE_CLASS_HOP[u.grade]||'badge-stagiaire'}">${u.grade}</span>
-      <div style="background:var(--hop-light);border:1px solid var(--hop-border);border-radius:6px;padding:3px 10px;font-size:12px;font-family:monospace;color:var(--hop-mauve2)">🔑 ${u.matricule||u.password||'—'}</div>
+      <div style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:6px;padding:3px 12px;font-size:13px;font-family:monospace;color:var(--hop-mauve2);letter-spacing:2px">🔑 ${u.password||'—'}</div>
     </div>`;
   });
   html += '</div>';
