@@ -1,0 +1,2594 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Hôpital de Konoha — Ninja Road FiveM</title>
+<style>/* ============================================================
+   HÔPITAL DE KONOHA — NINJA ROAD FiveM
+   style.css — Thème Mauve & Rose
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Nunito:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --hop-bg:       #FDF6FA;
+  --hop-bg2:      #F8EEF4;
+  --hop-card:     #FFFFFF;
+  --hop-mauve:    #8B5E83;
+  --hop-mauve2:   #6B3F6B;
+  --hop-rose:     #E8A0C0;
+  --hop-rose2:    #D4779A;
+  --hop-pink:     #FFB7C5;
+  --hop-light:    #FFF0F5;
+  --hop-dark:     #3D2040;
+  --hop-text:     #4A2550;
+  --hop-muted:    #9B7A9B;
+  --hop-border:   rgba(200,140,180,0.25);
+  --hop-border2:  rgba(200,140,180,0.5);
+  --hop-gold:     #C9956A;
+  --hop-green:    #6BAB8A;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--hop-bg);
+  color: var(--hop-text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ---- CANVAS PÉTALES ---- */
+#petals-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---- PAGES ---- */
+.page { display: none; position: relative; z-index: 2; }
+.page.active { display: block; }
+
+/* ---- DISCLAIMER ---- */
+.disclaimer {
+  background: rgba(139,94,131,0.08);
+  border-bottom: 1px solid var(--hop-border);
+  text-align: center;
+  padding: 5px 1rem;
+  font-size: 11px;
+  color: var(--hop-muted);
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 200;
+}
+
+/* ---- NAVBAR ---- */
+#main-nav {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(253,246,250,0.97);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hop-border);
+  display: flex;
+  align-items: center;
+  padding: 0 1.5rem;
+  height: 68px;
+  gap: 1rem;
+  overflow: visible;
+}
+
+
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-left: 10px;
+  position: relative;
+  z-index: 5;
+}
+
+.nav-links, .nav-auth, .nav-user, .nav-badge-hop {
+  position: relative;
+  z-index: 5;
+}
+
+.nav-logo-icon { flex-shrink: 0; }
+
+.nav-logo-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--hop-mauve2);
+  line-height: 1.2;
+}
+
+.nav-logo-sub {
+  font-size: 9px;
+  color: var(--hop-muted);
+  letter-spacing: 2px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.25rem;
+  list-style: none;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-left: auto;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.nav-links a {
+  color: var(--hop-muted);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+  font-weight: 500;
+}
+.nav-links a:hover { color: var(--hop-mauve2); }
+
+.nav-badge-hop {
+  background: linear-gradient(135deg, var(--hop-rose2), var(--hop-mauve));
+  color: white;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+/* ---- BUTTONS ---- */
+.btn-primary {
+  background: linear-gradient(135deg, var(--hop-mauve), var(--hop-rose2));
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 25px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+  box-shadow: 0 2px 12px rgba(139,94,131,0.3);
+}
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.btn-outline-hop {
+  background: transparent;
+  color: var(--hop-mauve2);
+  border: 1.5px solid var(--hop-border2);
+  padding: 7px 18px;
+  border-radius: 25px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-outline-hop:hover { background: var(--hop-light); border-color: var(--hop-mauve); }
+
+.btn-danger-hop {
+  background: transparent;
+  color: #C0392B;
+  border: 1px solid rgba(192,57,43,0.3);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-danger-hop:hover { background: rgba(192,57,43,0.08); }
+
+.btn-lg-hop { padding: 12px 30px; font-size: 14px; }
+.btn-full-hop { width: 100%; margin-top: 4px; }
+
+/* ---- AVATAR & GRADE ---- */
+.avatar-hop {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--hop-light), var(--hop-rose));
+  border: 2px solid var(--hop-rose2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: var(--hop-mauve2);
+}
+
+.grade-pill-hop {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--hop-light);
+  color: var(--hop-mauve2);
+  border: 1px solid var(--hop-border2);
+}
+
+/* ---- NAV AUTH ---- */
+.nav-auth { display: flex; gap: 8px; margin-left: auto; }
+.nav-user { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* ---- HERO ---- */
+.hero-hop {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, #FDF6FA 0%, #F5E0ED 40%, #EDD5E8 70%, #F8EEF4 100%);
+  padding: 4rem 2rem;
+}
+
+.hero-tree-left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -20px;
+  width: 320px;
+  pointer-events: none;
+}
+
+.big-tree {
+  width: 100%;
+  height: 100%;
+  opacity: 0.75;
+}
+
+.hero-content-hop {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 680px;
+}
+
+.hero-tag-hop {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--hop-mauve);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.hero-title-hop {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(48px, 8vw, 80px);
+  font-weight: 700;
+  color: var(--hop-mauve2);
+  line-height: 1.05;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 20px rgba(139,94,131,0.15);
+}
+
+.hero-subtitle-hop {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(14px, 2.5vw, 20px);
+  color: var(--hop-rose2);
+  letter-spacing: 2px;
+  margin-bottom: 1.5rem;
+}
+
+.hero-desc-hop {
+  font-size: 15px;
+  color: var(--hop-muted);
+  max-width: 520px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.8;
+}
+
+.hero-btns-hop {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ---- STATS ---- */
+.stats-bar-hop {
+  background: white;
+  border-top: 1px solid var(--hop-border);
+  border-bottom: 1px solid var(--hop-border);
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  box-shadow: 0 2px 20px rgba(139,94,131,0.08);
+  position: relative;
+  z-index: 2;
+}
+
+.stat-hop {
+  flex: 1; min-width: 120px; max-width: 200px;
+  text-align: center;
+  padding: 1.25rem 0.5rem;
+  border-right: 1px solid var(--hop-border);
+}
+.stat-hop:last-child { border-right: none; }
+
+.stat-num-hop {
+  display: block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--hop-mauve2);
+}
+.stat-label-hop { font-size: 10px; color: var(--hop-muted); text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* ---- SECTIONS ---- */
+.section-hop { padding: 4rem 2rem; position: relative; z-index: 2; }
+.section-pink { background: linear-gradient(180deg, #FFF5F8 0%, #FDF0F6 100%); border-top: 1px solid var(--hop-border); border-bottom: 1px solid var(--hop-border); }
+.section-inner-hop { max-width: 1100px; margin: 0 auto; }
+
+.section-tag-hop {
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--hop-rose2);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.section-title-hop {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(28px, 4vw, 42px);
+  color: var(--hop-mauve2);
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+.section-title-hop span { color: var(--hop-rose2); }
+
+/* ---- HISTOIRE ---- */
+.histoire-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 860px) { .histoire-layout { grid-template-columns: 1fr; } }
+
+.histoire-block-hop { margin-bottom: 2.5rem; padding-bottom: 2.5rem; border-bottom: 1px solid var(--hop-border); }
+.histoire-block-hop:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+.histoire-year-hop {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--hop-rose2);
+  background: var(--hop-light);
+  border: 1px solid var(--hop-border2);
+  border-radius: 20px;
+  padding: 3px 12px;
+  margin-bottom: 0.75rem;
+}
+
+.histoire-block-hop h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  color: var(--hop-mauve2);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.histoire-block-hop p { font-size: 14px; color: var(--hop-muted); line-height: 1.85; margin-bottom: 0.85rem; }
+.histoire-block-hop strong { color: var(--hop-mauve2); font-weight: 600; }
+
+.histoire-sidebar-hop { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.hop-fact-card {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 2px 12px rgba(139,94,131,0.06);
+}
+.hop-fact-label { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; color: var(--hop-rose2); margin-bottom: 4px; font-weight: 700; }
+.hop-fact-val { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--hop-mauve2); margin-bottom: 2px; font-weight: 600; }
+.hop-fact-sub { font-size: 11px; color: var(--hop-muted); }
+
+.hop-quote {
+  background: var(--hop-light);
+  border-left: 3px solid var(--hop-rose2);
+  border-radius: 0 10px 10px 0;
+  padding: 1rem 1.1rem;
+}
+.hop-quote p { font-size: 13px; color: var(--hop-mauve2); font-style: italic; line-height: 1.65; margin-bottom: 0.5rem; }
+.hop-quote span { font-size: 10px; color: var(--hop-muted); letter-spacing: 0.5px; }
+
+/* ---- SERVICES ---- */
+.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
+
+.service-card {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  text-align: center;
+  transition: box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 2px 12px rgba(139,94,131,0.06);
+}
+.service-card:hover { box-shadow: 0 8px 30px rgba(139,94,131,0.15); transform: translateY(-3px); }
+.service-icon { font-size: 36px; margin-bottom: 1rem; }
+.service-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--hop-mauve2); margin-bottom: 0.5rem; font-weight: 600; }
+.service-card p { font-size: 13px; color: var(--hop-muted); line-height: 1.65; }
+
+/* ---- GRADES ---- */
+.grades-hop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+
+.grade-hop-card {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(139,94,131,0.06);
+  transition: box-shadow 0.2s;
+}
+.grade-hop-card:hover { box-shadow: 0 6px 20px rgba(139,94,131,0.12); }
+
+.grade-hop-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.75rem;
+}
+
+.badge-chef { background: linear-gradient(135deg, #8B5E83, #D4779A); color: white; }
+.badge-senior { background: rgba(139,94,131,0.15); color: var(--hop-mauve2); border: 1px solid var(--hop-border2); }
+.badge-medecin { background: rgba(212,119,154,0.15); color: var(--hop-rose2); border: 1px solid rgba(212,119,154,0.3); }
+.badge-infirmier { background: rgba(107,171,138,0.15); color: var(--hop-green); border: 1px solid rgba(107,171,138,0.3); }
+.badge-stagiaire { background: rgba(155,122,155,0.12); color: var(--hop-muted); border: 1px solid var(--hop-border); }
+
+.grade-hop-card h3 { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--hop-mauve2); margin-bottom: 0.3rem; }
+.grade-hop-card p { font-size: 12px; color: var(--hop-muted); }
+
+/* ---- RECRUTEMENT CTA ---- */
+.recruit-cta-hop { background: linear-gradient(135deg, #F5E0ED, #EDD5E8); padding: 4rem 2rem; }
+.recruit-desc-hop { font-size: 15px; color: var(--hop-muted); max-width: 520px; margin: 0 auto 1.5rem; line-height: 1.7; }
+.req-chips-hop { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; list-style: none; margin-bottom: 2rem; }
+.req-chips-hop li { background: white; border: 1px solid var(--hop-border2); color: var(--hop-mauve2); font-size: 12px; padding: 5px 16px; border-radius: 20px; font-weight: 500; }
+
+/* ---- FOOTER ---- */
+.footer-hop { background: white; border-top: 1px solid var(--hop-border); padding: 2rem; text-align: center; position: relative; z-index: 2; }
+.footer-inner-hop { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.footer-logo-hop { font-size: 28px; }
+.footer-title-hop { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--hop-mauve2); font-weight: 600; }
+.footer-sub-hop { font-size: 12px; color: var(--hop-muted); }
+
+/* ---- AUTH ---- */
+.auth-page-hop {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #FDF6FA, #F5E0ED);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.auth-box-hop {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 20px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(139,94,131,0.12);
+}
+
+.auth-logo-hop { font-size: 52px; margin-bottom: 1rem; }
+.auth-box-hop h2 { font-family: 'Cormorant Garamond', serif; font-size: 26px; color: var(--hop-mauve2); margin-bottom: 0.4rem; font-weight: 700; }
+.auth-sub-hop { font-size: 13px; color: var(--hop-muted); margin-bottom: 1.5rem; }
+.auth-link-hop { margin-top: 1rem; font-size: 13px; color: var(--hop-muted); }
+.auth-link-hop a { color: var(--hop-mauve); cursor: pointer; text-decoration: underline; }
+
+/* ---- FORMS ---- */
+.form-group-hop { margin-bottom: 1rem; text-align: left; }
+.form-group-hop label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--hop-muted); margin-bottom: 5px; font-weight: 600; }
+.form-group-hop input,
+.form-group-hop select,
+.form-group-hop textarea {
+  width: 100%;
+  background: var(--hop-bg);
+  border: 1.5px solid var(--hop-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--hop-text);
+  font-size: 14px;
+  font-family: 'Nunito', sans-serif;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-group-hop input:focus,
+.form-group-hop select:focus,
+.form-group-hop textarea:focus { border-color: var(--hop-rose2); }
+.form-group-hop textarea { resize: vertical; min-height: 90px; }
+
+.form-msg-hop { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 1rem; }
+.form-msg-hop.error   { background: rgba(192,57,43,0.08); color: #C0392B; border: 1px solid rgba(192,57,43,0.2); }
+.form-msg-hop.success { background: rgba(107,171,138,0.1); color: var(--hop-green); border: 1px solid rgba(107,171,138,0.3); }
+.form-msg-hop:empty { display: none; }
+
+/* ---- SUBPAGE NAV ---- */
+.subpage-nav-hop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 2rem;
+  background: white;
+  border-bottom: 1px solid var(--hop-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(139,94,131,0.06);
+}
+.subpage-nav-title-hop { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--hop-mauve2); font-weight: 600; }
+
+/* ---- FORM PAGE ---- */
+.form-page-hop { background: var(--hop-bg); min-height: calc(100vh - 60px); padding: 3rem 2rem; position: relative; z-index: 2; }
+.form-container-hop { max-width: 640px; margin: 0 auto; }
+
+/* ---- DASHBOARD ---- */
+.dash-topbar-hop {
+  background: white;
+  border-bottom: 1px solid var(--hop-border);
+  padding: 0.85rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(139,94,131,0.06);
+}
+.dash-topbar-left-hop  { display: flex; align-items: center; gap: 10px; }
+.dash-topbar-right-hop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dash-topbar-title-hop { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--hop-mauve2); font-weight: 600; }
+.dash-topbar-sub-hop   { font-size: 10px; color: var(--hop-muted); letter-spacing: 1px; }
+
+.dash-layout-hop { display: flex; min-height: calc(100vh - 62px); }
+
+.dash-sidebar-hop {
+  width: 200px;
+  background: white;
+  border-right: 1px solid var(--hop-border);
+  flex-shrink: 0;
+  padding: 1.5rem 0;
+}
+
+.dash-nav-hop { display: flex; flex-direction: column; }
+
+.dash-nav-btn-hop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 1.25rem;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  color: var(--hop-muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+}
+.dash-nav-btn-hop:hover { color: var(--hop-mauve2); background: var(--hop-light); }
+.dash-nav-btn-hop.active { color: var(--hop-mauve2); border-left-color: var(--hop-rose2); background: var(--hop-light); font-weight: 600; }
+
+.dash-main-hop { flex: 1; padding: 2rem; background: var(--hop-bg); overflow-x: auto; }
+.dash-tab-hop { display: none; }
+.dash-tab-hop.active { display: block; }
+.dash-section-title-hop { font-family: 'Cormorant Garamond', serif; font-size: 26px; color: var(--hop-mauve2); margin-bottom: 1.5rem; font-weight: 700; }
+
+/* ---- KPI ---- */
+.kpi-grid-hop { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.kpi-card-hop {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 10px rgba(139,94,131,0.06);
+  text-align: center;
+}
+.kpi-label-hop { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--hop-muted); margin-bottom: 0.5rem; font-weight: 600; }
+.kpi-val-hop { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 700; color: var(--hop-mauve2); }
+
+/* ---- DASH TABLES ---- */
+.dash-block-hop {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 10px rgba(139,94,131,0.06);
+}
+
+.detail-card-hop { border-bottom: 1px solid var(--hop-border); }
+.detail-card-hop:last-child { border-bottom: none; }
+.detail-card-header-hop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 1rem;
+}
+.detail-card-header-hop:hover { background: var(--hop-light); }
+.detail-title-hop { font-size: 14px; font-weight: 600; color: var(--hop-mauve2); margin-bottom: 4px; }
+.detail-meta-hop { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.detail-card-body-hop { padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--hop-border); background: var(--hop-bg2); }
+.detail-section-hop { margin-top: 1rem; margin-bottom: 1rem; }
+.detail-section-label-hop { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--hop-rose2); margin-bottom: 0.5rem; font-weight: 700; }
+.detail-section-text-hop { font-size: 13px; color: var(--hop-text); line-height: 1.7; background: white; border-left: 3px solid var(--hop-rose2); border-radius: 0 8px 8px 0; padding: 0.75rem 1rem; }
+.detail-grid-hop { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
+.detail-field-hop { background: white; border: 1px solid var(--hop-border); border-radius: 8px; padding: 0.5rem 0.75rem; }
+.detail-field-label-hop { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--hop-muted); margin-bottom: 3px; }
+.detail-field-val-hop { font-size: 13px; color: var(--hop-mauve2); font-weight: 600; }
+.detail-actions-hop { display: flex; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--hop-border); flex-wrap: wrap; }
+.detail-toggle-icon-hop { font-size: 11px; color: var(--hop-muted); transition: transform 0.2s; display: inline-block; }
+
+/* ---- STATUS BADGES ---- */
+.status-badge-hop { padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+.s-wait-hop { background: rgba(201,149,106,0.15); color: var(--hop-gold); border: 1px solid rgba(201,149,106,0.3); }
+.s-ok-hop   { background: rgba(107,171,138,0.15); color: var(--hop-green); border: 1px solid rgba(107,171,138,0.3); }
+.s-no-hop   { background: rgba(192,57,43,0.1); color: #C0392B; border: 1px solid rgba(192,57,43,0.2); }
+
+/* ---- ACTION BUTTONS ---- */
+.btn-sm-hop { padding: 6px 14px; font-size: 12px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; font-family: 'Nunito', sans-serif; }
+.btn-ok-hop { background: rgba(107,171,138,0.15); color: var(--hop-green); border: 1px solid rgba(107,171,138,0.3); }
+.btn-no-hop { background: rgba(192,57,43,0.1); color: #C0392B; border: 1px solid rgba(192,57,43,0.2); }
+
+/* ---- MESSAGERIE ---- */
+.discussion-panel-hop { margin-top: 1rem; border: 1px solid var(--hop-border); border-radius: 12px; overflow: hidden; background: white; }
+.discussion-header-hop { display: flex; align-items: center; gap: 7px; padding: 0.6rem 1rem; background: var(--hop-light); border-bottom: 1px solid var(--hop-border); font-size: 11px; font-weight: 700; color: var(--hop-rose2); text-transform: uppercase; letter-spacing: 1.5px; }
+.discussion-body-hop { padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-height: 260px; overflow-y: auto; }
+.msg-system-hop { text-align: center; font-size: 11px; color: var(--hop-muted); font-style: italic; padding: 4px 0; }
+.msg-row-hop { display: flex; align-items: flex-start; gap: 0.6rem; }
+.msg-row-me-hop { flex-direction: row-reverse; }
+.msg-avatar-mini-hop { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; background: var(--hop-light); border: 1px solid var(--hop-border2); color: var(--hop-mauve2); }
+.msg-content-hop { flex: 1; }
+.msg-row-me-hop .msg-content-hop { align-items: flex-end; display: flex; flex-direction: column; }
+.msg-meta-hop { font-size: 10px; color: var(--hop-muted); margin-bottom: 3px; }
+.msg-bubble-hop { font-size: 13px; line-height: 1.55; padding: 0.55rem 0.85rem; border-radius: 12px; max-width: 82%; word-break: break-word; color: var(--hop-text); }
+.bubble-me-hop { background: linear-gradient(135deg, var(--hop-light), #F5D5E8); border: 1px solid var(--hop-border2); border-top-right-radius: 3px; }
+.bubble-other-hop { background: white; border: 1px solid var(--hop-border); border-top-left-radius: 3px; }
+.discussion-input-area-hop { border-top: 1px solid var(--hop-border); background: var(--hop-bg); padding: 0.6rem 0.85rem; }
+.discussion-input-hop { flex: 1; background: white; border: 1.5px solid var(--hop-border); border-radius: 20px; padding: 7px 14px; color: var(--hop-text); font-size: 13px; font-family: 'Nunito', sans-serif; outline: none; resize: none; line-height: 1.4; }
+.discussion-input-hop:focus { border-color: var(--hop-rose2); }
+.discussion-input-row-hop { display: flex; gap: 0.5rem; align-items: center; }
+.discussion-send-btn-hop { display: flex; align-items: center; gap: 5px; background: linear-gradient(135deg, var(--hop-mauve), var(--hop-rose2)); color: white; border: none; border-radius: 20px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Nunito', sans-serif; }
+
+/* ---- JOURNAL CARDS ---- */
+.journal-card-hop {
+  background: white;
+  border: 1px solid var(--hop-border);
+  border-radius: 14px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 10px rgba(139,94,131,0.06);
+  transition: box-shadow 0.2s;
+}
+.journal-card-hop:hover { box-shadow: 0 6px 20px rgba(139,94,131,0.12); }
+.journal-card-header-hop { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+.journal-type-badge-hop { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
+.journal-title-hop { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--hop-mauve2); margin-bottom: 0.6rem; font-weight: 600; }
+.journal-contenu-hop { font-size: 13px; color: var(--hop-muted); line-height: 1.7; margin-bottom: 0.75rem; }
+.journal-author-hop { font-size: 11px; color: var(--hop-rose2); font-style: italic; }
+
+/* ---- NO ACCESS ---- */
+.no-access-hop { text-align: center; padding: 3rem 2rem; color: var(--hop-muted); }
+.no-access-hop h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--hop-mauve2); margin-bottom: 0.5rem; }
+
+/* ---- MEMBRES ---- */
+.membre-row-hop { display: flex; align-items: center; gap: 12px; padding: 10px 1.25rem; border-bottom: 1px solid var(--hop-border); flex-wrap: wrap; }
+.membre-row-hop:last-child { border-bottom: none; }
+.membre-row-hop:hover { background: var(--hop-light); }
+.membre-name-hop { font-size: 13px; color: var(--hop-mauve2); font-weight: 600; flex: 1; min-width: 120px; }
+.grade-sel-hop { background: var(--hop-bg); border: 1.5px solid var(--hop-border); border-radius: 20px; padding: 4px 10px; color: var(--hop-text); font-size: 12px; font-family: 'Nunito', sans-serif; cursor: pointer; }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .hero-tree-left, .hero-tree-right { opacity: 0.4; width: 120px; }
+  .dash-sidebar-hop { width: 50px; }
+  .dash-nav-btn-hop { font-size: 0; padding: 12px; justify-content: center; }
+}
+
+/* ---- DUAL LOGIN RESPONSIVE ---- */
+@media (max-width: 700px) {
+  .auth-page-hop > div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+</head>
+<body>
+
+
+<canvas id="petals-canvas"></canvas>
+
+<div class="disclaimer">⚠ Contenu fictif — Mode de jeu Ninja Road sur FiveM &nbsp;|&nbsp; Aucun lien officiel avec Naruto / Masashi Kishimoto</div>
+
+<!-- NAV -->
+<nav id="main-nav" style="position:relative;overflow:visible">
+  <canvas id="nav-petals" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden"></canvas>
+
+  <div class="nav-logo" onclick="showPage('home')">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 40 40" width="40" height="40">
+        <circle cx="20" cy="20" r="18" fill="#F8E8F0" stroke="#C78FA8" stroke-width="1.5"/>
+        <path d="M20 8 Q24 14 20 18 Q16 14 20 8Z" fill="#E8A0C0"/>
+        <path d="M20 18 Q26 16 28 20 Q24 24 20 22 Q16 24 12 20 Q14 16 20 18Z" fill="#D4849C"/>
+        <path d="M20 22 Q24 26 20 32 Q16 26 20 22Z" fill="#E8A0C0"/>
+        <circle cx="20" cy="20" r="3" fill="#C0607A"/>
+      </svg>
+    </div>
+    <div>
+      <div class="nav-logo-text">Hôpital de Konoha</div>
+      <div class="nav-logo-sub">木ノ葉医療センター</div>
+    </div>
+  </div>
+  <ul class="nav-links" id="nav-links">
+    <li><a onclick="showPage('home')">Accueil</a></li>
+    <li><a onclick="showSection('histoire')">Histoire</a></li>
+    <li><a onclick="showSection('services')">Services</a></li>
+    <li><a onclick="showSection('equipe')">Équipe</a></li>
+    <li><a onclick="showSection('journal-section')">Journal</a></li>
+    <li><a onclick="showPage('rdv')">Rendez-vous</a></li>
+    <li><a onclick="showPage('postuler')">Recrutement</a></li>
+    <span class="nav-badge-hop">Ninja Road</span>
+  </ul>
+  <div class="nav-auth" id="nav-auth">
+    <button class="btn-primary" onclick="showPage('login')">Connexion</button>
+  </div>
+  <div class="nav-user" id="nav-user" style="display:none">
+    <div class="avatar-hop" id="nav-avatar">—</div>
+    <span id="nav-username-display"></span>
+    <span class="grade-pill-hop" id="nav-grade-pill"></span>
+    <button class="btn-outline-hop" id="nav-dash-btn" onclick="showPage('dashboard')">Mon espace</button>
+    <button class="btn-danger-hop" onclick="logout()">Déco.</button>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="page-home" class="page active">
+
+  <!-- HERO -->
+  <section class="hero-hop">
+    <div class="hero-tree-left">
+      <svg viewBox="0 0 300 700" xmlns="http://www.w3.org/2000/svg" class="big-tree">
+        <!-- Tronc principal - épais et détaillé -->
+        <path d="M80,700 Q78,650 75,600 Q72,550 74,500 Q76,450 73,400 Q70,350 72,300 Q74,250 70,200 Q68,170 65,140 Q62,110 60,80" stroke="#5C2D3A" stroke-width="22" fill="none" stroke-linecap="round"/>
+        <!-- Texture tronc -->
+        <path d="M80,700 Q82,650 79,600 Q76,550 78,500 Q80,450 77,400 Q74,350 76,300 Q78,250 74,200 Q72,170 69,140 Q66,110 64,80" stroke="#7A3B5A" stroke-width="12" fill="none" stroke-linecap="round" opacity="0.5"/>
+        <!-- Racines -->
+        <path d="M78,680 Q60,690 30,700" stroke="#5C2D3A" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <path d="M80,675 Q100,688 130,695" stroke="#5C2D3A" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <path d="M76,690 Q50,700 10,705" stroke="#5C2D3A" stroke-width="6" fill="none" stroke-linecap="round"/>
+
+        <!-- Grandes branches principales -->
+        <path d="M72,480 Q40,455 10,435 Q-10,420 -30,408" stroke="#6B3545" stroke-width="10" fill="none" stroke-linecap="round"/>
+        <path d="M73,420 Q110,390 150,368 Q180,350 220,332" stroke="#6B3545" stroke-width="9" fill="none" stroke-linecap="round"/>
+        <path d="M71,360 Q38,330 5,308 Q-18,292 -40,278" stroke="#7A3B5A" stroke-width="8" fill="none" stroke-linecap="round"/>
+        <path d="M72,300 Q108,272 148,252 Q178,236 210,220" stroke="#7A3B5A" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <path d="M70,240 Q35,215 0,195 Q-22,182 -45,168" stroke="#8B4569" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M68,180 Q100,155 138,138 Q168,124 200,110" stroke="#8B4569" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <path d="M66,130 Q30,105 -5,85 Q-28,70 -50,55" stroke="#8B4569" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M64,95 Q95,68 130,52 Q158,38 188,24" stroke="#8B4569" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+        <!-- Sous-branches -->
+        <path d="M10,435 Q-5,415 -15,392" stroke="#8B4569" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M150,368 Q158,345 155,318" stroke="#8B4569" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <path d="M5,308 Q-10,285 -8,260" stroke="#9B5578" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M148,252 Q158,228 154,202" stroke="#9B5578" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M0,195 Q-12,172 -8,148" stroke="#9B5578" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M138,138 Q148,114 144,88" stroke="#9B5578" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M-5,85 Q-18,62 -14,38" stroke="#9B5578" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M130,52 Q142,28 138,4" stroke="#9B5578" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M220,332 Q235,308 230,282" stroke="#9B5578" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M210,220 Q225,196 220,170" stroke="#9B5578" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+        <!-- FLEURS — Branche basse gauche -->
+        <g opacity="0.92">
+          <circle cx="-28" cy="410" r="16" fill="#FFB7C5"/><circle cx="-42" cy="398" r="13" fill="#FFC8D5"/>
+          <circle cx="-15" cy="395" r="14" fill="#FFD0DC"/><circle cx="-35" cy="385" r="11" fill="#FFB7C5"/>
+          <circle cx="-52" cy="405" r="12" fill="#FFC8D5"/><circle cx="-8" cy="408" r="10" fill="#FFD0DC"/>
+          <circle cx="-20" cy="378" r="9" fill="#FFB7C5"/><circle cx="-48" cy="390" r="8" fill="#FFC8D5"/>
+        </g>
+        <!-- Branche basse droite -->
+        <g opacity="0.90">
+          <circle cx="185" cy="340" r="15" fill="#FFB7C5"/><circle cx="200" cy="328" r="12" fill="#FFC8D5"/>
+          <circle cx="172" cy="328" r="13" fill="#FFD0DC"/><circle cx="215" cy="342" r="10" fill="#FFB7C5"/>
+          <circle cx="195" cy="315" r="11" fill="#FFC8D5"/><circle cx="168" cy="315" r="9" fill="#FFD0DC"/>
+        </g>
+        <!-- Branche milieu gauche -->
+        <g opacity="0.95">
+          <circle cx="-15" cy="290" r="16" fill="#FFB7C5"/><circle cx="-30" cy="275" r="14" fill="#FFC8D5"/>
+          <circle cx="-2" cy="275" r="13" fill="#FFD0DC"/><circle cx="-40" cy="285" r="12" fill="#FFB7C5"/>
+          <circle cx="-20" cy="260" r="11" fill="#FFC8D5"/><circle cx="5" cy="282" r="10" fill="#FFD0DC"/>
+          <circle cx="-35" cy="260" r="9" fill="#FFB7C5"/><circle cx="-8" cy="258" r="8" fill="#FFC8D5"/>
+        </g>
+        <!-- Branche milieu droite -->
+        <g opacity="0.88">
+          <circle cx="170" cy="240" r="14" fill="#FFB7C5"/><circle cx="185" cy="225" r="12" fill="#FFC8D5"/>
+          <circle cx="155" cy="228" r="13" fill="#FFD0DC"/><circle cx="198" cy="236" r="10" fill="#FFB7C5"/>
+          <circle cx="175" cy="210" r="11" fill="#FFC8D5"/><circle cx="148" cy="215" r="9" fill="#FFD0DC"/>
+        </g>
+        <!-- Branche haute gauche -->
+        <g opacity="0.93">
+          <circle cx="-22" cy="175" r="16" fill="#FFB7C5"/><circle cx="-38" cy="160" r="14" fill="#FFC8D5"/>
+          <circle cx="-8" cy="162" r="13" fill="#FFD0DC"/><circle cx="-45" cy="172" r="12" fill="#FFB7C5"/>
+          <circle cx="-25" cy="145" r="11" fill="#FFC8D5"/><circle cx="-5" cy="150" r="10" fill="#FFD0DC"/>
+          <circle cx="-40" cy="148" r="9" fill="#FFB7C5"/><circle cx="-12" cy="142" r="8" fill="#FFC8D5"/>
+          <circle cx="-28" cy="132" r="8" fill="#FFD0DC"/>
+        </g>
+        <!-- Branche haute droite -->
+        <g opacity="0.90">
+          <circle cx="162" cy="128" r="15" fill="#FFB7C5"/><circle cx="178" cy="112" r="13" fill="#FFC8D5"/>
+          <circle cx="148" cy="115" r="13" fill="#FFD0DC"/><circle cx="190" cy="122" r="11" fill="#FFB7C5"/>
+          <circle cx="168" cy="98" r="12" fill="#FFC8D5"/><circle cx="142" cy="100" r="10" fill="#FFD0DC"/>
+          <circle cx="152" cy="88" r="9" fill="#FFB7C5"/>
+        </g>
+        <!-- Très haute gauche -->
+        <g opacity="0.88">
+          <circle cx="-30" cy="62" r="14" fill="#FFB7C5"/><circle cx="-45" cy="48" r="12" fill="#FFC8D5"/>
+          <circle cx="-15" cy="50" r="13" fill="#FFD0DC"/><circle cx="-50" cy="60" r="10" fill="#FFB7C5"/>
+          <circle cx="-32" cy="36" r="11" fill="#FFC8D5"/><circle cx="-12" cy="40" r="9" fill="#FFD0DC"/>
+          <circle cx="-42" cy="35" r="8" fill="#FFB7C5"/>
+        </g>
+        <!-- Très haute droite -->
+        <g opacity="0.86">
+          <circle cx="152" cy="18" r="13" fill="#FFB7C5"/><circle cx="168" cy="4" r="11" fill="#FFC8D5"/>
+          <circle cx="138" cy="6" r="12" fill="#FFD0DC"/><circle cx="178" cy="14" r="9" fill="#FFB7C5"/>
+          <circle cx="158" cy="-8" r="10" fill="#FFC8D5"/>
+        </g>
+        <!-- Branche très basse droite étendue -->
+        <g opacity="0.85">
+          <circle cx="235" cy="288" r="12" fill="#FFB7C5"/><circle cx="248" cy="275" r="10" fill="#FFC8D5"/>
+          <circle cx="225" cy="275" r="11" fill="#FFD0DC"/><circle cx="240" cy="262" r="9" fill="#FFB7C5"/>
+        </g>
+        <g opacity="0.85">
+          <circle cx="228" cy="178" r="11" fill="#FFB7C5"/><circle cx="240" cy="164" r="9" fill="#FFC8D5"/>
+          <circle cx="218" cy="165" r="10" fill="#FFD0DC"/><circle cx="232" cy="152" r="8" fill="#FFB7C5"/>
+        </g>
+
+        <!-- Petits centres de fleurs -->
+        <g fill="#FF85A1" opacity="0.8">
+          <circle cx="-28" cy="410" r="4"/><circle cx="-15" cy="395" r="3.5"/><circle cx="-22" cy="175" r="4"/>
+          <circle cx="-8" cy="162" r="3.5"/><circle cx="-15" cy="290" r="4"/><circle cx="-2" cy="275" r="3.5"/>
+          <circle cx="185" cy="340" r="4"/><circle cx="172" cy="328" r="3.5"/><circle cx="162" cy="128" r="4"/>
+          <circle cx="148" cy="115" r="3.5"/>
+        </g>
+      </svg>
+    </div>
+    <div class="hero-content-hop">
+      <div class="hero-tag-hop">Section Médicale Officielle · Ninja Road FiveM</div>
+      <h1 class="hero-title-hop">Hôpital<br>de Konoha</h1>
+      <p class="hero-subtitle-hop">木ノ葉医療センター — Soigner, Protéger, Guérir</p>
+      <p class="hero-desc-hop">Au cœur du Village des Feuilles, notre équipe médicale veille sur la santé de chaque citoyen et ninja. Compassion, excellence et dévouement sont les piliers de notre mission.</p>
+      <div class="hero-btns-hop">
+        <button class="btn-primary btn-lg-hop" onclick="showPage('rdv')">Prendre rendez-vous</button>
+        <button class="btn-outline-hop btn-lg-hop" onclick="showPage('postuler')">Rejoindre l'équipe</button>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar-hop">
+    <div class="stat-hop"><span class="stat-num-hop" id="stat-staff">0</span><span class="stat-label-hop">Soignants actifs</span></div>
+    <div class="stat-hop"><span class="stat-num-hop" id="stat-rdv">0</span><span class="stat-label-hop">Rendez-vous traités</span></div>
+    <div class="stat-hop"><span class="stat-num-hop">24/7</span><span class="stat-label-hop">Service d'urgence</span></div>
+    <div class="stat-hop"><span class="stat-num-hop">🌸</span><span class="stat-label-hop">Avec soin & amour</span></div>
+  </div>
+
+  <!-- HISTOIRE -->
+  <section class="section-hop" id="histoire">
+    <div class="section-inner-hop">
+      <p class="section-tag-hop">Nos origines</p>
+      <h2 class="section-title-hop">Histoire de l'<span>Hôpital</span></h2>
+      <div class="histoire-layout">
+        <div class="histoire-text">
+          <div class="histoire-block-hop">
+            <div class="histoire-year-hop">Fondation</div>
+            <h3>La naissance d'un sanctuaire</h3>
+            <p>L'Hôpital de Konoha fut fondé dans les premières années du Village Caché des Feuilles, sous l'impulsion du premier Hokage. Face aux blessures incessantes des conflits shinobi, il fallait un lieu dédié au soin, à l'abri du tumulte des batailles.</p>
+            <p>Dès ses débuts, l'hôpital s'est distingué par son approche unique : marier les techniques médicales traditionnelles avec le chakra de guérison, une discipline rare que seuls quelques shinobi maîtrisaient.</p>
+          </div>
+          <div class="histoire-block-hop">
+            <div class="histoire-year-hop">Héritage</div>
+            <h3>La tradition des guérisseurs</h3>
+            <p>Au fil des générations, l'hôpital a formé certains des plus grands médecins ninja du monde shinobi. La légendaire <strong>Tsunade</strong>, cinquième Hokage, y a laissé une empreinte indélébile, révolutionnant les techniques de soin et formant une génération entière de médecins d'élite.</p>
+            <p>Aujourd'hui sur Ninja Road, l'Hôpital de Konoha perpétue cet héritage avec la même exigence et le même dévouement envers chaque patient.</p>
+          </div>
+        </div>
+        <div class="histoire-sidebar-hop">
+          <div class="hop-fact-card"><div class="hop-fact-label">Fondateur</div><div class="hop-fact-val">Hashirama Senju</div><div class="hop-fact-sub">1er Hokage de Konoha</div></div>
+          <div class="hop-fact-card"><div class="hop-fact-label">Spécialité</div><div class="hop-fact-val">Médecine ninja</div><div class="hop-fact-sub">Chakra de guérison</div></div>
+          <div class="hop-fact-card"><div class="hop-fact-label">Symbole</div><div class="hop-fact-val">La Fleur de Cerisier</div><div class="hop-fact-sub">Vie, renouveau, espoir</div></div>
+          <div class="hop-quote">
+            <p>"Là où la violence détruit, la médecine reconstruit. Chaque vie sauvée est une victoire pour Konoha."</p>
+            <span>— Devise de l'Hôpital</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="section-hop section-pink" id="services">
+    <div class="section-inner-hop">
+      <p class="section-tag-hop">Ce que nous proposons</p>
+      <h2 class="section-title-hop">Nos <span>Services</span></h2>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon">🏥</div>
+          <h3>Soins d'urgence</h3>
+          <p>Prise en charge immédiate des blessures de combat, hémorragies et traumatismes graves. Notre équipe intervient 24h/24.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">✨</div>
+          <h3>Chakra médical</h3>
+          <p>Techniques de guérison avancées utilisant le chakra pour régénérer les tissus, soigner les blessures internes et neutraliser les poisons.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🌿</div>
+          <h3>Médecine naturelle</h3>
+          <p>Préparation de remèdes à base de plantes médicinales du Pays du Feu, transmis de génération en génération.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🧬</div>
+          <h3>Analyses médicales</h3>
+          <p>Diagnostic approfondi, détection de poisons et de malédictions, analyse du flux de chakra et consultations préventives.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🩹</div>
+          <h3>Rééducation</h3>
+          <p>Programme de récupération après blessure grave, reconstruction musculaire et réadaptation au combat pour les ninjas.</p>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">💊</div>
+          <h3>Pharmacie ninja</h3>
+          <p>Préparation de pilules médicales spécialisées, antidotes sur mesure et trousses de soin pour missions longue durée.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉQUIPE -->
+  <section class="section-hop" id="equipe">
+    <div class="section-inner-hop">
+      <p class="section-tag-hop">Notre équipe soignante</p>
+      <h2 class="section-title-hop">Les <span>Grades Médicaux</span></h2>
+      <div class="grades-hop-grid">
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-chef">Chef Médecin</span><h3>Direction médicale</h3><p>Responsable de l'hôpital. Toutes les permissions.</p></div>
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-senior">Médecin Senior</span><h3>Spécialiste confirmé</h3><p>Gestion des cas complexes et supervision.</p></div>
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-medecin">Médecin</span><h3>Praticien</h3><p>Consultations et soins généraux.</p></div>
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-infirmier">Infirmier·ère</span><h3>Soins courants</h3><p>Suivi des patients et assistance médicale.</p></div>
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-stagiaire">Stagiaire médical</span><h3>En formation</h3><p>Apprenti soignant sous supervision.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOURNAL -->
+  <section class="section-hop section-pink" id="journal-section">
+    <div class="section-inner-hop">
+      <p class="section-tag-hop">Actualités & annonces</p>
+      <h2 class="section-title-hop">Journal <span>Médical</span></h2>
+      <div id="journal-public-list">
+        <p style="color:var(--hop-muted);font-size:14px;text-align:center;padding:2rem">Chargement des annonces...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA RECRUTEMENT -->
+  <section class="section-hop recruit-cta-hop">
+    <div class="section-inner-hop" style="text-align:center">
+      <p class="section-tag-hop">Rejoindre l'équipe</p>
+      <h2 class="section-title-hop">Recrutement <span>Ouvert</span></h2>
+      <p class="recruit-desc-hop">L'Hôpital de Konoha recrute des soignants passionnés, dévoués à sauver des vies sur Ninja Road.</p>
+      <ul class="req-chips-hop">
+        <li>Niveau Genin minimum</li>
+        <li>Vocation médicale</li>
+        <li>Disponibilité régulière</li>
+        <li>Casier vierge</li>
+      </ul>
+      <button class="btn-primary btn-lg-hop" onclick="showPage('postuler')">Postuler maintenant →</button>
+    </div>
+  </section>
+
+  <footer class="footer-hop">
+    <div class="footer-inner-hop">
+      <div class="footer-logo-hop">🌸</div>
+      <div>
+        <div class="footer-title-hop">Hôpital de Konoha — 木ノ葉医療センター</div>
+        <div class="footer-sub-hop">© 2025 Section Médicale · Ninja Road FiveM</div>
+      </div>
+    </div>
+    <div class="disclaimer" style="margin-top:0.75rem">⚠ Projet fictif dans le cadre du mode de jeu Ninja Road sur FiveM · Aucun lien avec Naruto / Masashi Kishimoto</div>
+  </footer>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="page-login" class="page">
+  <div class="auth-page-hop">
+    <div style="width:100%;max-width:860px;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+
+      <!-- ESPACE PATIENT -->
+      <div class="auth-box-hop">
+        <div class="auth-logo-hop">🌸</div>
+        <h2>Espace Patient</h2>
+        <p class="auth-sub-hop">Accédez à votre dossier médical</p>
+        <div class="form-msg-hop error" id="login-err"></div>
+        <div class="form-group-hop"><label>Nom et Prénom</label><input type="text" id="login-user" placeholder="Ex: Naruto Uzumaki"/></div>
+        <div class="form-group-hop"><label>Mot de passe</label>
+          <div style="position:relative"><input type="password" id="login-pass" placeholder="••••••••" style="padding-right:40px"/>
+          <button type="button" onclick="togglePwd('login-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hop-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        </div>
+        <button class="btn-primary btn-full-hop" onclick="doLogin()">Se connecter</button>
+        <p class="auth-link-hop">Pas de compte ? <a onclick="showPage('register')">Créer mon dossier</a></p>
+        <p class="auth-link-hop"><a onclick="showPage('home')">← Retour</a></p>
+      </div>
+
+      <!-- ESPACE SOIGNANT -->
+      <div class="auth-box-hop" style="border:2px solid var(--hop-mauve);background:linear-gradient(160deg,#FDF6FA,#F5E0ED)">
+        <div class="auth-logo-hop">⚕️</div>
+        <h2 style="color:var(--hop-mauve2)">Espace Soignant</h2>
+        <p class="auth-sub-hop">Accès réservé au personnel médical</p>
+        <div class="form-msg-hop error" id="staff-login-err"></div>
+        <div class="form-group-hop"><label>Nom et Prénom</label><input type="text" id="staff-login-user" placeholder="Ex: Tsunade Senju"/></div>
+        <div class="form-group-hop"><label>Matricule médical</label>
+          <div style="position:relative"><input type="password" id="staff-login-mat" placeholder="HOP-XXX-0000" style="padding-right:40px"/>
+          <button type="button" onclick="togglePwd('staff-login-mat',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hop-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        </div>
+        <button class="btn-primary btn-full-hop" onclick="doStaffLogin()" style="background:linear-gradient(135deg,var(--hop-mauve2),var(--hop-mauve))">Accès Soignant →</button>
+        <div style="margin-top:1rem;padding:0.75rem;background:rgba(139,94,131,0.08);border-radius:8px;font-size:11px;color:var(--hop-muted);line-height:1.6">
+          🔒 Connexion réservée au personnel médical enregistré par la direction.
+        </div>
+        <p class="auth-link-hop"><a onclick="showPage('home')">← Retour</a></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER PAGE -->
+<div id="page-register" class="page">
+  <div class="auth-page-hop">
+    <div class="auth-box-hop">
+      <div class="auth-logo-hop">🌸</div>
+      <h2>Recensement citoyen</h2>
+      <p class="auth-sub-hop">Créez votre dossier médical de Konoha</p>
+      <div class="form-msg-hop error" id="reg-err"></div>
+      <div class="form-msg-hop success" id="reg-ok" style="display:none">Compte créé ! Bienvenue à l'Hôpital de Konoha.</div>
+      <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="reg-user" placeholder="Ex: Sakura Haruno"/></div>
+      <div class="form-group-hop"><label>Grade / Rang actuel *</label>
+        <select id="reg-grade">
+          <option value="">-- Votre rang shinobi --</option>
+          <option value="Citoyen">Citoyen</option>
+          <option value="Genin">Genin</option>
+          <option value="Genin confirmé">Genin confirmé</option>
+          <option value="Chunin">Chunin</option>
+          <option value="Tokubetsu-Chunin">Tokubetsu-Chunin</option>
+          <option value="Kakunin">Kakunin</option>
+          <option value="Tokubetsu-Jonin">Tokubetsu-Jonin</option>
+          <option value="Jonin">Jonin</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Mot de passe *</label>
+        <div style="position:relative"><input type="password" id="reg-pass" placeholder="Minimum 6 caractères" style="padding-right:40px"/>
+        <button type="button" onclick="togglePwd('reg-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hop-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+      </div>
+      <div class="form-group-hop"><label>Confirmer *</label><input type="password" id="reg-pass2" placeholder="••••••••"/></div>
+      <button class="btn-primary btn-full-hop" onclick="doRegister()">Créer mon dossier</button>
+      <p class="auth-link-hop">Déjà inscrit ? <a onclick="showPage('login')">Se connecter</a></p>
+      <p class="auth-link-hop"><a onclick="showPage('home')">← Retour</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- RDV PAGE -->
+<div id="page-rdv" class="page">
+  <div class="subpage-nav-hop">
+    <span class="subpage-nav-title-hop">🌸 Demande de rendez-vous médical</span>
+    <button class="btn-outline-hop" onclick="showPage('home')">← Retour</button>
+  </div>
+  <div id="rdv-auth-wall" style="display:none;min-height:80vh;background:var(--hop-bg);display:flex;align-items:center;justify-content:center;padding:2rem">
+    <div style="background:var(--hop-card);border:1px solid var(--hop-border);border-radius:12px;padding:2.5rem;max-width:460px;width:100%;text-align:center">
+      <div style="font-size:48px;margin-bottom:1rem">🔒</div>
+      <h2 style="font-family:Georgia,serif;color:var(--hop-dark);margin-bottom:0.75rem">Connexion requise</h2>
+      <p style="font-size:14px;color:var(--hop-muted);line-height:1.7;margin-bottom:1.5rem">Pour prendre rendez-vous à l'Hôpital de Konoha, vous devez créer votre dossier patient.<br><br>Cordialement,<br><strong>L'Hôpital de Konoha — 木ノ葉医療センター</strong></p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
+        <button onclick="showPage('register')" class="btn-primary">Créer mon dossier</button>
+        <button onclick="showPage('login')" class="btn-outline-hop">Se connecter</button>
+      </div>
+    </div>
+  </div>
+  <div id="rdv-form-content">
+  <div class="form-page-hop">
+    <div class="form-container-hop">
+      <p class="section-tag-hop">Formulaire officiel</p>
+      <h2 class="section-title-hop">Demande de <span>Rendez-vous</span></h2>
+      <div class="form-msg-hop success" id="rdv-ok" style="display:none">Votre demande a été enregistrée. Un soignant vous contactera.</div>
+      <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="rdv-nom" placeholder="Ex: Naruto Uzumaki"/></div>
+      <div class="form-group-hop"><label>Grade / Rang shinobi *</label>
+        <select id="rdv-grade">
+          <option value="">-- Votre rang --</option>
+          <option>Citoyen</option><option>Genin</option><option>Genin confirmé</option>
+          <option>Chunin</option><option>Tokubetsu-Chunin</option><option>Kakunin</option>
+          <option>Tokubetsu-Jonin</option><option>Jonin</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Motif du rendez-vous *</label>
+        <select id="rdv-motif">
+          <option value="">-- Sélectionner --</option>
+          <option>Blessure de combat</option>
+          <option>Empoisonnement / Poison</option>
+          <option>Malédiction / Sceau maudit</option>
+          <option>Épuisement du chakra</option>
+          <option>Maladie ou infection</option>
+          <option>Traumatisme psychologique</option>
+          <option>Consultation préventive</option>
+          <option>Rééducation post-blessure</option>
+          <option>Analyse médicale</option>
+          <option>Urgence critique</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Avez-vous des antécédents médicaux ?</label>
+        <select id="rdv-antecedents">
+          <option value="non">Non — premier soin</option>
+          <option value="oui">Oui (précisez ci-dessous)</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Description détaillée de votre état *</label>
+        <textarea id="rdv-desc" rows="5" placeholder="Décrivez précisément vos symptômes, depuis quand, ce qui s'est passé..."></textarea>
+      </div>
+      <div class="form-group-hop"><label>Niveau de douleur (1 = léger, 10 = insupportable)</label>
+        <select id="rdv-douleur">
+          <option value="1">1 — Léger inconfort</option>
+          <option value="3">3 — Modéré</option>
+          <option value="5" selected>5 — Significatif</option>
+          <option value="7">7 — Intense</option>
+          <option value="10">10 — Insupportable / Urgence</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Date et heure souhaitées</label>
+        <input type="text" id="rdv-date" placeholder="Ex: Demain soir vers 21h00"/></div>
+      <button class="btn-primary btn-lg-hop" onclick="submitRdv()">Envoyer ma demande</button>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- POSTULER PAGE -->
+<div id="page-postuler" class="page">
+  <div class="subpage-nav-hop">
+    <span class="subpage-nav-title-hop">🌸 Candidature médicale</span>
+    <button class="btn-outline-hop" onclick="showPage('home')">← Retour</button>
+  </div>
+  <div id="postuler-auth-wall" style="display:none;min-height:80vh;background:var(--hop-bg);display:flex;align-items:center;justify-content:center;padding:2rem">
+    <div style="background:var(--hop-card);border:1px solid var(--hop-border);border-radius:12px;padding:2.5rem;max-width:460px;width:100%;text-align:center">
+      <div style="font-size:48px;margin-bottom:1rem">🔒</div>
+      <h2 style="font-family:Georgia,serif;color:var(--hop-dark);margin-bottom:0.75rem">Connexion requise</h2>
+      <p style="font-size:14px;color:var(--hop-muted);line-height:1.7;margin-bottom:1.5rem">Pour postuler à l'Hôpital de Konoha, vous devez d'abord créer votre dossier.<br><br>Cordialement,<br><strong>L'Hôpital de Konoha</strong></p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
+        <button onclick="showPage('register')" class="btn-primary">Créer mon dossier</button>
+        <button onclick="showPage('login')" class="btn-outline-hop">Se connecter</button>
+      </div>
+    </div>
+  </div>
+  <div id="postuler-form-content">
+  <div class="form-page-hop">
+    <div class="form-container-hop">
+      <p class="section-tag-hop">Recrutement médical</p>
+      <h2 class="section-title-hop">Candidature <span>Soignant</span></h2>
+      <div class="form-msg-hop success" id="post-ok" style="display:none">Candidature envoyée ! Elle sera étudiée par le Chef Médecin.</div>
+      <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="post-nom" placeholder="Ex: Sakura Haruno"/></div>
+      <div class="form-group-hop"><label>Niveau ninja actuel *</label>
+        <select id="post-niveau">
+          <option value="">-- Votre rang --</option>
+          <option>Genin</option><option>Genin confirmé</option><option>Chunin</option>
+          <option>Tokubetsu-Chunin</option><option>Kakunin</option><option>Tokubetsu-Jonin</option><option>Jonin</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Spécialité médicale souhaitée *</label>
+        <select id="post-specialite">
+          <option value="">-- Choisir --</option>
+          <option>Chakra de guérison</option>
+          <option>Médecine d'urgence</option>
+          <option>Pharmacologie ninja</option>
+          <option>Rééducation</option>
+          <option>Analyse & diagnostic</option>
+          <option>Médecine naturelle</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Pourquoi rejoindre l'Hôpital de Konoha ? *</label>
+        <textarea id="post-motiv" rows="4" placeholder="Expliquez votre vocation médicale..."></textarea>
+      </div>
+      <div class="form-group-hop"><label>Avez-vous un casier judiciaire ? *</label>
+        <select id="post-casier">
+          <option value="">-- Choisir --</option>
+          <option value="non">Non — casier vierge</option>
+          <option value="oui">Oui</option>
+        </select>
+      </div>
+      <div class="form-group-hop"><label>Disponibilité hebdomadaire *</label>
+        <select id="post-dispo">
+          <option value="">-- Choisir --</option>
+          <option value="1-2">1 à 2 services par semaine</option>
+          <option value="3-4">3 à 4 services par semaine</option>
+          <option value="5+">5 services et plus</option>
+        </select>
+      </div>
+      <button class="btn-primary btn-lg-hop" onclick="submitPostuler()">Envoyer ma candidature</button>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page">
+  <div class="dash-topbar-hop">
+    <div class="dash-topbar-left-hop">
+      <span style="font-size:24px">🌸</span>
+      <div>
+        <div class="dash-topbar-title-hop" id="dash-topbar-title-text">Espace Médical</div>
+        <div class="dash-topbar-sub-hop">Hôpital de Konoha</div>
+      </div>
+    </div>
+    <div class="dash-topbar-right-hop">
+      <div class="avatar-hop" id="dash-avatar">—</div>
+      <div>
+        <div id="dash-username-display" style="font-size:13px;color:var(--hop-dark);font-weight:600"></div>
+        <span class="grade-pill-hop" id="dash-grade-pill"></span>
+      </div>
+      <button class="btn-outline-hop" onclick="showPage('home')">Site public</button>
+      <button class="btn-danger-hop" onclick="logout()">Déconnexion</button>
+    </div>
+  </div>
+  <div class="dash-layout-hop">
+    <aside class="dash-sidebar-hop">
+      <div id="dash-sidebar-agent">
+        <nav class="dash-nav-hop" id="agent-sidebar-nav" style="display:flex;flex-direction:column">
+          <button class="dash-nav-btn-hop active" onclick="switchDashTab('overview',this)">📊 Vue d'ensemble</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('journal',this)">📰 Journal</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('rdvs',this)">📋 Rendez-vous</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('candidatures',this)">👩‍⚕️ Candidatures</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('annuaire',this)">📒 Annuaire</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
+        </nav>
+      </div>
+      <div id="dash-sidebar-citizen" style="display:none">
+        <nav class="dash-nav-hop" id="citizen-sidebar-nav" style="display:flex;flex-direction:column">
+          <button class="dash-nav-btn-hop active" onclick="switchCitizenTab('journal',this)">📰 Journal</button>
+          <button class="dash-nav-btn-hop" onclick="switchCitizenTab('rdvs',this)">🗓️ Mes rendez-vous</button>
+          <button class="dash-nav-btn-hop" onclick="switchCitizenTab('candid',this)">📝 Ma candidature</button>
+          <button class="dash-nav-btn-hop" onclick="switchCitizenTab('overview',this)">👤 Mon profil</button>
+        </nav>
+      </div>
+    </aside>
+    <main class="dash-main-hop">
+      <div class="dash-tab-hop active" id="dash-overview"></div>
+      <div class="dash-tab-hop" id="dash-journal"></div>
+      <div class="dash-tab-hop" id="dash-rdvs"></div>
+      <div class="dash-tab-hop" id="dash-candidatures"></div>
+      <div class="dash-tab-hop" id="dash-annuaire"></div>
+      <div class="dash-tab-hop" id="dash-membres"></div>
+      <div class="dash-tab-hop" id="dash-ajout"></div>
+      <div class="dash-tab-hop" id="dash-dossiers"></div>
+      <div class="dash-tab-hop" id="dash-logs"></div>
+      <div class="dash-tab-hop" id="dash-citizen-journal"></div>
+      <div class="dash-tab-hop" id="dash-citizen-rdvs"></div>
+      <div class="dash-tab-hop" id="dash-citizen-candid"></div>
+      <div class="dash-tab-hop" id="dash-citizen-overview"></div>
+    </main>
+  </div>
+</div>
+
+
+<script>// ============================================================
+// HÔPITAL DE KONOHA — app.js
+// ============================================================
+
+const SB_URL = 'SUPABASE_URL_HERE';
+const SB_KEY = 'SUPABASE_KEY_HERE';
+
+async function sbFetch(table, method='GET', body=null, query='') {
+  const url = `${SB_URL}/rest/v1/${table}${query}`;
+  const opts = {
+    method,
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if (method === 'GET') return await res.json();
+  return res.ok;
+}
+async function sbGet(t, q='')    { return sbFetch(t,'GET',null,q); }
+async function sbPost(t, b)      { return sbFetch(t,'POST',b); }
+async function sbPatch(t, q, b)  { return sbFetch(t,'PATCH',b,q); }
+async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
+
+// ============================================================
+// ÉTAT GLOBAL
+// ============================================================
+const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier·ère', 'Stagiaire médical'];
+const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier·ère':3, 'Stagiaire médical':4, 'Citoyen':9 };
+const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
+
+const state = {
+  currentUser: null,
+  users: {},
+  rdvs: [],
+  candidatures: [],
+  messages: {},
+  journal: [
+    { id:1, titre:'Ouverture du portail médical', contenu:"L'Hôpital de Konoha lance son portail officiel. Prenez rendez-vous et postulez directement en ligne.", type:'annonce', auteur:'Chef Médecin', grade:'Chef Médecin', date:'08/04/2025' },
+    { id:2, titre:'Rendez-vous obligatoire avant toute mission', contenu:'Tout ninja blessé lors d\'une mission doit obligatoirement consulter l\'hôpital avant de reprendre du service. Votre santé est notre priorité.', type:'info', auteur:'Chef Médecin', grade:'Chef Médecin', date:'07/04/2025' },
+  ]
+};
+
+// ============================================================
+// SUPABASE SYNC
+// ============================================================
+async function syncFromSupabase() {
+  try {
+    const rdvs = await sbGet('rdvs', '?order=id.asc');
+    if (Array.isArray(rdvs)) {
+      state.rdvs = rdvs.map(r => ({
+        id: r.id, nom: r.nom, grade: r.grade, motif: r.motif,
+        antecedents: r.antecedents, desc: r.description || r.desc || '',
+        douleur: r.douleur, date: r.date_souhaitee || r.date || '',
+        status: r.status || 'wait', author: r.author, authorDisplay: r.author_display
+      }));
+    }
+    const candids = await sbGet('candidatures_hop', '?order=id.asc');
+    if (Array.isArray(candids)) {
+      state.candidatures = candids.map(c => ({
+        id: c.id, nom: c.nom, niveau: c.niveau, specialite: c.specialite,
+        motiv: c.motiv || '', casier: c.casier, dispo: c.dispo,
+        status: c.status || 'wait', author: c.author, authorDisplay: c.author_display
+      }));
+    }
+    const msgs = await sbGet('messages_hop', '?order=created_at.asc');
+    if (Array.isArray(msgs)) {
+      state.messages = {};
+      msgs.forEach(m => {
+        if (!state.messages[m.thread_id]) state.messages[m.thread_id] = [];
+        state.messages[m.thread_id].push({ from: m.from_user, senderName: m.sender_name, grade: m.grade, role: m.role, text: m.text, time: m.time });
+      });
+    }
+    const journal = await sbGet('journal_hop', '?order=id.asc');
+    if (Array.isArray(journal) && journal.length > 0) {
+      state.journal = journal.map(a => ({ id: a.id, titre: a.titre, contenu: a.contenu, type: a.type, auteur: a.auteur, grade: a.grade, date: a.date }));
+    }
+    const users = await sbGet('users_hop', '');
+    if (Array.isArray(users)) {
+      const blacklist = JSON.parse(localStorage.getItem('hop_deleted') || '[]');
+      users.forEach(u => {
+        if (blacklist.includes(u.username)) return; // Skip deleted users
+        state.users[u.username] = { password: u.password, grade: u.grade || 'Citoyen', fullname: u.fullname || u.username, isStaff: u.is_staff || false, matricule: u.matricule || '', inscription: u.inscription || '' };
+      });
+    }
+    const overrides = await sbGet('grade_overrides_hop', '');
+    if (Array.isArray(overrides)) {
+      overrides.forEach(o => { if (state.users[o.username]) state.users[o.username].grade = o.grade; });
+    }
+    // Sync dossiers médicaux
+    const dossiers = await sbGet('dossiers_hop', '?order=id.asc');
+    if (Array.isArray(dossiers) && dossiers.length > 0) {
+      const localDossiers = dossiers.map(d => ({
+        patient: d.patient, soignant: d.soignant, blessure: d.blessure,
+        gravite: d.gravite, desc: d.description, traitement: d.traitement,
+        statut: d.statut, date: d.date, createdBy: d.created_by
+      }));
+      localStorage.setItem('hop_dossiers', JSON.stringify(localDossiers));
+    }
+  } catch(e) { console.warn('syncFromSupabase error', e); }
+}
+
+// Realtime polling
+let realtimeHop = null;
+function startRealtime() {
+  if (realtimeHop) return;
+  realtimeHop = setInterval(async () => {
+    if (!state.currentUser) return;
+    const oldMsg = Object.values(state.messages).reduce((a,b)=>a+b.length,0);
+    const oldRdv = state.rdvs.length;
+    const oldCandid = state.candidatures.length;
+    await syncFromSupabase();
+    const newMsg = Object.values(state.messages).reduce((a,b)=>a+b.length,0);
+    if (newMsg !== oldMsg || state.rdvs.length !== oldRdv || state.candidatures.length !== oldCandid) {
+      const u = state.currentUser;
+      const ud = state.users[u.username];
+      const isStaff = ud && ud.isStaff;
+      const active = document.querySelector('.dash-tab-hop.active');
+      if (!active) return;
+      if (isStaff) {
+        const g = u.grade;
+        if (active.id === 'dash-rdvs') renderRdvsContent(g);
+        if (active.id === 'dash-candidatures') renderCandidContent(g);
+      } else {
+        if (active.id === 'dash-citizen-rdvs') renderCitizenRdvs();
+        if (active.id === 'dash-citizen-candid') renderCitizenCandid();
+      }
+      if (state.users[u.username]) {
+        const fg = state.users[u.username].grade;
+        if (fg && fg !== u.grade) { state.currentUser.grade = fg; localStorage.setItem('hop_session', JSON.stringify(state.currentUser)); updateNav(); }
+      }
+    }
+  }, 5000);
+}
+function stopRealtime() { if (realtimeHop) { clearInterval(realtimeHop); realtimeHop = null; } }
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-' + id);
+  if (target) target.classList.add('active');
+  window.scrollTo(0,0);
+  const nav = document.getElementById('main-nav');
+  if (nav) nav.style.display = (id === 'dashboard') ? 'none' : 'flex';
+
+  if (id === 'rdv' || id === 'postuler') {
+    const wall    = document.getElementById(id === 'rdv' ? 'rdv-auth-wall' : 'postuler-auth-wall');
+    const content = document.getElementById(id === 'rdv' ? 'rdv-form-content' : 'postuler-form-content');
+    const logged  = !!state.currentUser;
+    if (wall)    wall.style.display    = logged ? 'none' : 'flex';
+    if (content) content.style.display = logged ? 'block' : 'none';
+    return;
+  }
+  if (id === 'dashboard') {
+    if (!state.currentUser) { showPage('login'); return; }
+    syncFromSupabase().then(() => renderDashboard('overview'));
+    return;
+  }
+  if (id === 'home') { renderJournalPublic(); updateStats(); }
+  updateNav();
+}
+
+function showSection(id) {
+  showPage('home');
+  setTimeout(() => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  }, 80);
+}
+
+function updateNav() {
+  const u = state.currentUser;
+  const auth = document.getElementById('nav-auth');
+  const usr  = document.getElementById('nav-user');
+  if (!u) {
+    if (auth) auth.style.display = 'flex';
+    if (usr)  usr.style.display  = 'none';
+  } else {
+    if (auth) auth.style.display = 'none';
+    if (usr)  usr.style.display  = 'flex';
+    const av = document.getElementById('nav-avatar');
+    const nm = document.getElementById('nav-username-display');
+    const gp = document.getElementById('nav-grade-pill');
+    if (av) av.textContent = (u.fullname || u.username).slice(0,2).toUpperCase();
+    if (nm) nm.textContent = u.fullname || u.username;
+    if (gp) { gp.textContent = u.grade; gp.className = 'grade-pill-hop ' + (GRADE_CLASS_HOP[u.grade] || 'badge-stagiaire'); }
+  }
+  updateStats();
+}
+
+function updateStats() {
+  const s = document.getElementById('stat-staff');
+  const r = document.getElementById('stat-rdv');
+  if (s) s.textContent = Object.values(state.users).filter(u => u.isStaff).length;
+  if (r) r.textContent = state.rdvs.filter(r => r.status === 'ok').length;
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-err');
+  err.textContent = '';
+  if (!user || !pass) { err.textContent = 'Veuillez remplir tous les champs.'; return; }
+  await syncFromSupabase();
+  let found = state.users[user];
+  if (!found || found.password !== pass) {
+    try {
+      const res = await sbGet('users_hop', `?username=eq.${encodeURIComponent(user)}&password=eq.${encodeURIComponent(pass)}`);
+      if (Array.isArray(res) && res.length > 0) {
+        const u = res[0];
+        found = { password: u.password, grade: u.grade||'Citoyen', fullname: u.fullname||user, isStaff: u.is_staff||false, matricule: u.matricule||'' };
+        state.users[user] = found;
+      }
+    } catch(e) {}
+    if (!found || found.password !== pass) { err.textContent = 'Nom ou mot de passe incorrect.'; return; }
+  }
+  state.currentUser = { username: user, grade: found.grade, fullname: found.fullname, matricule: found.matricule };
+  localStorage.setItem('hop_session', JSON.stringify(state.currentUser));
+  startRealtime();
+  showPage('dashboard');
+}
+
+async function doStaffLogin() {
+  const user = document.getElementById('staff-login-user').value.trim();
+  const mat  = document.getElementById('staff-login-mat').value.trim();
+  const err  = document.getElementById('staff-login-err');
+  err.textContent = '';
+
+  if (!user || !mat) { err.textContent = 'Veuillez remplir tous les champs.'; return; }
+
+  // Sync from Supabase first
+  await syncFromSupabase();
+
+  // Find staff member by name and matricule
+  const username = user.replace(/\s+/g,'_');
+  let found = null;
+  let foundKey = null;
+
+  // Try exact username match
+  if (state.users[username] && state.users[username].isStaff) {
+    found = state.users[username];
+    foundKey = username;
+  }
+
+  // Try fullname match
+  if (!found) {
+    const entry = Object.entries(state.users).find(([k,u]) =>
+      u.isStaff && (u.fullname === user || u.fullname?.toLowerCase() === user.toLowerCase())
+    );
+    if (entry) { foundKey = entry[0]; found = entry[1]; }
+  }
+
+  // If not in memory, try Supabase directly
+  if (!found) {
+    try {
+      const res = await sbGet('users_hop', `?fullname=eq.${encodeURIComponent(user)}&is_staff=eq.true`);
+      if (Array.isArray(res) && res.length > 0) {
+        const u = res[0];
+        foundKey = u.username;
+        found = { password: u.password, grade: u.grade||'Stagiaire médical', fullname: u.fullname||user, isStaff: true, matricule: u.matricule||'' };
+        state.users[foundKey] = found;
+      }
+    } catch(e) {}
+  }
+
+  if (!found || !found.isStaff) {
+    err.textContent = 'Aucun soignant trouvé avec ce nom.'; return;
+  }
+
+  // Check matricule (password for staff = matricule)
+  if (found.matricule !== mat && found.password !== mat) {
+    err.textContent = 'Matricule incorrect.'; return;
+  }
+
+  // Apply grade override
+  try {
+    const overrides = await sbGet('grade_overrides_hop', `?username=eq.${foundKey}`);
+    if (Array.isArray(overrides) && overrides.length > 0) found.grade = overrides[0].grade;
+  } catch(e) {}
+
+  state.currentUser = { username: foundKey, grade: found.grade, fullname: found.fullname, matricule: found.matricule };
+  localStorage.setItem('hop_session', JSON.stringify(state.currentUser));
+  startRealtime();
+  showPage('dashboard');
+}
+
+async function doRegister() {
+  const user = document.getElementById('reg-user').value.trim();
+  const grade= document.getElementById('reg-grade').value;
+  const pass = document.getElementById('reg-pass').value;
+  const pass2= document.getElementById('reg-pass2').value;
+  const err  = document.getElementById('reg-err');
+  const ok   = document.getElementById('reg-ok');
+  err.textContent = '';
+  ok.style.display = 'none';
+  if (!user || !grade || !pass) { err.textContent = 'Tous les champs sont obligatoires.'; return; }
+  if (pass.length < 6) { err.textContent = 'Mot de passe minimum 6 caractères.'; return; }
+  if (pass !== pass2) { err.textContent = 'Les mots de passe ne correspondent pas.'; return; }
+  if (state.users[user]) { err.textContent = 'Ce nom est déjà utilisé.'; return; }
+  state.users[user] = { password: pass, grade, fullname: user, isStaff: false, inscription: new Date().toLocaleDateString('fr-FR') };
+  await sbPost('users_hop', { username: user, password: pass, grade, fullname: user, is_staff: false, inscription: new Date().toLocaleDateString('fr-FR') });
+  ok.style.display = 'block';
+  document.getElementById('reg-user').value = '';
+  document.getElementById('reg-pass').value = '';
+  document.getElementById('reg-pass2').value = '';
+}
+
+function logout() {
+  stopRealtime();
+  state.currentUser = null;
+  localStorage.removeItem('hop_session');
+  showPage('home');
+}
+
+// ============================================================
+// FORMULAIRES
+// ============================================================
+async function submitRdv() {
+  const nom  = document.getElementById('rdv-nom').value.trim();
+  const grade= document.getElementById('rdv-grade').value;
+  const motif= document.getElementById('rdv-motif').value;
+  const ant  = document.getElementById('rdv-antecedents').value;
+  const desc = document.getElementById('rdv-desc').value.trim();
+  const doul = document.getElementById('rdv-douleur').value;
+  const date = document.getElementById('rdv-date').value.trim();
+  if (!nom||!grade||!motif||!desc) { alert('Veuillez remplir tous les champs obligatoires.'); return; }
+  const author = state.currentUser ? state.currentUser.username : nom;
+  await sbPost('rdvs', { nom, grade, motif, antecedents: ant, description: desc, douleur: doul, date_souhaitee: date||'Non précisée', status:'wait', author, author_display: nom });
+  const newId = Date.now();
+  await sbPost('messages_hop', { thread_id:'rdv_'+newId, from_user:'system', sender_name:'Système', role:'system', text:'Votre demande de rendez-vous a bien été enregistrée. Un soignant vous contactera prochainement.', time: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) });
+  await syncFromSupabase();
+  document.getElementById('rdv-nom').value=''; document.getElementById('rdv-grade').value=''; document.getElementById('rdv-motif').value=''; document.getElementById('rdv-desc').value=''; document.getElementById('rdv-date').value='';
+  const ok = document.getElementById('rdv-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',4000);
+}
+
+async function submitPostuler() {
+  const nom  = document.getElementById('post-nom').value.trim();
+  const niv  = document.getElementById('post-niveau').value;
+  const spec = document.getElementById('post-specialite').value;
+  const motiv= document.getElementById('post-motiv').value.trim();
+  const cas  = document.getElementById('post-casier').value;
+  const dispo= document.getElementById('post-dispo').value;
+  if (!nom||!niv||!spec||!motiv||!cas||!dispo) { alert('Veuillez remplir tous les champs.'); return; }
+  if (cas==='oui') { alert('Un casier judiciaire disqualifie automatiquement la candidature.'); return; }
+  const author = state.currentUser ? state.currentUser.username : nom;
+  await sbPost('candidatures_hop', { nom, niveau: niv, specialite: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom });
+  await syncFromSupabase();
+  const newId = state.candidatures[state.candidatures.length-1]?.id || Date.now();
+  await sbPost('messages_hop', { thread_id:'candid_'+newId, from_user:'system', sender_name:'Système', role:'system', text:'Votre candidature a bien été enregistrée. Elle sera étudiée par le Chef Médecin.', time: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) });
+  await syncFromSupabase();
+  document.getElementById('post-nom').value=''; document.getElementById('post-niveau').value=''; document.getElementById('post-specialite').value=''; document.getElementById('post-motiv').value='';
+  const ok = document.getElementById('post-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',4000);
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function gradeRankHop(g) { return GRADE_RANK_HOP[g] ?? 99; }
+function canAllHop(g)    { return gradeRankHop(g) <= 1; }
+function canRdvsHop(g)   { return gradeRankHop(g) <= 4; }
+
+function renderDashboard(tab) {
+  const u = state.currentUser;
+  if (!u) return;
+  const g = u.grade;
+  const ud = state.users[u.username];
+  const isStaff = ud && ud.isStaff;
+
+  // Topbar
+  const av = document.getElementById('dash-avatar');
+  const nm = document.getElementById('dash-username-display');
+  const gp = document.getElementById('dash-grade-pill');
+  if (av) av.textContent = (u.fullname||u.username).slice(0,2).toUpperCase();
+  if (nm) nm.textContent = u.fullname||u.username;
+  if (gp) { gp.textContent = g; gp.className = 'grade-pill-hop '+(GRADE_CLASS_HOP[g]||'badge-stagiaire'); }
+
+  // Show correct sidebar
+  const agentSide   = document.getElementById('dash-sidebar-agent');
+  const citizenSide = document.getElementById('dash-sidebar-citizen');
+  if (isStaff) {
+    if (agentSide)   agentSide.style.display   = 'block';
+    if (citizenSide) citizenSide.style.display = 'none';
+    const title = document.getElementById('dash-topbar-title-text');
+    if (title) title.textContent = 'Espace Soignant';
+    switchDashTab('overview', document.querySelector('#agent-sidebar-nav .dash-nav-btn-hop'));
+  } else {
+    if (agentSide)   agentSide.style.display   = 'none';
+    if (citizenSide) citizenSide.style.display = 'block';
+    const title = document.getElementById('dash-topbar-title-text');
+    if (title) title.textContent = 'Espace Patient';
+    switchCitizenTab('journal', document.querySelector('#citizen-sidebar-nav .dash-nav-btn-hop'));
+  }
+}
+
+function switchDashTab(name, btn) {
+  document.querySelectorAll('.dash-tab-hop').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#agent-sidebar-nav .dash-nav-btn-hop').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById('dash-' + name);
+  if (tab) tab.classList.add('active');
+  if (btn) btn.classList.add('active');
+  const g = state.currentUser?.grade || 'Citoyen';
+  if (name === 'overview')      renderAgentOverview(g);
+  if (name === 'journal')       renderJournalAgent(g);
+  if (name === 'rdvs')          renderRdvsContent(g);
+  if (name === 'candidatures')  renderCandidContent(g);
+  if (name === 'annuaire')      renderAnnuaireContent(g);
+  if (name === 'membres')       renderMembresContent(g);
+  if (name === 'ajout')         renderAjoutContent(g);
+  if (name === 'logs')          renderLogsContent(g);
+  if (name === 'dossiers')      renderDossiersContent(g);
+}
+
+function switchCitizenTab(name, btn) {
+  document.querySelectorAll('.dash-tab-hop').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#citizen-sidebar-nav .dash-nav-btn-hop').forEach(b => b.classList.remove('active'));
+  const tab = document.getElementById('dash-citizen-' + name);
+  if (tab) tab.classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'journal')   renderCitizenJournal();
+  if (name === 'rdvs')      renderCitizenRdvs();
+  if (name === 'candid')    renderCitizenCandid();
+  if (name === 'overview')  renderCitizenProfile();
+}
+
+// ---- AGENT OVERVIEW ----
+function renderAgentOverview(g) {
+  const el = document.getElementById('dash-overview');
+  if (!el) return;
+  const rdvWait = state.rdvs.filter(r => r.status === 'wait').length;
+  const candidWait = state.candidatures.filter(c => c.status === 'wait').length;
+  const staffCount = Object.values(state.users).filter(u => u.isStaff).length;
+  const perms = gradeRankHop(g) <= 1 ? ['Toutes les permissions','Gérer les membres','Valider candidatures','Gérer les RDVs','Publier le journal'] :
+                gradeRankHop(g) <= 2 ? ['Valider candidatures','Gérer les RDVs','Publier le journal'] :
+                ['Gérer les RDVs'];
+  el.innerHTML = `
+    <h2 class="dash-section-title-hop">Vue d'ensemble</h2>
+    <div class="kpi-grid-hop">
+      <div class="kpi-card-hop"><div class="kpi-label-hop">Rendez-vous</div><div class="kpi-val-hop" style="color:var(--hop-gold)">${rdvWait}</div><div style="font-size:11px;color:var(--hop-muted)">En attente</div></div>
+      <div class="kpi-card-hop"><div class="kpi-label-hop">Candidatures</div><div class="kpi-val-hop" style="color:var(--hop-mauve)">${candidWait}</div><div style="font-size:11px;color:var(--hop-muted)">En attente</div></div>
+      <div class="kpi-card-hop"><div class="kpi-label-hop">Équipe</div><div class="kpi-val-hop">${staffCount}</div><div style="font-size:11px;color:var(--hop-muted)">Soignants</div></div>
+      <div class="kpi-card-hop"><div class="kpi-label-hop">Mon grade</div><div style="margin-top:6px"><span class="grade-pill-hop ${GRADE_CLASS_HOP[g]||'badge-stagiaire'}">${g}</span></div></div>
+    </div>
+    <div class="dash-block-hop" style="padding:1.25rem">
+      <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.75rem">Vos permissions</div>
+      ${perms.map(p => `<div style="font-size:13px;color:var(--hop-text);padding:4px 0;display:flex;align-items:center;gap:8px"><span style="color:var(--hop-green)">✓</span>${p}</div>`).join('')}
+    </div>`;
+}
+
+// ---- JOURNAL PUBLIC ----
+function renderJournalPublic() {
+  const el = document.getElementById('journal-public-list');
+  if (!el) return;
+  if (state.journal.length === 0) { el.innerHTML = '<p style="color:var(--hop-muted);text-align:center;padding:2rem">Aucune annonce.</p>'; return; }
+  const typeColors = { annonce:'rgba(139,94,131,0.15)', info:'rgba(107,171,138,0.15)', urgent:'rgba(192,57,43,0.1)', alerte:'rgba(192,57,43,0.1)' };
+  const typeLabels = { annonce:'Annonce', info:'Information', urgent:'⚠ Urgent', alerte:'🔔 Alerte' };
+  el.innerHTML = state.journal.map(a => `
+    <div class="journal-card-hop">
+      <div class="journal-card-header-hop">
+        <span class="journal-type-badge-hop" style="background:${typeColors[a.type]||typeColors.annonce};color:var(--hop-mauve2)">${typeLabels[a.type]||a.type}</span>
+        <span style="font-size:11px;color:var(--hop-muted)">${a.date}</span>
+      </div>
+      <div class="journal-title-hop">${a.titre}</div>
+      <div class="journal-contenu-hop">${a.contenu}</div>
+      <div class="journal-author-hop">Par ${a.auteur} — ${a.grade}</div>
+    </div>`).join('');
+}
+
+// ---- JOURNAL AGENT ----
+function renderJournalAgent(g) {
+  const el = document.getElementById('dash-journal');
+  if (!el) return;
+  const canPublish = canRdvsHop(g);
+  let html = `<h2 class="dash-section-title-hop">Journal médical</h2>`;
+  if (canPublish) {
+    html += `<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1rem">
+      <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.75rem">Publier une annonce</div>
+      <div class="form-group-hop"><input type="text" id="j-titre" placeholder="Titre de l'annonce"/></div>
+      <div class="form-group-hop"><textarea id="j-contenu" rows="3" placeholder="Contenu..."></textarea></div>
+      <div class="form-group-hop"><select id="j-type"><option value="annonce">Annonce</option><option value="info">Information</option><option value="urgent">Urgent</option><option value="alerte">Alerte</option></select></div>
+      <button class="btn-primary" onclick="publishJournal()">Publier</button>
+    </div>`;
+  }
+  const typeColors = { annonce:'rgba(139,94,131,0.15)', info:'rgba(107,171,138,0.15)', urgent:'rgba(192,57,43,0.1)', alerte:'rgba(192,57,43,0.1)' };
+  const typeLabels = { annonce:'Annonce', info:'Information', urgent:'⚠ Urgent', alerte:'🔔 Alerte' };
+  html += state.journal.map(a => `
+    <div class="journal-card-hop">
+      <div class="journal-card-header-hop">
+        <span class="journal-type-badge-hop" style="background:${typeColors[a.type]||typeColors.annonce};color:var(--hop-mauve2)">${typeLabels[a.type]||a.type}</span>
+        <span style="font-size:11px;color:var(--hop-muted)">${a.date}</span>
+        ${canPublish ? `<button onclick="deleteJournal(${a.id})" style="background:none;border:none;color:var(--hop-muted);cursor:pointer;font-size:12px;margin-left:auto">🗑</button>` : ''}
+      </div>
+      <div class="journal-title-hop">${a.titre}</div>
+      <div class="journal-contenu-hop">${a.contenu}</div>
+      <div class="journal-author-hop">Par ${a.auteur} — ${a.grade}</div>
+    </div>`).join('') || '<p style="color:var(--hop-muted)">Aucune annonce.</p>';
+  el.innerHTML = html;
+}
+
+async function publishJournal() {
+  const titre = document.getElementById('j-titre')?.value.trim();
+  const contenu = document.getElementById('j-contenu')?.value.trim();
+  const type = document.getElementById('j-type')?.value;
+  if (!titre||!contenu) { alert('Titre et contenu requis.'); return; }
+  const u = state.currentUser;
+  await sbPost('journal_hop', { titre, contenu, type, auteur: u.fullname||u.username, grade: u.grade, date: new Date().toLocaleDateString('fr-FR') });
+  await syncFromSupabase();
+  renderJournalAgent(u.grade);
+  renderJournalPublic();
+}
+
+async function deleteJournal(id) {
+  if (!confirm('Supprimer cette annonce ?')) return;
+  await sbDelete('journal_hop', `?id=eq.${id}`);
+  await syncFromSupabase();
+  renderJournalAgent(state.currentUser.grade);
+  renderJournalPublic();
+}
+
+// ---- RDVs (AGENT) ----
+function renderRdvsContent(g) {
+  const el = document.getElementById('dash-rdvs');
+  if (!el) return;
+  if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Stagiaire médical minimum'); return; }
+  if (state.rdvs.length === 0) { el.innerHTML = '<h2 class="dash-section-title-hop">Rendez-vous médicaux</h2><p style="color:var(--hop-muted)">Aucun rendez-vous.</p>'; return; }
+  let html = '<h2 class="dash-section-title-hop">Rendez-vous médicaux</h2><div class="dash-block-hop">';
+  state.rdvs.forEach(r => {
+    const sc = r.status==='wait'?'s-wait-hop':r.status==='ok'?'s-ok-hop':'s-no-hop';
+    const sl = r.status==='wait'?'En attente':r.status==='ok'?'Traité':'Annulé';
+    const canAct = canRdvsHop(g) && r.status==='wait';
+    html += `<div class="detail-card-hop">
+      <div class="detail-card-header-hop" onclick="toggleDetailHop('rdv-${r.id}')">
+        <div><div class="detail-title-hop">#${r.id} — ${r.nom}</div>
+          <div class="detail-meta-hop"><span style="font-size:11px;background:rgba(139,94,131,0.1);color:var(--hop-mauve2);padding:2px 8px;border-radius:10px">${r.motif}</span><span style="font-size:11px;color:var(--hop-muted)">Douleur ${r.douleur}/10</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="status-badge-hop ${sc}">${sl}</span><span class="detail-toggle-icon-hop">▼</span></div>
+      </div>
+      <div class="detail-card-body-hop" id="rdv-body-${r.id}" style="display:none;padding:1.25rem">
+        <div class="detail-section-hop"><div class="detail-section-label-hop">Description</div><div class="detail-section-text-hop">${r.desc||'—'}</div></div>
+        <div class="detail-grid-hop">
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${r.nom}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Grade</span><span class="detail-field-val-hop">${r.grade}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Antécédents</span><span class="detail-field-val-hop">${r.antecedents==='oui'?'Oui':'Non'}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Date souhaitée</span><span class="detail-field-val-hop">${r.date||'NC'}</span></div>
+        </div>
+        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actRdv(${r.id},'ok')">✓ Marquer traité</button><button class="btn-sm-hop btn-no-hop" onclick="actRdv(${r.id},'no')">✗ Annuler</button></div>`:''}
+        ${buildThreadHop('rdv_'+r.id, state.currentUser.username, state.currentUser.fullname||state.currentUser.username, 'RDV #'+r.id+' — '+r.motif)}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function actRdv(id, status) {
+  const r = state.rdvs.find(r => r.id === id);
+  if (!r) return;
+  r.status = status;
+  await sbPatch('rdvs', `?id=eq.${id}`, { status });
+  const u = state.currentUser;
+  const threadId = 'rdv_' + id;
+  if (!state.messages[threadId]) state.messages[threadId] = [];
+  const msgText = status === 'ok' ? `Votre rendez-vous #${id} a été pris en charge par ${u.fullname||u.username} (${u.grade}). Nous vous contacterons bientôt.` : `Votre rendez-vous #${id} a été annulé par ${u.fullname||u.username} (${u.grade}).`;
+  const msgTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  state.messages[threadId].push({ from: u.username, senderName: u.fullname||u.username, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+  await sbPost('messages_hop', { thread_id: threadId, from_user: u.username, sender_name: u.fullname||u.username, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+  await syncFromSupabase();
+  renderRdvsContent(u.grade);
+  setTimeout(() => {
+    const body = document.getElementById(`rdv-body-${id}`);
+    if (body) { body.style.display='block'; const msgs = body.querySelector('[id^="msglist-"]'); if(msgs) msgs.scrollTop=msgs.scrollHeight; }
+  }, 30);
+}
+
+// ---- CANDIDATURES (AGENT) ----
+function renderCandidContent(g) {
+  const el = document.getElementById('dash-candidatures');
+  if (!el) return;
+  if (!canAllHop(g)) { el.innerHTML = noAccessHop('Médecin Senior ou Chef Médecin'); return; }
+  if (state.candidatures.length === 0) { el.innerHTML = '<h2 class="dash-section-title-hop">Candidatures</h2><p style="color:var(--hop-muted)">Aucune candidature.</p>'; return; }
+  let html = '<h2 class="dash-section-title-hop">Candidatures reçues</h2><div class="dash-block-hop">';
+  state.candidatures.forEach(c => {
+    const sc = c.status==='wait'?'s-wait-hop':c.status==='ok'?'s-ok-hop':'s-no-hop';
+    const sl = c.status==='wait'?'En attente':c.status==='ok'?'Accepté':'Refusé';
+    const canAct = c.status==='wait';
+    html += `<div class="detail-card-hop">
+      <div class="detail-card-header-hop" onclick="toggleDetailHop('candid-${c.id}')">
+        <div><div class="detail-title-hop">#${c.id} — ${c.nom}</div>
+          <div class="detail-meta-hop"><span style="font-size:11px;background:rgba(139,94,131,0.1);color:var(--hop-mauve2);padding:2px 8px;border-radius:10px">${c.niveau}</span><span style="font-size:11px;color:var(--hop-muted)">${c.specialite||'—'}</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px"><span class="status-badge-hop ${sc}">${sl}</span><span class="detail-toggle-icon-hop">▼</span></div>
+      </div>
+      <div class="detail-card-body-hop" id="candid-body-${c.id}" style="display:none;padding:1.25rem">
+        <div class="detail-section-hop"><div class="detail-section-label-hop">Motivation</div><div class="detail-section-text-hop">${c.motiv||'—'}</div></div>
+        <div class="detail-grid-hop">
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Nom</span><span class="detail-field-val-hop">${c.nom}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Niveau</span><span class="detail-field-val-hop">${c.niveau}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Spécialité</span><span class="detail-field-val-hop">${c.specialite||'—'}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Casier</span><span class="detail-field-val-hop">${c.casier==='non'?'Vierge ✓':'Chargé ✗'}</span></div>
+          <div class="detail-field-hop"><span class="detail-field-label-hop">Disponibilité</span><span class="detail-field-val-hop">${c.dispo||'—'}</span></div>
+        </div>
+        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actCandid(${c.id},'ok')">✓ Accepter</button><button class="btn-sm-hop btn-no-hop" onclick="actCandid(${c.id},'no')">✗ Refuser</button></div>`:''}
+        ${buildThreadHop('candid_'+c.id, state.currentUser.username, state.currentUser.fullname||state.currentUser.username, 'Candidature #'+c.id+' — '+c.nom)}
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function actCandid(id, status) {
+  const c = state.candidatures.find(c => c.id === id);
+  if (!c) return;
+  c.status = status;
+  await sbPatch('candidatures_hop', `?id=eq.${id}`, { status });
+  const u = state.currentUser;
+  const threadId = 'candid_' + id;
+  if (!state.messages[threadId]) state.messages[threadId] = [];
+  const msgText = status === 'ok' ? `Bienvenue dans l'équipe ! Votre candidature #${id} a été acceptée par ${u.fullname||u.username} (${u.grade}). Un supérieur vous contactera pour la suite.` : `Votre candidature #${id} a été refusée par ${u.fullname||u.username} (${u.grade}). N'hésitez pas à repostuler ultérieurement.`;
+  const msgTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  state.messages[threadId].push({ from: u.username, senderName: u.fullname||u.username, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+  await sbPost('messages_hop', { thread_id: threadId, from_user: u.username, sender_name: u.fullname||u.username, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+  await syncFromSupabase();
+  renderCandidContent(u.grade);
+  setTimeout(() => {
+    const body = document.getElementById(`candid-body-${id}`);
+    if (body) { body.style.display='block'; const msgs = body.querySelector('[id^="msglist-"]'); if(msgs) msgs.scrollTop=msgs.scrollHeight; }
+  }, 30);
+}
+
+// ---- ANNUAIRE ----
+function renderAnnuaireContent(g) {
+  const el = document.getElementById('dash-annuaire');
+  if (!el) return;
+  const citizens = Object.entries(state.users).filter(([,u])=>!u.isStaff);
+  const staff    = Object.entries(state.users).filter(([,u])=>u.isStaff).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9));
+  let html = '<h2 class="dash-section-title-hop">Annuaire</h2>';
+  if (citizens.length > 0) {
+    html += `<div class="dash-block-hop" style="margin-bottom:1rem"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Patients inscrits (${citizens.length})</div>`;
+    citizens.forEach(([un,u]) => { html += `<div class="membre-row-hop"><div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div><div class="membre-name-hop">${u.fullname||un}</div><span class="grade-pill-hop">${u.grade}</span></div>`; });
+    html += '</div>';
+  }
+  html += `<div class="dash-block-hop"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Équipe médicale (${staff.length})</div>`;
+  staff.forEach(([un,u]) => { html += `<div class="membre-row-hop"><div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div><div class="membre-name-hop">${u.fullname||un}<div style="font-size:10px;color:var(--hop-muted)">${u.matricule||''}</div></div><span class="grade-pill-hop ${GRADE_CLASS_HOP[u.grade]||'badge-stagiaire'}">${u.grade}</span></div>`; });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ---- MEMBRES ----
+function renderMembresContent(g) {
+  const el = document.getElementById('dash-membres');
+  if (!el) return;
+  if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior'); return; }
+  const staff = Object.entries(state.users).filter(([,u])=>u.isStaff).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9));
+  let html = `<h2 class="dash-section-title-hop">Gestion des membres</h2><div class="dash-block-hop">`;
+  staff.forEach(([un,u]) => {
+    html += `<div class="membre-row-hop">
+      <div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div>
+      <div class="membre-name-hop" style="flex:1">${u.fullname||un}<div style="font-size:10px;color:var(--hop-muted)">${u.matricule||''}</div></div>
+      <select class="grade-sel-hop" onchange="changeGradeHop('${un}',this.value)">
+        ${[...GRADES_MED,'Citoyen'].map(gd=>`<option value="${gd}" ${u.grade===gd?'selected':''}>${gd}</option>`).join('')}
+      </select>
+      ${gradeRankHop(g) <= 1 ? `<button onclick="deleteAccount('${un}', true)" style="background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif">🗑 Supprimer</button>` : ''}
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function changeGradeHop(username, newGrade) {
+  if (!state.users[username]) return;
+  state.users[username].grade = newGrade;
+  await sbPatch('users_hop', `?username=eq.${username}`, { grade: newGrade });
+  try {
+    const r = await sbGet('grade_overrides_hop', `?username=eq.${username}`);
+    if (Array.isArray(r) && r.length > 0) await sbPatch('grade_overrides_hop', `?username=eq.${username}`, { grade: newGrade, updated_at: new Date().toISOString() });
+    else await sbPost('grade_overrides_hop', { username, grade: newGrade });
+  } catch(e) {}
+  if (state.currentUser?.username === username) { state.currentUser.grade = newGrade; localStorage.setItem('hop_session', JSON.stringify(state.currentUser)); updateNav(); }
+  renderMembresContent(state.currentUser.grade);
+}
+
+
+// ============================================================
+// SUPPRESSION DE COMPTE (Chef Médecin + Médecin Senior)
+// ============================================================
+async function deleteAccount(username, isStaff) {
+  const u = state.currentUser;
+  if (gradeRankHop(u.grade) > 1) { alert('Accès refusé — Chef Médecin ou Médecin Senior uniquement.'); return; }
+
+  const displayName = state.users[username]?.fullname || username;
+  const motif = prompt(`Motif de suppression du dossier de "${displayName}" :\n(Décès RP, départ, autre...)\n\nCe motif sera enregistré dans les logs.`);
+  if (!motif) return;
+  if (!confirm(`Confirmer la suppression définitive de "${displayName}" ?\nMotif : ${motif}`)) return;
+
+  try {
+    // Delete from Supabase
+    await sbDelete('users_hop', `?username=eq.${encodeURIComponent(username)}`);
+    await sbDelete('grade_overrides_hop', `?username=eq.${encodeURIComponent(username)}`);
+
+    // Log the deletion in journal
+    await sbPost('journal_hop', {
+      titre: `Dossier supprimé — ${displayName}`,
+      contenu: `Le dossier de ${displayName} a été supprimé par ${u.fullname||u.username} (${u.grade}). Motif : ${motif}`,
+      type: 'admin',
+      auteur: u.fullname||u.username,
+      grade: u.grade,
+      date: new Date().toLocaleDateString('fr-FR')
+    });
+
+    // Save deletion to localStorage blacklist so it doesn't come back
+    const blacklist = JSON.parse(localStorage.getItem('hop_deleted') || '[]');
+    if (!blacklist.includes(username)) blacklist.push(username);
+    localStorage.setItem('hop_deleted', JSON.stringify(blacklist));
+
+    // Remove from local state
+    delete state.users[username];
+
+    await syncFromSupabase();
+    alert(`Dossier de "${displayName}" supprimé. Motif enregistré.`);
+    renderMembresContent(u.grade);
+    renderAnnuaireContent(u.grade);
+    renderLogsContent(u.grade);
+  } catch(e) {
+    console.error(e);
+    alert('Erreur lors de la suppression.');
+  }
+}
+
+// ---- AJOUT MEMBRE ----
+function renderAjoutContent(g) {
+  const el = document.getElementById('dash-ajout');
+  if (!el) return;
+  if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior'); return; }
+  el.innerHTML = `<h2 class="dash-section-title-hop">Ajouter un membre</h2>
+    <div class="dash-block-hop" style="padding:1.5rem;max-width:480px">
+      <div id="ajout-ok" style="display:none" class="form-msg-hop success">Membre ajouté avec succès !</div>
+      <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="aj-nom" placeholder="Ex: Tsunade Senju"/></div>
+      <div class="form-group-hop"><label>Grade médical *</label>
+        <select id="aj-grade">${GRADES_MED.map(gd=>`<option value="${gd}">${gd}</option>`).join('')}</select>
+      </div>
+      <div class="form-group-hop"><label>Matricule</label><input type="text" id="aj-mat" placeholder="HOP-XXX-0000"/></div>
+      <div class="form-group-hop"><label>Mot de passe (= matricule par défaut)</label><input type="text" id="aj-pass" placeholder="Laisser vide = matricule"/></div>
+      <button class="btn-primary" onclick="addMembre()">Ajouter</button>
+    </div>`;
+}
+
+async function addMembre() {
+  const nom = document.getElementById('aj-nom')?.value.trim();
+  const grade = document.getElementById('aj-grade')?.value;
+  const mat = document.getElementById('aj-mat')?.value.trim();
+  const pass = document.getElementById('aj-pass')?.value.trim() || mat || nom;
+  if (!nom||!grade) { alert('Nom et grade obligatoires.'); return; }
+  const username = nom.replace(/\s+/g,'_');
+  state.users[username] = { password: pass, grade, fullname: nom, isStaff: true, matricule: mat, inscription: new Date().toLocaleDateString('fr-FR') };
+  await sbPost('users_hop', { username, password: pass, grade, fullname: nom, is_staff: true, matricule: mat, inscription: new Date().toLocaleDateString('fr-FR') });
+  document.getElementById('ajout-ok').style.display = 'block';
+  document.getElementById('aj-nom').value=''; document.getElementById('aj-mat').value=''; document.getElementById('aj-pass').value='';
+}
+
+// ---- LOGS ----
+function renderLogsContent(g) {
+  const el = document.getElementById('dash-logs');
+  if (!el) return;
+  if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior uniquement'); return; }
+  let html = `<h2 class="dash-section-title-hop">Logs — Comptes & Accès</h2>
+    <div class="dash-block-hop" style="padding:0.75rem 1.25rem;background:rgba(192,57,43,0.05);font-size:12px;color:#C0392B;border-bottom:1px solid var(--hop-border)">🔒 Informations confidentielles — Direction uniquement</div>
+    <div class="dash-block-hop">`;
+  Object.entries(state.users).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9)).forEach(([un,u]) => {
+    html += `<div class="membre-row-hop">
+      <div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div>
+      <div style="flex:1"><div class="membre-name-hop">${u.fullname||un}</div><div style="font-size:10px;color:var(--hop-muted)">${u.isStaff?'Personnel médical':'Patient'}</div></div>
+      <span class="grade-pill-hop ${GRADE_CLASS_HOP[u.grade]||'badge-stagiaire'}">${u.grade}</span>
+      <div style="background:var(--hop-light);border:1px solid var(--hop-border);border-radius:6px;padding:3px 10px;font-size:12px;font-family:monospace;color:var(--hop-mauve2)">🔑 ${u.matricule||u.password||'—'}</div>
+    </div>`;
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ---- CITIZEN VIEWS ----
+function renderCitizenJournal() {
+  const el = document.getElementById('dash-citizen-journal');
+  if (!el) return;
+  el.innerHTML = '<h2 class="dash-section-title-hop">Journal médical</h2>';
+  const jEl = document.createElement('div');
+  el.appendChild(jEl);
+  const typeColors = { annonce:'rgba(139,94,131,0.15)', info:'rgba(107,171,138,0.15)', urgent:'rgba(192,57,43,0.1)', alerte:'rgba(192,57,43,0.1)' };
+  const typeLabels = { annonce:'Annonce', info:'Information', urgent:'⚠ Urgent', alerte:'🔔 Alerte' };
+  jEl.innerHTML = state.journal.map(a => `
+    <div class="journal-card-hop">
+      <div class="journal-card-header-hop"><span class="journal-type-badge-hop" style="background:${typeColors[a.type]||typeColors.annonce};color:var(--hop-mauve2)">${typeLabels[a.type]||a.type}</span><span style="font-size:11px;color:var(--hop-muted)">${a.date}</span></div>
+      <div class="journal-title-hop">${a.titre}</div>
+      <div class="journal-contenu-hop">${a.contenu}</div>
+      <div class="journal-author-hop">Par ${a.auteur} — ${a.grade}</div>
+    </div>`).join('') || '<p style="color:var(--hop-muted)">Aucune annonce.</p>';
+}
+
+function renderCitizenRdvs() {
+  const el = document.getElementById('dash-citizen-rdvs');
+  if (!el) return;
+  const u = state.currentUser;
+  const myRdvs = state.rdvs.filter(r => r.author === u.username);
+  let html = `<h2 class="dash-section-title-hop">Mes rendez-vous</h2>`;
+  if (myRdvs.length === 0) {
+    html += `<div class="dash-block-hop" style="padding:1.5rem;text-align:center"><p style="color:var(--hop-muted);margin-bottom:1rem">Aucun rendez-vous.</p><button class="btn-primary" onclick="showPage('rdv')">Prendre rendez-vous</button></div>`;
+  } else {
+    html += '<div class="dash-block-hop">';
+    myRdvs.forEach(r => {
+      const sc = r.status==='wait'?'s-wait-hop':r.status==='ok'?'s-ok-hop':'s-no-hop';
+      const sl = r.status==='wait'?'En attente':r.status==='ok'?'Traité':'Annulé';
+      html += `<div class="detail-card-hop">
+        <div class="detail-card-header-hop" onclick="toggleDetailHop('rdv-cit-${r.id}')">
+          <div><div class="detail-title-hop">RDV #${r.id} — ${r.motif}</div><div class="detail-meta-hop"><span style="font-size:11px;color:var(--hop-muted)">${r.date||'NC'}</span></div></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="status-badge-hop ${sc}">${sl}</span><span class="detail-toggle-icon-hop">▼</span></div>
+        </div>
+        <div class="detail-card-body-hop" id="rdv-cit-body-${r.id}" style="display:none;padding:1.25rem">
+          ${buildThreadHop('rdv_'+r.id, u.username, u.fullname||u.username, 'RDV #'+r.id+' — '+r.motif)}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderCitizenCandid() {
+  const el = document.getElementById('dash-citizen-candid');
+  if (!el) return;
+  const u = state.currentUser;
+  const myC = state.candidatures.filter(c => c.author === u.username);
+  let html = `<h2 class="dash-section-title-hop">Ma candidature</h2>`;
+  if (myC.length === 0) {
+    html += `<div class="dash-block-hop" style="padding:1.5rem;text-align:center"><p style="color:var(--hop-muted);margin-bottom:1rem">Aucune candidature.</p><button class="btn-primary" onclick="showPage('postuler')">Postuler maintenant</button></div>`;
+  } else {
+    html += '<div class="dash-block-hop">';
+    myC.forEach(c => {
+      const sc = c.status==='wait'?'s-wait-hop':c.status==='ok'?'s-ok-hop':'s-no-hop';
+      const sl = c.status==='wait'?'En attente':c.status==='ok'?'Accepté':'Refusé';
+      html += `<div class="detail-card-hop">
+        <div class="detail-card-header-hop" onclick="toggleDetailHop('candid-cit-${c.id}')">
+          <div><div class="detail-title-hop">Candidature #${c.id} — ${c.specialite||c.niveau}</div></div>
+          <div style="display:flex;align-items:center;gap:8px"><span class="status-badge-hop ${sc}">${sl}</span><span class="detail-toggle-icon-hop">▼</span></div>
+        </div>
+        <div class="detail-card-body-hop" id="candid-cit-body-${c.id}" style="display:none;padding:1.25rem">
+          ${buildThreadHop('candid_'+c.id, u.username, u.fullname||u.username, 'Candidature #'+c.id)}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderCitizenProfile() {
+  const el = document.getElementById('dash-citizen-overview');
+  if (!el) return;
+  const u = state.currentUser;
+  const ud = state.users[u.username] || {};
+  el.innerHTML = `<h2 class="dash-section-title-hop">Mon profil</h2>
+    <div class="dash-block-hop" style="padding:1.5rem;max-width:480px">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+        <div class="avatar-hop" style="width:52px;height:52px;font-size:18px">${(u.fullname||u.username).slice(0,2).toUpperCase()}</div>
+        <div><div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--hop-mauve2);font-weight:700">${u.fullname||u.username}</div>
+        <span class="grade-pill-hop ${GRADE_CLASS_HOP[u.grade]||'badge-stagiaire'}">${u.grade}</span></div>
+      </div>
+      <div class="form-group-hop"><label>Grade</label>
+        <select id="prof-grade">
+          ${['Citoyen','Genin','Genin confirmé','Chunin','Tokubetsu-Chunin','Kakunin','Tokubetsu-Jonin','Jonin'].map(gd=>`<option value="${gd}" ${(ud.grade||u.grade)===gd?'selected':''}>${gd}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn-primary" onclick="saveCitizenProfile()">Sauvegarder</button>
+    </div>`;
+}
+
+async function saveCitizenProfile() {
+  const u = state.currentUser;
+  const grade = document.getElementById('prof-grade')?.value;
+  if (state.users[u.username]) state.users[u.username].grade = grade;
+  u.grade = grade;
+  await sbPatch('users_hop', `?username=eq.${u.username}`, { grade });
+  localStorage.setItem('hop_session', JSON.stringify(u));
+  updateNav();
+  alert('Profil mis à jour !');
+}
+
+// ---- MESSAGERIE ----
+function buildThreadHop(threadId, fromKey, senderName, contextLabel) {
+  const msgs = state.messages[threadId] || [];
+  const u = state.currentUser;
+  const msgsHtml = msgs.map(m => {
+    if (m.from === 'system') return `<div class="msg-system-hop">${m.text}</div>`;
+    const isMe = m.from === fromKey;
+    const initials = (m.senderName||m.from).slice(0,2).toUpperCase();
+    return `<div class="msg-row-hop ${isMe?'msg-row-me-hop':''}">
+      <div class="msg-avatar-mini-hop">${initials}</div>
+      <div class="msg-content-hop">
+        <div class="msg-meta-hop">${m.senderName||m.from} <span style="color:var(--hop-rose2)">${m.grade?'· '+m.grade:''}</span> · ${m.time}</div>
+        <div class="msg-bubble-hop ${isMe?'bubble-me-hop':'bubble-other-hop'}">${m.text}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="discussion-panel-hop">
+    <div class="discussion-header-hop">💬 Discussion — ${contextLabel}</div>
+    <div class="discussion-body-hop" id="msglist-${threadId}">${msgsHtml||'<div class="msg-system-hop">Démarrez la conversation...</div>'}</div>
+    <div class="discussion-input-area-hop" style="margin-top:0.5rem">
+      <div style="font-size:11px;color:var(--hop-muted);margin-bottom:4px">${senderName} <span class="grade-pill-hop" style="font-size:9px">${u?.grade||''}</span></div>
+      <div class="discussion-input-row-hop">
+        <textarea class="discussion-input-hop" id="msginput-${threadId}" placeholder="Écrivez votre message..." rows="1"></textarea>
+        <button class="discussion-send-btn-hop" onclick="sendMsgHop('${threadId}','${fromKey}','${senderName}')">✈ Envoyer</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function sendMsgHop(threadId, fromKey, senderName) {
+  const input = document.getElementById('msginput-' + threadId);
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  const u = state.currentUser;
+  const userData = state.users[u.username] || {};
+  const msgTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  if (!state.messages[threadId]) state.messages[threadId] = [];
+  state.messages[threadId].push({ from: fromKey, senderName, grade: userData.grade||'', role: userData.isStaff?'staff':'patient', text, time: msgTime });
+  sbPost('messages_hop', { thread_id: threadId, from_user: fromKey, sender_name: senderName, grade: userData.grade||'', role: userData.isStaff?'staff':'patient', text, time: msgTime });
+  const isStaff = userData.isStaff;
+  const parts = threadId.split('_');
+  const itemId = parts[1];
+  const prefix = threadId.startsWith('rdv') ? 'rdv' : 'candid';
+  const bodyId = isStaff ? `${prefix}-body-${itemId}` : `${prefix}-cit-body-${itemId}`;
+  if (isStaff) {
+    if (threadId.startsWith('rdv')) renderRdvsContent(u.grade);
+    else renderCandidContent(u.grade);
+  } else {
+    if (threadId.startsWith('rdv')) renderCitizenRdvs();
+    else renderCitizenCandid();
+  }
+  setTimeout(() => {
+    const body = document.getElementById(bodyId);
+    if (body) { body.style.display='block'; const ml = document.getElementById('msglist-'+threadId); if(ml) ml.scrollTop=ml.scrollHeight; }
+  }, 30);
+}
+
+// ---- HELPERS ----
+function toggleDetailHop(id) {
+  const body = document.getElementById(id.replace('rdv-','rdv-body-').replace('candid-','candid-body-'));
+  const bodyReal = document.getElementById(id + (id.includes('body') ? '' : '-body-' + id.split('-').pop())) || document.querySelector(`[id*="${id}"][id*="body"]`);
+  // simpler approach:
+  const allBodies = document.querySelectorAll(`[id*="-body-"]`);
+  let found = null;
+  allBodies.forEach(b => { if (b.id.includes(id.replace('rdv-','').replace('candid-','').replace('cit-',''))) found = b; });
+  if (!found) {
+    // try direct
+    found = document.getElementById(id.replace('rdv-cit-','rdv-cit-body-').replace('candid-cit-','candid-cit-body-').replace('rdv-','rdv-body-').replace('candid-','candid-body-'));
+  }
+  if (found) {
+    const isOpen = found.style.display !== 'none';
+    found.style.display = isOpen ? 'none' : 'block';
+    const icon = found.previousElementSibling?.querySelector('.detail-toggle-icon-hop');
+    if (icon) icon.style.transform = isOpen ? '' : 'rotate(180deg)';
+    if (!isOpen) { const ml = found.querySelector('[id^="msglist-"]'); if(ml) ml.scrollTop=ml.scrollHeight; }
+  }
+}
+
+function noAccessHop(required) {
+  return `<div class="no-access-hop"><div style="font-size:40px;margin-bottom:1rem">🔒</div><h3>Accès restreint</h3><p>Grade requis : <strong>${required}</strong></p></div>`;
+}
+
+function togglePwd(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.innerHTML = isHidden ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
+// ============================================================
+// PÉTALES CANVAS
+// ============================================================
+function initPetals() {
+  const canvas = document.getElementById('petals-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+  const petals = Array.from({length:35}, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height - canvas.height,
+    size: 4 + Math.random() * 8,
+    speedX: (Math.random()-0.5)*1.2,
+    speedY: 0.8 + Math.random()*1.5,
+    rotation: Math.random()*Math.PI*2,
+    rotSpeed: (Math.random()-0.5)*0.06,
+    opacity: 0.4 + Math.random()*0.5,
+    color: Math.random()<0.5?'#FFB7C5':'#FFC8D5'
+  }));
+
+  function drawPetal(ctx, x, y, size, rotation, color, opacity) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.globalAlpha = opacity;
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.bezierCurveTo(size*0.6, -size*0.6, size*0.8, size*0.2, 0, size*0.8);
+    ctx.bezierCurveTo(-size*0.8, size*0.2, -size*0.6, -size*0.6, 0, -size);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function animate() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    petals.forEach(p => {
+      p.x += p.speedX + Math.sin(Date.now()*0.001+p.y*0.01)*0.4;
+      p.y += p.speedY;
+      p.rotation += p.rotSpeed;
+      if (p.y > canvas.height+20) { p.y=-20; p.x=Math.random()*canvas.width; }
+      drawPetal(ctx, p.x, p.y, p.size, p.rotation, p.color, p.opacity);
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  // Nav petals — smaller, faster, horizontal
+  const navCanvas = document.getElementById('nav-petals');
+  if (navCanvas) {
+    const nCtx = navCanvas.getContext('2d');
+    const updateNavSize = () => {
+      navCanvas.width  = navCanvas.offsetWidth;
+      navCanvas.height = navCanvas.offsetHeight;
+    };
+    updateNavSize();
+    window.addEventListener('resize', updateNavSize);
+
+    const navPetals = Array.from({length:18}, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * 80,
+      size: 2.5 + Math.random() * 4,
+      speedX: (Math.random()-0.5)*0.8,
+      speedY: 0.5 + Math.random()*0.9,
+      rotation: Math.random()*Math.PI*2,
+      rotSpeed: (Math.random()-0.5)*0.08,
+      opacity: 0.5 + Math.random()*0.45,
+      color: Math.random()<0.5?'#FFB7C5':'#FFC8D5'
+    }));
+
+    function animateNav() {
+      const w = navCanvas.offsetWidth;
+      const h = navCanvas.offsetHeight;
+      navCanvas.width = w;
+      nCtx.clearRect(0,0,w,h);
+      navPetals.forEach(p => {
+        p.x += p.speedX + Math.sin(Date.now()*0.0015+p.y*0.05)*0.3;
+        p.y += p.speedY;
+        p.rotation += p.rotSpeed;
+        if (p.y > h+10) { p.y=-8; p.x=Math.random()*w; }
+        if (p.x < -10) p.x = w+10;
+        if (p.x > w+10) p.x = -10;
+        nCtx.save();
+        nCtx.translate(p.x, p.y);
+        nCtx.rotate(p.rotation);
+        nCtx.globalAlpha = p.opacity;
+        nCtx.beginPath();
+        nCtx.moveTo(0,-p.size);
+        nCtx.bezierCurveTo(p.size*0.6,-p.size*0.6,p.size*0.8,p.size*0.2,0,p.size*0.8);
+        nCtx.bezierCurveTo(-p.size*0.8,p.size*0.2,-p.size*0.6,-p.size*0.6,0,-p.size);
+        nCtx.fillStyle = p.color;
+        nCtx.fill();
+        nCtx.restore();
+      });
+      requestAnimationFrame(animateNav);
+    }
+    animateNav();
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+try {
+  const saved = localStorage.getItem('hop_session');
+  if (saved) {
+    state.currentUser = JSON.parse(saved);
+    // Refresh grade from Supabase on next sync
+  }
+} catch(e) {}
+
+initPetals();
+
+syncFromSupabase().then(() => {
+  if (state.currentUser && state.users[state.currentUser.username]) {
+    const fg = state.users[state.currentUser.username].grade;
+    if (fg) { state.currentUser.grade = fg; localStorage.setItem('hop_session', JSON.stringify(state.currentUser)); }
+    startRealtime();
+  }
+  updateNav();
+  renderJournalPublic();
+  updateStats();
+});
+
+// ============================================================
+// DOSSIERS MÉDICAUX SECRETS
+// ============================================================
+const BLESSURES = [
+  "Blessure par arme tranchante (katana)",
+  "Blessure par arme tranchante (kunai/shuriken)",
+  "Blessure par arme contondante",
+  "Blessure par arme a feu / projectile",
+  "Brulure (Katon / feu)",
+  "Brulure electrique (Raiton / foudre)",
+  "Traumatisme par explosion (Doton)",
+  "Noyade / Trauma hydraulique (Suiton)",
+  "Empoisonnement (poison ninja)",
+  "Malediction / Sceau maudit",
+  "Epuisement du chakra",
+  "Trauma cranien",
+  "Fracture osseuse",
+  "Hemorragie interne",
+  "Blessure oculaire (dojutsu)",
+  "Morsure de creature / animal",
+  "Infection / Septicemie",
+  "Traumatisme psychologique",
+  "Blessures multiples combinees",
+  "Autre (preciser dans description)"
+];
+
+function renderDossiersContent(g) {
+  const el = document.getElementById('dash-dossiers');
+  if (!el) return;
+  if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
+
+  const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
+  const staff = Object.entries(state.users).filter(([,u])=>u.isStaff);
+
+  let html = `<h2 class="dash-section-title-hop">📁 Dossiers Médicaux Secrets</h2>
+    <div style="background:rgba(192,57,43,0.05);border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:12px;color:#C0392B">
+      🔒 Ces dossiers sont strictement confidentiels — Secret médical. Invisibles aux patients.
+    </div>`;
+
+  // Add new dossier form
+  html += `<div class="dash-block-hop" style="padding:1.5rem;margin-bottom:1.5rem">
+    <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Créer un nouveau dossier médical</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+      <div class="form-group-hop" style="margin:0"><label>Nom du patient *</label><input type="text" id="dos-patient" placeholder="Ex: Naruto Uzumaki"/></div>
+      <div class="form-group-hop" style="margin:0"><label>Soignant responsable *</label>
+        <select id="dos-soignant">
+          <option value="">-- Choisir --</option>
+          ${staff.map(([,u])=>`<option value="${u.fullname||u.username}">${u.fullname||u.username} (${u.grade})</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+      <div class="form-group-hop" style="margin:0"><label>Type de blessure / motif *</label>
+        <select id="dos-blessure">
+          <option value="">-- Sélectionner --</option>
+          ${BLESSURES.map(b=>`<option>${b}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group-hop" style="margin:0"><label>Gravité</label>
+        <select id="dos-gravite">
+          <option value="légère">Légère</option>
+          <option value="modérée" selected>Modérée</option>
+          <option value="grave">Grave</option>
+          <option value="critique">Critique — Urgence vitale</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group-hop" style="margin-bottom:0.75rem"><label>Description complète *</label>
+      <textarea id="dos-desc" rows="4" placeholder="Décrivez précisément les blessures, les soins apportés, les médicaments administrés, l'état du patient..."></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+      <div class="form-group-hop" style="margin:0"><label>Traitement administré</label>
+        <input type="text" id="dos-traitement" placeholder="Ex: Chakra de guérison niveau 3, antidote..."/></div>
+      <div class="form-group-hop" style="margin:0"><label>Statut du patient</label>
+        <select id="dos-statut">
+          <option value="en_traitement">En traitement</option>
+          <option value="gueri">Guéri — Sorti</option>
+          <option value="surveillance">Sous surveillance</option>
+          <option value="critique">État critique</option>
+          <option value="deces">Décédé (RP)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveDossier()">💾 Enregistrer le dossier médical</button>
+    <div id="dos-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">Dossier enregistré avec succès !</div>
+  </div>`;
+
+  // List existing dossiers
+  if (dossiers.length === 0) {
+    html += '<p style="color:var(--hop-muted);text-align:center;padding:1rem">Aucun dossier médical enregistré.</p>';
+  } else {
+    const graviteColors = { 'légère':'var(--hop-green)', 'modérée':'var(--hop-gold)', 'grave':'#fb923c', 'critique':'#e74c3c' };
+    const statutLabels = { 'en_traitement':'En traitement', 'gueri':'✓ Guéri', 'surveillance':'Surveillance', 'critique':'⚠ Critique', 'deces':'✝ Décédé (RP)' };
+    html += '<div class="dash-block-hop">';
+    dossiers.slice().reverse().forEach((d, i) => {
+      const realIdx = dossiers.length - 1 - i;
+      html += `<div class="detail-card-hop">
+        <div class="detail-card-header-hop" onclick="toggleDetailHop('dos-${realIdx}')">
+          <div>
+            <div class="detail-title-hop">📁 ${d.patient}</div>
+            <div class="detail-meta-hop">
+              <span style="font-size:11px;color:${graviteColors[d.gravite]||'var(--hop-muted)'}">● ${d.gravite}</span>
+              <span style="font-size:11px;color:var(--hop-muted)">${d.blessure}</span>
+              <span style="font-size:11px;color:var(--hop-muted)">${d.date}</span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="status-badge-hop ${d.statut==='gueri'?'s-ok-hop':d.statut==='deces'?'s-no-hop':'s-wait-hop'}">${statutLabels[d.statut]||d.statut}</span>
+            <span class="detail-toggle-icon-hop">▼</span>
+          </div>
+        </div>
+        <div class="detail-card-body-hop" id="dos-body-${realIdx}" style="display:none;padding:1.25rem">
+          <div class="detail-grid-hop">
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${d.patient}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Soignant</span><span class="detail-field-val-hop">${d.soignant}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Blessure</span><span class="detail-field-val-hop">${d.blessure}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${graviteColors[d.gravite]}">${d.gravite}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Traitement</span><span class="detail-field-val-hop">${d.traitement||'—'}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Statut</span><span class="detail-field-val-hop">${statutLabels[d.statut]||d.statut}</span></div>
+          </div>
+          <div class="detail-section-hop"><div class="detail-section-label-hop">Description médicale confidentielle</div>
+            <div class="detail-section-text-hop">${d.desc}</div>
+          </div>
+          <div style="margin-top:0.75rem;font-size:11px;color:var(--hop-muted)">Dossier créé le ${d.date} — Réf. #${realIdx+1}</div>
+          ${gradeRankHop(g) <= 1 ? `<button onclick="deleteDossier(${realIdx})" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:4px 12px;border-radius:4px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif">🗑 Supprimer ce dossier</button>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function saveDossier() {
+  const patient   = document.getElementById('dos-patient')?.value.trim();
+  const soignant  = document.getElementById('dos-soignant')?.value;
+  const blessure  = document.getElementById('dos-blessure')?.value;
+  const gravite   = document.getElementById('dos-gravite')?.value;
+  const desc      = document.getElementById('dos-desc')?.value.trim();
+  const traitement= document.getElementById('dos-traitement')?.value.trim();
+  const statut    = document.getElementById('dos-statut')?.value;
+
+  if (!patient||!soignant||!blessure||!desc) { alert('Champs obligatoires manquants'); return; }
+
+  const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
+  dossiers.push({ patient, soignant, blessure, gravite, desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), createdBy: state.currentUser?.username });
+  localStorage.setItem('hop_dossiers', JSON.stringify(dossiers));
+
+  // Also save to Supabase for persistence across devices
+  await sbPost('dossiers_hop', { patient, soignant, blessure, gravite, description: desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), created_by: state.currentUser?.username });
+
+  document.getElementById('dos-patient').value=''; document.getElementById('dos-soignant').value=''; document.getElementById('dos-blessure').value=''; document.getElementById('dos-desc').value=''; document.getElementById('dos-traitement').value='';
+  const ok = document.getElementById('dos-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000);
+  renderDossiersContent(state.currentUser.grade);
+}
+
+function deleteDossier(index) {
+  if (!confirm('Supprimer ce dossier médical définitivement ?')) return;
+  const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
+  dossiers.splice(index, 1);
+  localStorage.setItem('hop_dossiers', JSON.stringify(dossiers));
+  renderDossiersContent(state.currentUser.grade);
+}
+</script></body></html>
