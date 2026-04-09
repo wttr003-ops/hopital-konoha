@@ -1090,13 +1090,14 @@ body {
         <select id="reg-grade">
           <option value="">-- Votre rang shinobi --</option>
           <option value="Citoyen">Citoyen</option>
-          <option value="Genin">Genin</option>
-          <option value="Genin confirmé">Genin confirmé</option>
-          <option value="Chunin">Chunin</option>
+          <option value="Génin Simple">Génin Simple</option>
+          <option value="Génin Confirmé">Génin Confirmé</option>
           <option value="Tokubetsu-Chunin">Tokubetsu-Chunin</option>
+          <option value="Chunin">Chunin</option>
           <option value="Kakunin">Kakunin</option>
           <option value="Tokubetsu-Jonin">Tokubetsu-Jonin</option>
           <option value="Jonin">Jonin</option>
+          <option value="Commandant-Jonin">Commandant-Jonin</option>
         </select>
       </div>
       <div class="form-group-hop"><label>Mot de passe *</label>
@@ -1138,9 +1139,15 @@ body {
       <div class="form-group-hop"><label>Grade / Rang shinobi *</label>
         <select id="rdv-grade">
           <option value="">-- Votre rang --</option>
-          <option>Citoyen</option><option>Genin</option><option>Genin confirmé</option>
-          <option>Chunin</option><option>Tokubetsu-Chunin</option><option>Kakunin</option>
-          <option>Tokubetsu-Jonin</option><option>Jonin</option>
+          <option>Citoyen</option>
+          <option>Génin Simple</option>
+          <option>Génin Confirmé</option>
+          <option>Tokubetsu-Chunin</option>
+          <option>Chunin</option>
+          <option>Kakunin</option>
+          <option>Tokubetsu-Jonin</option>
+          <option>Jonin</option>
+          <option>Commandant-Jonin</option>
         </select>
       </div>
       <div class="form-group-hop"><label>Motif du rendez-vous *</label>
@@ -1227,8 +1234,14 @@ body {
       <div class="form-group-hop"><label>Niveau ninja actuel *</label>
         <select id="post-niveau">
           <option value="">-- Votre rang --</option>
-          <option>Genin</option><option>Genin confirmé</option><option>Chunin</option>
-          <option>Tokubetsu-Chunin</option><option>Kakunin</option><option>Tokubetsu-Jonin</option><option>Jonin</option>
+          <option>Génin Simple</option>
+          <option>Génin Confirmé</option>
+          <option>Tokubetsu-Chunin</option>
+          <option>Chunin</option>
+          <option>Kakunin</option>
+          <option>Tokubetsu-Jonin</option>
+          <option>Jonin</option>
+          <option>Commandant-Jonin</option>
         </select>
       </div>
       <div class="form-group-hop"><label>Spécialité médicale souhaitée *</label>
@@ -2296,7 +2309,7 @@ function renderCitizenProfile() {
       </div>
       <div class="form-group-hop"><label>Grade</label>
         <select id="prof-grade">
-          ${['Citoyen','Genin','Genin confirmé','Chunin','Tokubetsu-Chunin','Kakunin','Tokubetsu-Jonin','Jonin'].map(gd=>`<option value="${gd}" ${(ud.grade||u.grade)===gd?'selected':''}>${gd}</option>`).join('')}
+          ${['Citoyen','Génin Simple','Génin Confirmé','Tokubetsu-Chunin','Chunin','Kakunin','Tokubetsu-Jonin','Jonin','Commandant-Jonin'].map(gd=>`<option value="${gd}" ${(ud.grade||u.grade)===gd?'selected':''}>${gd}</option>`).join('')}
         </select>
       </div>
       <button class="btn-primary" onclick="saveCitizenProfile()">Sauvegarder</button>
