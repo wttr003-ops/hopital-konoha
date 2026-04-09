@@ -1341,9 +1341,11 @@ const POLICE_URL = 'https://tbzmqoxnsniknpqgcqrh.supabase.co';
 const POLICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiem1xb3huc25pa25wcWdjcXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODUwMTQsImV4cCI6MjA5MTI2MTAxNH0.3wi7vBAruxmVjSUzNoetmpFeGt_SiVRgxm0rXus8vQQ';
 
 // Vérifier casier judiciaire dans la base police
+// Détecte même si la personne inverse prénom/nom ou change l'ordre
 async function checkCasierPolice(nom) {
   try {
-    const url = `${POLICE_URL}/rest/v1/casiers?nom=ilike.${encodeURIComponent('%'+nom+'%')}`;
+    // Récupérer tous les casiers
+    const url = `${POLICE_URL}/rest/v1/casiers?select=*`;
     const res = await fetch(url, {
       headers: {
         'apikey': POLICE_KEY,
@@ -1351,9 +1353,40 @@ async function checkCasierPolice(nom) {
       }
     });
     const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      return data[0]; // Retourne la fiche casier
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    // Normaliser le nom saisi (minuscules, sans accents, sans espaces doubles)
+    function normalize(str) {
+      return (str || '').toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[-_]/g, ' ')
+        .trim();
     }
+
+    const nomNorm = normalize(nom);
+    const motsCherches = nomNorm.split(' ').filter(m => m.length > 1);
+
+    for (const casier of data) {
+      const casierNorm = normalize(casier.nom);
+      const motsCasier = casierNorm.split(' ').filter(m => m.length > 1);
+
+      // 1. Correspondance exacte
+      if (casierNorm === nomNorm) return casier;
+
+      // 2. Même mots dans n'importe quel ordre (prénom/nom inversé)
+      if (motsCherches.length >= 2 && motsCasier.length >= 2) {
+        const tousPresents = motsCherches.every(m => motsCasier.includes(m));
+        if (tousPresents) return casier;
+      }
+
+      // 3. Un mot en commun significatif (nom de famille unique)
+      const motsCommuns = motsCherches.filter(m => motsCasier.includes(m) && m.length > 3);
+      if (motsCommuns.length >= 1 && motsCasier.length <= 3) return casier;
+
+      // 4. Contient le nom (recherche partielle)
+      if (motsCherches.length > 0 && motsCherches.every(m => casierNorm.includes(m))) return casier;
+    }
+
     return null;
   } catch(e) {
     console.warn('Casier check error:', e);
