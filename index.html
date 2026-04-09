@@ -1336,6 +1336,31 @@ body {
 const SB_URL = 'https://rqmrhcvlhufseiwefwtm.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxbXJoY3ZsaHVmc2Vpd2Vmd3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzMyNjYsImV4cCI6MjA5MTMwOTI2Nn0.pDh3-XQ6qjupTkL2Nf09cAAM0YXEFFUdWdYVQkdd1cg';
 
+// Supabase Police (pour vérification casier judiciaire)
+const POLICE_URL = 'https://tbzmqoxnsniknpqgcqrh.supabase.co';
+const POLICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiem1xb3huc25pa25wcWdjcXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2ODUwMTQsImV4cCI6MjA5MTI2MTAxNH0.3wi7vBAruxmVjSUzNoetmpFeGt_SiVRgxm0rXus8vQQ';
+
+// Vérifier casier judiciaire dans la base police
+async function checkCasierPolice(nom) {
+  try {
+    const url = `${POLICE_URL}/rest/v1/casiers?nom=ilike.${encodeURIComponent('%'+nom+'%')}`;
+    const res = await fetch(url, {
+      headers: {
+        'apikey': POLICE_KEY,
+        'Authorization': `Bearer ${POLICE_KEY}`
+      }
+    });
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      return data[0]; // Retourne la fiche casier
+    }
+    return null;
+  } catch(e) {
+    console.warn('Casier check error:', e);
+    return null;
+  }
+}
+
 async function sbFetch(table, method='GET', body=null, query='') {
   const url = `${SB_URL}/rest/v1/${table}${query}`;
   const opts = {
@@ -1682,6 +1707,24 @@ async function submitPostuler() {
   const dispo= document.getElementById('post-dispo').value;
   if (!nom||!niv||!spec||!motiv||!cas||!dispo) { alert('Veuillez remplir tous les champs.'); return; }
   if (cas==='oui') { alert('Un casier judiciaire disqualifie automatiquement la candidature.'); return; }
+
+  // Vérification casier judiciaire dans la base de la Police de Konoha
+  const ficheCasier = await checkCasierPolice(nom);
+  if (ficheCasier) {
+    const msg = `⚠ Candidature refusée automatiquement\n\n` +
+      `Bonjour ${nom},\n\n` +
+      `Nous avons le regret de vous informer que votre candidature à l'Hôpital de Konoha ` +
+      `ne peut pas être acceptée.\n\n` +
+      `En effet, vous faites l'objet d'une fiche au casier judiciaire de la Police de Konoha ` +
+      `pour les faits suivants :\n\n` +
+      `• Infraction : ${ficheCasier.type || '—'}\n` +
+      `• Dangerosité : ${ficheCasier.danger || '—'}\n` +
+      `• Motif : ${ficheCasier.motif || '—'}\n\n` +
+      `Toute personne fichée au casier judiciaire ne peut rejoindre les sections officielles de Konoha.\n\n` +
+      `Cordialement,\nL'Hôpital de Konoha — 木ノ葉医療センター`;
+    alert(msg);
+    return;
+  }
   const author = state.currentUser ? state.currentUser.username : nom;
   await sbPost('candidatures_hop', { nom, niveau: niv, spécialité: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom });
   await syncFromSupabase();
