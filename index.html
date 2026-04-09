@@ -1318,8 +1318,8 @@ body {
 // HÔPITAL DE KONOHA — app.js
 // ============================================================
 
-const SB_URL = 'SUPABASE_URL_HERE';
-const SB_KEY = 'SUPABASE_KEY_HERE';
+const SB_URL = 'https://rqmrhcvlhufseiwefwtm.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxbXJoY3ZsaHVmc2Vpd2Vmd3RtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MzMyNjYsImV4cCI6MjA5MTMwOTI2Nn0.pDh3-XQ6qjupTkL2Nf09cAAM0YXEFFUdWdYVQkdd1cg';
 
 async function sbFetch(table, method='GET', body=null, query='') {
   const url = `${SB_URL}/rest/v1/${table}${query}`;
