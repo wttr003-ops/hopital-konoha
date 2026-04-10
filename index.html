@@ -1323,7 +1323,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('annuaire',this)">📒 Annuaire</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
+          <button class="dash-nav-btn-hop" disabled style="opacity:0.4;cursor:not-allowed;pointer-events:none">📚 Cours médicaux <span style="font-size:9px;display:block;color:var(--hop-muted)">(En cours de développement)</span></button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
@@ -1432,12 +1432,21 @@ async function sbFetch(table, method='GET', body=null, query='') {
       'apikey': SB_KEY,
       'Authorization': `Bearer ${SB_KEY}`,
       'Content-Type': 'application/json',
-      'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal'
+      'Prefer': method === 'POST' ? 'return=representation' : (method === 'GET' ? '' : 'return=minimal')
     }
   };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(url, opts);
-  if (method === 'GET') return await res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    console.warn('Supabase error:', res.status, errText);
+    throw new Error('Supabase ' + res.status + ': ' + errText);
+  }
+  if (method === 'GET' || method === 'POST') {
+    const text = await res.text();
+    if (!text) return method === 'GET' ? [] : true;
+    return JSON.parse(text);
+  }
   return res.ok;
 }
 async function sbGet(t, q='')    { return sbFetch(t,'GET',null,q); }
@@ -3313,19 +3322,38 @@ async function renderMonumentDash(g) {
   if (!el) return;
   if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
 
-  const canAdd = gradeRankHop(g) <= 2; // Chef Médecin, Médecin Senior, Médecin
+  const canAdd = gradeRankHop(g) <= 2;
+  const u = state.currentUser;
 
+  // Always load fresh from Supabase
   let morts = [];
   try {
     const res = await sbGet('monument_hop', '?order=created_at.desc');
-    if (Array.isArray(res)) morts = res;
+    if (Array.isArray(res)) {
+      morts = res.map(m => {
+        if (m.messages && typeof m.messages === 'string') {
+          try { m.messages = JSON.parse(m.messages); } catch(e) { m.messages = []; }
+        }
+        if (!Array.isArray(m.messages)) m.messages = [];
+        return m;
+      });
+      localStorage.setItem('hop_monument', JSON.stringify(morts));
+    }
   } catch(e) {
-    morts = JSON.parse(localStorage.getItem('hop_monument') || '[]');
+    console.warn('Monument load error:', e);
+    // Fallback to localStorage
+    const cached = JSON.parse(localStorage.getItem('hop_monument') || '[]');
+    morts = cached.map(m => {
+      if (m.messages && typeof m.messages === 'string') {
+        try { m.messages = JSON.parse(m.messages); } catch(ex) { m.messages = []; }
+      }
+      if (!Array.isArray(m.messages)) m.messages = [];
+      return m;
+    });
   }
 
   let html = `<h2 class="dash-section-title-hop">🕯️ Monument aux Morts</h2>`;
 
-  // Form — Chef Médecin, Médecin Senior, Médecin
   if (canAdd) {
     html += `<div class="dash-block-hop" style="padding:1.5rem;margin-bottom:1.5rem">
       <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">➕ Inscrire un défunt</div>
@@ -3339,48 +3367,41 @@ async function renderMonumentDash(g) {
           <select id="mort-grade">
             <option value="">-- Sélectionner --</option>
             <optgroup label="Rangs Ninja">
-              <option>Génin Simple</option>
-              <option>Génin Confirmé</option>
-              <option>Tokubetsu-Chunin</option>
-              <option>Chunin</option>
-              <option>Kakunin</option>
-              <option>Tokubetsu-Jonin</option>
-              <option>Jonin</option>
-              <option>Commandant-Jonin</option>
+              <option>Génin Simple</option><option>Génin Confirmé</option>
+              <option>Tokubetsu-Chunin</option><option>Chunin</option>
+              <option>Kakunin</option><option>Tokubetsu-Jonin</option>
+              <option>Jonin</option><option>Commandant-Jonin</option>
             </optgroup>
             <optgroup label="Grades Médicaux">
-              <option>Stagiaire médical</option>
-              <option>Infirmier·ère</option>
-              <option>Médecin</option>
-              <option>Médecin Senior</option>
-              <option>Chef Médecin</option>
+              <option>Stagiaire médical</option><option>Infirmier·ère</option>
+              <option>Médecin</option><option>Médecin Senior</option><option>Chef Médecin</option>
             </optgroup>
-            <optgroup label="Autres">
-              <option>Citoyen</option>
-              <option>Inconnu</option>
-            </optgroup>
+            <optgroup label="Autres"><option>Citoyen</option><option>Inconnu</option></optgroup>
           </select>
         </div>
       </div>
       <div class="form-group-hop" style="margin-bottom:0.75rem">
         <label>Date et circonstances</label>
-        <input type="text" id="mort-date" placeholder="Ex: 10/04/2026 — Mort au combat lors d'une mission"/>
+        <input type="text" id="mort-date" placeholder="Ex: 10/04/2026 — Mort au combat"/>
       </div>
       <div class="form-group-hop" style="margin-bottom:1rem">
         <label>Description / Hommage *</label>
-        <textarea id="mort-desc" rows="3" placeholder="Décrivez les circonstances du décès et rendez hommage à cette personne..."></textarea>
+        <textarea id="mort-desc" rows="3" placeholder="Décrivez les circonstances et rendez hommage..."></textarea>
       </div>
       <button class="btn-primary" onclick="saveMortDash()">🕯️ Inscrire au monument</button>
       <div id="mort-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">✓ Inscrit au Monument aux Morts.</div>
     </div>`;
   }
 
-  // List
   if (morts.length === 0) {
     html += '<div class="dash-block-hop" style="padding:2rem;text-align:center"><p style="color:var(--hop-muted);font-style:italic">Aucun défunt inscrit pour le moment.</p></div>';
   } else {
     html += '<div class="dash-block-hop">';
     morts.forEach((m, i) => {
+      const messages = Array.isArray(m.messages) ? m.messages : [];
+      // Check if current user already left a message
+      const alreadyLeft = messages.some(msg => msg.username === u.username);
+
       html += `<div class="detail-card-hop">
         <div class="detail-card-header-hop" onclick="toggleMortDetail(${i})">
           <div>
@@ -3403,6 +3424,28 @@ async function renderMonumentDash(g) {
             <div class="detail-section-label-hop">Description / Hommage</div>
             <div class="detail-section-text-hop">${m.description||'—'}</div>
           </div>
+
+          ${messages.length > 0 ? `
+          <div class="detail-section-hop">
+            <div class="detail-section-label-hop">💬 Messages de condoléances (${messages.length})</div>
+            ${messages.map(msg => `
+              <div style="background:var(--hop-light);border-left:3px solid var(--hop-mauve);padding:8px 12px;margin-top:6px;border-radius:0 6px 6px 0">
+                <div style="font-size:13px;color:var(--hop-text)">${msg.texte}</div>
+                <div style="font-size:10px;color:var(--hop-muted);margin-top:3px">${msg.auteur} — ${msg.date}</div>
+              </div>`).join('')}
+          </div>` : ''}
+
+          ${!alreadyLeft ? `
+          <div style="margin-top:1rem">
+            <div id="msg-form-hop-${i}" style="display:none">
+              <textarea id="msg-text-hop-${i}" rows="2" class="form-group-hop" placeholder="Laissez un message en mémoire de ${m.nom}..." style="width:100%;box-sizing:border-box"></textarea>
+              <button onclick="sendMsgMort(${m.id||0},${i})" class="btn-primary" style="margin-top:6px;font-size:12px;padding:6px 16px">💬 Envoyer</button>
+            </div>
+            <button onclick="toggleMortMsg(${i})" id="btn-mort-msg-${i}" style="margin-top:0.5rem;background:rgba(139,94,131,0.1);color:var(--hop-mauve2);border:1px solid var(--hop-border2);padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif">
+              💬 Laisser un message
+            </button>
+          </div>` : `<div style="margin-top:0.75rem;font-size:12px;color:var(--hop-muted);font-style:italic">✓ Vous avez déjà laissé un message.</div>`}
+
           ${canAdd ? `<button onclick="deleteMortDash(${m.id||0})" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif">🗑 Supprimer</button>` : ''}
         </div>
       </div>`;
@@ -3412,6 +3455,41 @@ async function renderMonumentDash(g) {
 
   el.innerHTML = html;
 }
+
+function toggleMortMsg(i) {
+  const form = document.getElementById('msg-form-hop-'+i);
+  const btn  = document.getElementById('btn-mort-msg-'+i);
+  if (!form) return;
+  const open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '💬 Laisser un message' : '✕ Annuler';
+}
+
+async function sendMsgMort(mortId, idx) {
+  const texte = document.getElementById('msg-text-hop-'+idx)?.value.trim();
+  if (!texte) { alert('Écrivez un message.'); return; }
+  const u = state.currentUser;
+  const msg = { texte, auteur: u.fullname||u.username, username: u.username, date: new Date().toLocaleDateString('fr-FR') };
+
+  try {
+    const res = await sbGet('monument_hop', '?id=eq.'+mortId);
+    if (Array.isArray(res) && res[0]) {
+      let messages = [];
+      try { messages = JSON.parse(res[0].messages||'[]'); } catch(e) {}
+      if (messages.some(m => m.username === u.username)) { alert('Vous avez déjà laissé un message.'); return; }
+      messages.push(msg);
+      await fetch(SB_URL+'/rest/v1/monument_hop?id=eq.'+mortId, {
+        method:'PATCH',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({ messages: JSON.stringify(messages) })
+      });
+    }
+  } catch(e) { console.warn(e); }
+
+  alert('✓ Message envoyé.');
+  renderMonumentDash(state.currentUser.grade);
+}
+
 
 async function saveMortDash() {
   const nom  = document.getElementById('mort-nom')?.value.trim();
