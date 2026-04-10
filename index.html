@@ -1497,9 +1497,9 @@ async function syncFromSupabase() {
     const dossiers = await sbGet('dossiers_hop', '?order=id.asc');
     if (Array.isArray(dossiers) && dossiers.length > 0) {
       const localDossiers = dossiers.map(d => ({
-        patient: d.patient, soignant: d.soignant, blessure: d.blessure,
-        gravité: d.gravité, desc: d.description, traitement: d.traitement,
-        statut: d.statut, date: d.date, createdBy: d.created_by
+        id: d.id, patient: d.patient, soignant: d.soignant, blessure: d.blessure,
+        gravite: d.gravite, gravité: d.gravite, desc: d.description, traitement: d.traitement,
+        statut: d.statut, date: d.date, groupe_sanguin: d.groupe_sanguin, createdBy: d.created_by
       }));
       localStorage.setItem('hop_dossiers', JSON.stringify(localDossiers));
     }
@@ -2750,7 +2750,7 @@ function renderDossiersContent(g) {
             <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
               📅 Créé le <strong>${d.date||'—'}</strong>
             </div>
-            ${gradeRankHop(g) <= 0 ? `<button onclick="deleteDossierEntry(${d.id||0},'${safeId}-${i}')" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">🗑 Supprimer cette entrée</button>` : ''}
+            ${gradeRankHop(g) <= 1 ? `<button onclick="deleteDossierEntry(${d.id||0},'${safeId}-${i}')" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">🗑 Supprimer cette entrée</button>` : ''}
           </div>
         </div>`;
       });
@@ -2782,12 +2782,21 @@ function toggleDosDetail(id) {
 
 async function deleteDossierEntry(id, safeComboId) {
   if (!confirm('Supprimer cette entrée médicale définitivement ?')) return;
-  if (id) {
-    try { await sbDelete('dossiers_hop', '?id=eq.'+id); } catch(e) {}
+
+  // Delete from Supabase
+  if (id && id !== 0) {
+    try {
+      await sbDelete('dossiers_hop', '?id=eq.' + id);
+    } catch(e) { console.warn('Delete error:', e); }
   }
+
+  // Remove from localStorage
   const allDossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
-  const filtered = allDossiers.filter(d => d.id !== id);
+  const filtered = allDossiers.filter(d => String(d.id) !== String(id));
   localStorage.setItem('hop_dossiers', JSON.stringify(filtered));
+
+  // Resync from Supabase to make sure it's gone
+  await syncFromSupabase();
   renderDossiersContent(state.currentUser.grade);
 }
 
