@@ -1324,6 +1324,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
@@ -1346,6 +1347,7 @@ body {
       <div class="dash-tab-hop" id="dash-membres"></div>
       <div class="dash-tab-hop" id="dash-ajout"></div>
       <div class="dash-tab-hop" id="dash-cours"></div>
+      <div class="dash-tab-hop" id="dash-monument"></div>
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
@@ -1858,6 +1860,7 @@ function switchDashTab(name, btn) {
   if (name === 'logs')          renderLogsContent(g);
   if (name === 'dossiers')      renderDossiersContent(g);
   if (name === 'cours')         renderCoursContent(g);
+  if (name === 'monument')      renderMonumentDash(g);
 }
 
 function switchCitizenTab(name, btn) {
@@ -3300,5 +3303,155 @@ async function saveMort() {
   document.getElementById('add-mort-form').style.display = 'none';
   ['mort-nom','mort-grade','mort-date','mort-desc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   loadMonument();
+}
+
+// ============================================================
+// MONUMENT AUX MORTS — DASHBOARD SOIGNANT
+// ============================================================
+async function renderMonumentDash(g) {
+  const el = document.getElementById('dash-monument');
+  if (!el) return;
+  if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
+
+  const canAdd = gradeRankHop(g) <= 2; // Chef Médecin, Médecin Senior, Médecin
+
+  let morts = [];
+  try {
+    const res = await sbGet('monument_hop', '?order=created_at.desc');
+    if (Array.isArray(res)) morts = res;
+  } catch(e) {
+    morts = JSON.parse(localStorage.getItem('hop_monument') || '[]');
+  }
+
+  let html = `<h2 class="dash-section-title-hop">🕯️ Monument aux Morts</h2>`;
+
+  // Form — Chef Médecin, Médecin Senior, Médecin
+  if (canAdd) {
+    html += `<div class="dash-block-hop" style="padding:1.5rem;margin-bottom:1.5rem">
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">➕ Inscrire un défunt</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0">
+          <label>Nom et Prénom *</label>
+          <input type="text" id="mort-nom" placeholder="Ex: Obito Uchiha"/>
+        </div>
+        <div class="form-group-hop" style="margin:0">
+          <label>Grade / Rang</label>
+          <select id="mort-grade">
+            <option value="">-- Sélectionner --</option>
+            <optgroup label="Rangs Ninja">
+              <option>Génin Simple</option>
+              <option>Génin Confirmé</option>
+              <option>Tokubetsu-Chunin</option>
+              <option>Chunin</option>
+              <option>Kakunin</option>
+              <option>Tokubetsu-Jonin</option>
+              <option>Jonin</option>
+              <option>Commandant-Jonin</option>
+            </optgroup>
+            <optgroup label="Grades Médicaux">
+              <option>Stagiaire médical</option>
+              <option>Infirmier·ère</option>
+              <option>Médecin</option>
+              <option>Médecin Senior</option>
+              <option>Chef Médecin</option>
+            </optgroup>
+            <optgroup label="Autres">
+              <option>Citoyen</option>
+              <option>Inconnu</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="form-group-hop" style="margin-bottom:0.75rem">
+        <label>Date et circonstances</label>
+        <input type="text" id="mort-date" placeholder="Ex: 10/04/2026 — Mort au combat lors d'une mission"/>
+      </div>
+      <div class="form-group-hop" style="margin-bottom:1rem">
+        <label>Description / Hommage *</label>
+        <textarea id="mort-desc" rows="3" placeholder="Décrivez les circonstances du décès et rendez hommage à cette personne..."></textarea>
+      </div>
+      <button class="btn-primary" onclick="saveMortDash()">🕯️ Inscrire au monument</button>
+      <div id="mort-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">✓ Inscrit au Monument aux Morts.</div>
+    </div>`;
+  }
+
+  // List
+  if (morts.length === 0) {
+    html += '<div class="dash-block-hop" style="padding:2rem;text-align:center"><p style="color:var(--hop-muted);font-style:italic">Aucun défunt inscrit pour le moment.</p></div>';
+  } else {
+    html += '<div class="dash-block-hop">';
+    morts.forEach((m, i) => {
+      html += `<div class="detail-card-hop">
+        <div class="detail-card-header-hop" onclick="toggleMortDetail(${i})">
+          <div>
+            <div class="detail-title-hop">🕯️ ${m.nom}</div>
+            <div class="detail-meta-hop">
+              <span style="font-size:11px;color:var(--hop-muted)">${m.grade||'—'}</span>
+              <span style="font-size:11px;color:var(--hop-muted)">${m.date||'—'}</span>
+            </div>
+          </div>
+          <span class="detail-toggle-icon-hop" id="mort-icon-${i}">▼</span>
+        </div>
+        <div class="detail-card-body-hop" id="mort-body-${i}" style="display:none;padding:1.25rem">
+          <div class="detail-grid-hop">
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Nom</span><span class="detail-field-val-hop">${m.nom}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Grade</span><span class="detail-field-val-hop">${m.grade||'—'}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Date</span><span class="detail-field-val-hop">${m.date||'—'}</span></div>
+            <div class="detail-field-hop"><span class="detail-field-label-hop">Ajouté par</span><span class="detail-field-val-hop">${m.added_by||'—'}</span></div>
+          </div>
+          <div class="detail-section-hop">
+            <div class="detail-section-label-hop">Description / Hommage</div>
+            <div class="detail-section-text-hop">${m.description||'—'}</div>
+          </div>
+          ${canAdd ? `<button onclick="deleteMortDash(${m.id||0})" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif">🗑 Supprimer</button>` : ''}
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function saveMortDash() {
+  const nom  = document.getElementById('mort-nom')?.value.trim();
+  const grade= document.getElementById('mort-grade')?.value;
+  const date = document.getElementById('mort-date')?.value.trim();
+  const desc = document.getElementById('mort-desc')?.value.trim();
+  if (!nom || !desc) { alert('Nom et description obligatoires.'); return; }
+
+  const u = state.currentUser;
+  const entry = { nom, grade: grade||null, date: date||new Date().toLocaleDateString('fr-FR'), description: desc, messages:'[]', added_by: u?.fullname||u?.username };
+
+  try { await sbPost('monument_hop', entry); } catch(e) { console.warn(e); }
+
+  const list = JSON.parse(localStorage.getItem('hop_monument') || '[]');
+  list.unshift(entry);
+  localStorage.setItem('hop_monument', JSON.stringify(list));
+
+  ['mort-nom','mort-date','mort-desc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('mort-grade').value = '';
+
+  const ok = document.getElementById('mort-ok');
+  if (ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+
+  renderMonumentDash(state.currentUser.grade);
+}
+
+async function deleteMortDash(id) {
+  if (!confirm('Supprimer cette entrée du monument ?')) return;
+  if (id) { try { await sbDelete('monument_hop', '?id=eq.'+id); } catch(e) {} }
+  const list = JSON.parse(localStorage.getItem('hop_monument') || '[]');
+  localStorage.setItem('hop_monument', JSON.stringify(list.filter(m=>m.id!==id)));
+  renderMonumentDash(state.currentUser.grade);
+}
+
+function toggleMortDetail(i) {
+  const body = document.getElementById('mort-body-'+i);
+  const icon = document.getElementById('mort-icon-'+i);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
 }
 </script></body></html>
