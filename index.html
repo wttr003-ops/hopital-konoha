@@ -2590,25 +2590,48 @@ function renderDossiersContent(g) {
   if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
 
   const staff = Object.entries(state.users).filter(([,u])=>u.isStaff);
-  const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
-  const graviteColors = { 'légère':'var(--hop-green)', 'modérée':'var(--hop-gold)', 'grave':'#fb923c', 'critique':'#e74c3c' };
-  const statutLabels  = { 'en_traitement':'En traitement', 'gueri':'Guéri', 'surveillance':'Sous surveillance', 'critique':'État critique', 'deces':'Décédé (RP)' };
+  const allDossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
+  const graviteColors = { 'aucune':'var(--hop-muted)', 'légère':'var(--hop-green)', 'modérée':'var(--hop-gold)', 'grave':'#fb923c', 'critique':'#e74c3c' };
+  const statutLabels  = { 'aucun':'—', 'en_traitement':'En traitement', 'gueri':'Guéri', 'surveillance':'Sous surveillance', 'critique':'État critique', 'deces':'Décédé (RP)' };
+
+  // Group dossiers by patient name (no duplicates)
+  function norm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[-_]/g,' ').trim(); }
+  const dossiers = {};
+  allDossiers.forEach(d => {
+    const dn = norm(d.patient);
+    const md = dn.split(' ').filter(m=>m.length>1);
+    let found = null;
+    for (const key of Object.keys(dossiers)) {
+      const kn = norm(key);
+      const km = kn.split(' ').filter(m=>m.length>1);
+      if (kn===dn || (md.length>=2 && md.every(m=>km.includes(m)))) { found=key; break; }
+    }
+    const key = found || d.patient;
+    if (!dossiers[key]) dossiers[key] = { patient: d.patient, entries: [] };
+    dossiers[key].entries.push(d);
+  });
+  // Sort each patient's entries newest first
+  Object.values(dossiers).forEach(d => d.entries.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0)));
 
   let html = `<h2 class="dash-section-title-hop">📁 Dossiers Médicaux Secrets</h2>
     <div style="background:rgba(192,57,43,0.05);border:1px solid rgba(192,57,43,0.2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.5rem;font-size:12px;color:#C0392B">
-      🔒 Ces dossiers sont strictement confidentiels — Secret médical. Invisibles aux patients.
+      🔒 Strictement confidentiels — Secret médical. Invisibles aux patients.
     </div>
     <div style="display:flex;gap:0.75rem;margin-bottom:1.5rem">
       <button id="dos-tab-create" onclick="switchDosTab('create')" style="padding:8px 20px;border-radius:20px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;background:linear-gradient(135deg,var(--hop-mauve),var(--hop-rose2));color:white;box-shadow:0 2px 10px rgba(139,94,131,0.3)">
-        ➕ Créer un dossier
+        ➕ Créer / Mettre à jour
       </button>
       <button id="dos-tab-list" onclick="switchDosTab('list')" style="padding:8px 20px;border-radius:20px;border:1.5px solid var(--hop-border2);cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;background:white;color:var(--hop-mauve2)">
-        📋 Dossiers des patients (${dossiers.length})
+        📋 Dossiers patients (${Object.keys(dossiers).length})
       </button>
     </div>
 
+    <!-- Formulaire création/ajout -->
     <div id="dos-panel-create" class="dash-block-hop" style="padding:1.5rem;margin-bottom:1rem">
-      <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Nouveau dossier médical</div>
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem">Nouveau dossier / Nouvelle entrée médicale</div>
+      <div style="font-size:11px;color:var(--hop-muted);margin-bottom:1rem;padding:6px 10px;background:var(--hop-light);border-radius:4px;border-left:3px solid var(--hop-mauve)">
+        Si le patient a déjà un dossier, la nouvelle entrée sera ajoutée à son dossier existant.
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
         <div class="form-group-hop" style="margin:0"><label>Nom du patient *</label><input type="text" id="dos-patient" placeholder="Ex: Naruto Uzumaki"/></div>
         <div class="form-group-hop" style="margin:0"><label>Soignant responsable *</label>
@@ -2618,14 +2641,24 @@ function renderDossiersContent(g) {
           </select>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
-        <div class="form-group-hop" style="margin:0"><label>Type de blessure / motif <span style="color:var(--hop-muted);font-size:10px">(optionnel)</span></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0"><label>Groupe sanguin</label>
+          <select id="dos-sang">
+            <option value="">— Inconnu —</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+        </div>
+        <div class="form-group-hop" style="margin:0"><label>Type / Motif <span style="font-size:10px;color:var(--hop-muted)">(optionnel)</span></label>
           <select id="dos-blessure">
             ${BLESSURES.map(b => b.startsWith('---') ? `<option disabled>${b}</option>` : `<option>${b}</option>`).join('')}
           </select>
         </div>
         <div class="form-group-hop" style="margin:0"><label>Gravité</label>
           <select id="dos-gravite">
+            <option value="aucune">— Aucune —</option>
             <option value="légère">Légère</option>
             <option value="modérée" selected>Modérée</option>
             <option value="grave">Grave</option>
@@ -2634,13 +2667,14 @@ function renderDossiersContent(g) {
         </div>
       </div>
       <div class="form-group-hop" style="margin-bottom:0.75rem"><label>Description complète *</label>
-        <textarea id="dos-desc" rows="4" placeholder="Décrivez précisément les blessures, soins apportés, médicaments administrés, état du patient..."></textarea>
+        <textarea id="dos-desc" rows="4" placeholder="Décrivez précisément : blessures, soins apportés, médicaments administrés, état du patient..."></textarea>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
         <div class="form-group-hop" style="margin:0"><label>Traitement administré</label>
-          <input type="text" id="dos-traitement" placeholder="Ex: Chakra de guérison niveau 3, antidote..."/></div>
+          <input type="text" id="dos-traitement" placeholder="Ex: Chakra de guérison niveau 3..."/></div>
         <div class="form-group-hop" style="margin:0"><label>Statut du patient</label>
           <select id="dos-statut">
+            <option value="aucun">— Aucun (recensement) —</option>
             <option value="en_traitement">En traitement</option>
             <option value="surveillance">Sous surveillance</option>
             <option value="gueri">Guéri — Sorti</option>
@@ -2649,63 +2683,114 @@ function renderDossiersContent(g) {
           </select>
         </div>
       </div>
-      <button class="btn-primary" onclick="saveDossier()">💾 Enregistrer le dossier médical</button>
-      <div id="dos-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">✓ Dossier enregistré avec succès !</div>
+      <button class="btn-primary" onclick="saveDossier()">💾 Enregistrer dans le dossier</button>
+      <div id="dos-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">✓ Entrée enregistrée dans le dossier patient !</div>
     </div>
 
+    <!-- Liste dossiers groupés par patient -->
     <div id="dos-panel-list" style="display:none">`;
 
-  if (dossiers.length === 0) {
-    html += `<div class="dash-block-hop" style="padding:2rem;text-align:center"><p style="color:var(--hop-muted)">Aucun dossier médical enregistré.</p></div>`;
+  if (Object.keys(dossiers).length === 0) {
+    html += '<div class="dash-block-hop" style="padding:2rem;text-align:center"><p style="color:var(--hop-muted)">Aucun dossier médical enregistré.</p></div>';
   } else {
-    html += '<div class="dash-block-hop">';
-    dossiers.slice().reverse().forEach((d, i) => {
-      const realIdx = dossiers.length - 1 - i;
-      const sc = d.statut==='gueri'?'s-ok-hop':d.statut==='deces'?'s-no-hop':'s-wait-hop';
-      const sl = statutLabels[d.statut] || d.statut || 'En traitement';
-      const grav = d.gravite || d.gravité || 'modérée';
-      const gc = graviteColors[grav] || 'var(--hop-muted)';
-      const blessure = d.blessure && d.blessure !== '-- Choisir (optionnel) --' ? d.blessure : '—';
-      html += `<div class="detail-card-hop">
-        <div class="detail-card-header-hop" onclick="toggleDosDetail(${realIdx})">
+    Object.entries(dossiers).forEach(([patientName, dossier]) => {
+      const safeId = patientName.replace(/[^a-zA-Z0-9]/g,'_');
+      const nbEntries = dossier.entries.length;
+      const lastEntry = dossier.entries[0];
+      const lastStatut = lastEntry?.statut || 'aucun';
+      const sc = lastStatut==='gueri'?'s-ok-hop':lastStatut==='deces'?'s-no-hop':'s-wait-hop';
+      const sl = statutLabels[lastStatut] || lastStatut;
+
+      html += `<div class="dash-block-hop" style="margin-bottom:1rem">
+        <div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleDosPatient('${safeId}')">
           <div>
-            <div class="detail-title-hop">📁 ${d.patient||'Patient inconnu'}</div>
-            <div class="detail-meta-hop">
-              <span style="font-size:11px;background:rgba(139,94,131,0.1);color:var(--hop-mauve2);padding:2px 8px;border-radius:10px">${blessure}</span>
-              <span style="font-size:11px;color:${gc};font-weight:600">● ${grav}</span>
-              <span style="font-size:11px;color:var(--hop-muted)">${d.date||'—'}</span>
-            </div>
+            <div style="font-weight:700;font-size:14px;color:var(--hop-mauve2)">📁 ${patientName}</div>
+            <div style="font-size:11px;color:var(--hop-muted);margin-top:2px">${nbEntries} entrée(s) médicale(s)</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="status-badge-hop ${sc}">${sl}</span>
-            <span class="detail-toggle-icon-hop" id="dos-icon-${realIdx}">▼</span>
+            <span id="dos-pat-icon-${safeId}">▼</span>
           </div>
         </div>
-        <div class="detail-card-body-hop" id="dos-body-${realIdx}" style="display:none;padding:1.25rem">
-          <div class="detail-grid-hop">
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${d.patient||'—'}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Soignant responsable</span><span class="detail-field-val-hop">${d.soignant||'—'}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Type / Motif</span><span class="detail-field-val-hop">${blessure}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${gc};font-weight:700">${grav}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Traitement administré</span><span class="detail-field-val-hop">${d.traitement||'Aucun traitement indiqué'}</span></div>
-            <div class="detail-field-hop"><span class="detail-field-label-hop">Statut</span><span class="detail-field-val-hop">${sl}</span></div>
+        <div id="dos-pat-body-${safeId}" style="display:none">`;
+
+      dossier.entries.forEach((d, i) => {
+        const gc = graviteColors[d.gravite||d.gravité||'modérée'] || 'var(--hop-muted)';
+        const blessure = d.blessure && d.blessure !== '-- Choisir (optionnel) --' ? d.blessure : '—';
+        const statut = statutLabels[d.statut] || d.statut || '—';
+        html += `<div class="detail-card-hop">
+          <div class="detail-card-header-hop" onclick="toggleDosDetail('${safeId}-${i}')">
+            <div>
+              <div class="detail-title-hop">${blessure !== '—' ? blessure : 'Entrée médicale'}</div>
+              <div class="detail-meta-hop">
+                <span style="font-size:11px;color:${gc};font-weight:600">● ${d.gravite||d.gravité||'—'}</span>
+                <span style="font-size:11px;color:var(--hop-muted)">${d.date||'—'}</span>
+                <span style="font-size:11px;color:var(--hop-muted)">${d.soignant||'—'}</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="status-badge-hop ${d.statut==='gueri'?'s-ok-hop':d.statut==='deces'?'s-no-hop':'s-wait-hop'}">${statut}</span>
+              <span class="detail-toggle-icon-hop" id="dos-icon-${safeId}-${i}">▼</span>
+            </div>
           </div>
-          <div class="detail-section-hop">
-            <div class="detail-section-label-hop">📋 Description médicale confidentielle</div>
-            <div class="detail-section-text-hop">${d.desc||'—'}</div>
+          <div class="detail-card-body-hop" id="dos-body-${safeId}-${i}" style="display:none;padding:1.25rem">
+            <div class="detail-grid-hop">
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${d.patient||'—'}</span></div>
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Soignant</span><span class="detail-field-val-hop">${d.soignant||'—'}</span></div>
+              ${d.groupe_sanguin ? `<div class="detail-field-hop"><span class="detail-field-label-hop">Groupe sanguin</span><span class="detail-field-val-hop" style="font-weight:700;color:var(--hop-mauve2)">${d.groupe_sanguin}</span></div>` : ''}
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Type / Motif</span><span class="detail-field-val-hop">${blessure}</span></div>
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${gc};font-weight:700">${d.gravite||d.gravité||'—'}</span></div>
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Traitement</span><span class="detail-field-val-hop">${d.traitement||'—'}</span></div>
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Statut</span><span class="detail-field-val-hop">${statut}</span></div>
+            </div>
+            <div class="detail-section-hop">
+              <div class="detail-section-label-hop">📋 Description médicale confidentielle</div>
+              <div class="detail-section-text-hop">${d.desc||d.description||'—'}</div>
+            </div>
+            <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
+              📅 Créé le <strong>${d.date||'—'}</strong>
+            </div>
+            ${gradeRankHop(g) <= 0 ? `<button onclick="deleteDossierEntry(${d.id||0},'${safeId}-${i}')" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">🗑 Supprimer cette entrée</button>` : ''}
           </div>
-          <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
-            📅 Créé le <strong>${d.date||'—'}</strong> &nbsp;|&nbsp; Réf. #${realIdx+1}
-          </div>
-          ${gradeRankHop(g) <= 0 ? `<button onclick="deleteDossier(${realIdx})" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">🗑 Supprimer (Chef Médecin uniquement)</button>` : ''}
-        </div>
-      </div>`;
+        </div>`;
+      });
+      html += '</div></div>';
     });
-    html += '</div>';
   }
+
   html += '</div>';
   el.innerHTML = html;
 }
+
+function toggleDosPatient(safeId) {
+  const body = document.getElementById('dos-pat-body-'+safeId);
+  const icon = document.getElementById('dos-pat-icon-'+safeId);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '▼' : '▲';
+}
+
+function toggleDosDetail(id) {
+  const body = document.getElementById('dos-body-'+id);
+  const icon = document.getElementById('dos-icon-'+id);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+async function deleteDossierEntry(id, safeComboId) {
+  if (!confirm('Supprimer cette entrée médicale définitivement ?')) return;
+  if (id) {
+    try { await sbDelete('dossiers_hop', '?id=eq.'+id); } catch(e) {}
+  }
+  const allDossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
+  const filtered = allDossiers.filter(d => d.id !== id);
+  localStorage.setItem('hop_dossiers', JSON.stringify(filtered));
+  renderDossiersContent(state.currentUser.grade);
+}
+
 
 function switchDosTab(tab) {
   const cp = document.getElementById('dos-panel-create');
@@ -2754,6 +2839,7 @@ async function saveDossier() {
 
   document.getElementById('dos-patient').value=''; document.getElementById('dos-soignant').value=''; document.getElementById('dos-blessure').value=''; document.getElementById('dos-desc').value=''; document.getElementById('dos-traitement').value='';
   const ok = document.getElementById('dos-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000);
+  switchDosTab('list');
   renderDossiersContent(state.currentUser.grade);
 }
 
