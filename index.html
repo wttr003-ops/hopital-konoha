@@ -3216,9 +3216,12 @@ async function loadMonument() {
 
   // Show "Ajouter un défunt" button for médecins+
   if (btnZone) {
-    const u = state.currentUser;
-    const canAdd = u && u.isStaff && gradeRankHop(u.grade) <= 2;
-    console.log('Monument: user=', u?.username, 'grade=', u?.grade, 'canAdd=', canAdd);
+    // Check session storage directly for robustness
+    const session = JSON.parse(localStorage.getItem('hop_session') || 'null');
+    const u = state.currentUser || session;
+    const grade = u?.grade || '';
+    const isStaff = u?.isStaff || u?.is_staff || false;
+    const canAdd = isStaff && (grade === 'Chef Médecin' || grade === 'Médecin Senior' || grade === 'Médecin');
     btnZone.innerHTML = canAdd ? `
       <div id="add-mort-form" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(155,89,182,0.2);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:1rem">
         <div style="font-size:13px;font-weight:700;color:#9b59b6;text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Ajouter un défunt au monument</div>
