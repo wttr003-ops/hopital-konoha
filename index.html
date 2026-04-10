@@ -1308,7 +1308,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
+          <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
       </div>
       <div id="dash-sidebar-citizen" style="display:none">
@@ -1810,6 +1810,9 @@ function renderDashboard(tab) {
     const title = document.getElementById('dash-topbar-title-text');
     if (title) title.textContent = 'Espace Soignant';
     switchDashTab('overview', document.querySelector('#agent-sidebar-nav .dash-nav-btn-hop'));
+    // Masquer le bouton Logs pour les non-Chef Médecin
+    const logsBtn = document.getElementById('nav-logs-hop');
+    if (logsBtn) logsBtn.style.display = gradeRankHop(u.grade) <= 0 ? '' : 'none';
   } else {
     if (agentSide)   agentSide.style.display   = 'none';
     if (citizenSide) citizenSide.style.display = 'block';
@@ -2175,36 +2178,85 @@ function renderAjoutContent(g) {
   if (!el) return;
   if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior'); return; }
   el.innerHTML = `<h2 class="dash-section-title-hop">Ajouter un membre</h2>
-    <div class="dash-block-hop" style="padding:1.5rem;max-width:480px">
-      <div id="ajout-ok" style="display:none" class="form-msg-hop succèss">Membre ajouté avec succès !</div>
-      <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="aj-nom" placeholder="Ex: Tsunade Senju"/></div>
-      <div class="form-group-hop"><label>Grade médical *</label>
+    <div class="dash-block-hop" style="padding:1.5rem;max-width:520px">
+      <div id="ajout-ok" style="display:none" class="form-msg-hop success">✓ Membre ajouté avec succès !</div>
+      <div class="form-group-hop">
+        <label>Nom et Prénom *</label>
+        <input type="text" id="aj-nom" placeholder="Ex: Tsunade Senju"/>
+      </div>
+      <div class="form-group-hop">
+        <label>Grade médical *</label>
         <select id="aj-grade">${GRADES_MED.map(gd=>`<option value="${gd}">${gd}</option>`).join('')}</select>
       </div>
-      <div class="form-group-hop"><label>Matricule</label><input type="text" id="aj-mat" placeholder="HOP-XXX-0000"/></div>
-      <div class="form-group-hop"><label>Mot de passe (= matricule par défaut)</label><input type="text" id="aj-pass" placeholder="Laisser vide = matricule"/></div>
-      <button class="btn-primary" onclick="addMembre()">Ajouter</button>
+      <div class="form-group-hop">
+        <label>Matricule</label>
+        <input type="text" id="aj-mat" placeholder="HOP-XXX-0000"/>
+      </div>
+      <div class="form-group-hop">
+        <label>Mot de passe *</label>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <div style="position:relative;flex:1">
+            <input type="password" id="aj-pass" placeholder="Minimum 5 chiffres" style="padding-right:42px;font-family:monospace"/>
+            <button type="button" onclick="togglePwdHop()" title="Voir/masquer" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hop-muted);padding:0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <button type="button" onclick="generatePwdHop()" title="Générer un mot de passe" style="background:linear-gradient(135deg,var(--hop-mauve),var(--hop-rose2));color:white;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;font-family:'Nunito',sans-serif">
+            🎲 Générer
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--hop-muted);margin-top:4px">Chiffres uniquement — minimum 5 chiffres.</div>
+      </div>
+      <button class="btn-primary" onclick="addMembre()">➕ Ajouter le membre</button>
     </div>`;
 }
 
-async function addMembre() {
-  const nom = document.getElementById('aj-nom')?.value.trim();
-  const grade = document.getElementById('aj-grade')?.value;
-  const mat = document.getElementById('aj-mat')?.value.trim();
-  const pass = document.getElementById('aj-pass')?.value.trim() || mat || nom;
-  if (!nom||!grade) { alert('Nom et grade obligatoires.'); return; }
-  const username = nom.replace(/\s+/g,'_');
-  state.users[username] = { password: pass, grade, fullname: nom, isStaff: true, matricule: mat, inscription: new Date().toLocaleDateString('fr-FR') };
-  await sbPost('users_hop', { username, password: pass, grade, fullname: nom, is_staff: true, matricule: mat, inscription: new Date().toLocaleDateString('fr-FR') });
-  document.getElementById('ajout-ok').style.display = 'block';
-  document.getElementById('aj-nom').value=''; document.getElementById('aj-mat').value=''; document.getElementById('aj-pass').value='';
+function togglePwdHop() {
+  const input = document.getElementById('aj-pass');
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
 }
+
+function generatePwdHop() {
+  const input = document.getElementById('aj-pass');
+  if (!input) return;
+  // Generate 5-8 random digits
+  const length = Math.floor(Math.random() * 4) + 5; // 5 to 8 digits
+  let pwd = '';
+  for (let i = 0; i < length; i++) {
+    pwd += Math.floor(Math.random() * 10);
+  }
+  input.value = pwd;
+  input.type = 'text';
+}
+
+async function addMembre() {
+  const nom   = document.getElementById('aj-nom')?.value.trim();
+  const grade = document.getElementById('aj-grade')?.value;
+  const mat   = document.getElementById('aj-mat')?.value.trim();
+  const pass  = document.getElementById('aj-pass')?.value.trim();
+
+  if (!nom || !grade) { alert('Nom et grade obligatoires.'); return; }
+  if (!pass) { alert('Mot de passe obligatoire — clique sur "Générer" ou saisis minimum 5 chiffres.'); return; }
+  if (!/^\d{5,}$/.test(pass)) { alert('Le mot de passe doit contenir uniquement des chiffres (minimum 5).'); return; }
+
+  const username = nom.replace(/\s+/g,'_');
+  const inscription = new Date().toLocaleDateString('fr-FR');
+
+  state.users[username] = { password: pass, grade, fullname: nom, isStaff: true, matricule: mat, inscription };
+  await sbPost('users_hop', { username, password: pass, grade, fullname: nom, is_staff: true, matricule: mat, inscription });
+
+  const ok = document.getElementById('ajout-ok');
+  if (ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+  ['aj-nom','aj-mat','aj-pass'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+}
+
 
 // ---- LOGS ----
 function renderLogsContent(g) {
   const el = document.getElementById('dash-logs');
   if (!el) return;
-  if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior uniquement'); return; }
+  if (gradeRankHop(g) > 0) { el.innerHTML = noAccessHop('Chef Médecin uniquement'); return; }
   let html = `<h2 class="dash-section-title-hop">Logs — Comptes & Accès</h2>
     <div class="dash-block-hop" style="padding:0.75rem 1.25rem;background:rgba(192,57,43,0.05);font-size:12px;color:#C0392B;border-bottom:1px solid var(--hop-border)">🔒 Informations confidentielles — Direction uniquement</div>
     <div class="dash-block-hop">`;
