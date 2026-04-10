@@ -2829,28 +2829,67 @@ function toggleDosDetail(idx) {
 
 
 async function saveDossier() {
-  const patient   = document.getElementById('dos-patient')?.value.trim();
-  const soignant  = document.getElementById('dos-soignant')?.value;
-  const blessure  = document.getElementById('dos-blessure')?.value;
-  const gravité   = document.getElementById('dos-gravité')?.value;
-  const desc      = document.getElementById('dos-desc')?.value.trim();
-  const traitement= document.getElementById('dos-traitement')?.value.trim();
-  const statut    = document.getElementById('dos-statut')?.value;
+  const patient        = document.getElementById('dos-patient')?.value.trim();
+  const soignant       = document.getElementById('dos-soignant')?.value;
+  const blessure       = document.getElementById('dos-blessure')?.value;
+  const gravite        = document.getElementById('dos-gravite')?.value;
+  const desc           = document.getElementById('dos-desc')?.value.trim();
+  const traitement     = document.getElementById('dos-traitement')?.value.trim();
+  const statut         = document.getElementById('dos-statut')?.value;
+  const groupe_sanguin = document.getElementById('dos-sang')?.value || null;
 
-  if (!patient||!soignant||!blessure||!desc) { alert('Champs obligatoires manquants'); return; }
+  if (!patient || !soignant || !desc) { alert('Patient, soignant et description sont obligatoires.'); return; }
 
+  // Save to Supabase
+  let newId = null;
+  try {
+    const saved = await sbPost('dossiers_hop', {
+      patient,
+      soignant,
+      blessure: blessure || null,
+      gravite: gravite || 'modérée',
+      description: desc,
+      traitement: traitement || null,
+      statut: statut || 'aucun',
+      groupe_sanguin: groupe_sanguin || null,
+      date: new Date().toLocaleDateString('fr-FR'),
+      created_by: state.currentUser?.username
+    });
+    if (Array.isArray(saved) && saved[0]) newId = saved[0].id;
+  } catch(e) { console.warn('saveDossier error:', e); }
+
+  // Save to localStorage
   const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
-  dossiers.push({ patient, soignant, blessure, gravité, desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), createdBy: state.currentUser?.username });
+  dossiers.push({
+    id: newId,
+    patient,
+    soignant,
+    blessure,
+    gravite,
+    desc,
+    traitement,
+    statut,
+    groupe_sanguin,
+    date: new Date().toLocaleDateString('fr-FR'),
+    createdBy: state.currentUser?.username
+  });
   localStorage.setItem('hop_dossiers', JSON.stringify(dossiers));
 
-  // Also save to Supabase for persistence across devices
-  await sbPost('dossiers_hop', { patient, soignant, blessure, gravité, description: desc, traitement, statut, date: new Date().toLocaleDateString('fr-FR'), created_by: state.currentUser?.username });
+  // Reset form
+  ['dos-patient','dos-desc','dos-traitement'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  ['dos-soignant','dos-blessure','dos-sang'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
 
-  document.getElementById('dos-patient').value=''; document.getElementById('dos-soignant').value=''; document.getElementById('dos-blessure').value=''; document.getElementById('dos-desc').value=''; document.getElementById('dos-traitement').value='';
-  const ok = document.getElementById('dos-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000);
+  const ok = document.getElementById('dos-ok');
+  if (ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none', 3000); }
+
   switchDosTab('list');
   renderDossiersContent(state.currentUser.grade);
 }
+
 
 async function deleteDossier(index) {
   if (!confirm('Supprimer ce dossier médical définitivement ? Cette action est irréversible.')) return;
