@@ -733,7 +733,7 @@ body {
 <nav id="main-nav" style="position:relative;overflow:visible">
   <canvas id="nav-petals" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden"></canvas>
 
-  <div class="nav-logo" onclick="showPage('home')">
+  <div class="nav-logo" onclick="showPage('home'); setTimeout(loadMonument, 200);">
     <div class="nav-logo-icon">
       <svg viewBox="0 0 40 40" width="40" height="40">
         <circle cx="20" cy="20" r="18" fill="#F8E8F0" stroke="#C78FA8" stroke-width="1.5"/>
@@ -749,7 +749,7 @@ body {
     </div>
   </div>
   <ul class="nav-links" id="nav-links">
-    <li><a onclick="showPage('home')">Accueil</a></li>
+    <li><a onclick="showPage('home'); setTimeout(loadMonument, 200);">Accueil</a></li>
     <li><a onclick="showSection('histoire')">Histoire</a></li>
     <li><a onclick="showSection('services')">Services</a></li>
     <li><a onclick="showSection('équipe')">Équipe</a></li>
@@ -1064,7 +1064,7 @@ body {
         </div>
         <button class="btn-primary btn-full-hop" onclick="doLogin()">Se connecter</button>
         <p class="auth-link-hop">Pas de compte ? <a onclick="showPage('register')">Créer mon dossier</a></p>
-        <p class="auth-link-hop"><a onclick="showPage('home')">← Retour</a></p>
+        <p class="auth-link-hop"><a onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</a></p>
       </div>
 
       <!-- ESPACE SOIGNANT -->
@@ -1082,7 +1082,7 @@ body {
         <div style="margin-top:1rem;padding:0.75rem;background:rgba(139,94,131,0.08);border-radius:8px;font-size:11px;color:var(--hop-muted);line-height:1.6">
           🔒 Connexion réservée au personnel médical enregistré par la direction.
         </div>
-        <p class="auth-link-hop"><a onclick="showPage('home')">← Retour</a></p>
+        <p class="auth-link-hop"><a onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</a></p>
       </div>
 
     </div>
@@ -1120,7 +1120,7 @@ body {
       <div class="form-group-hop"><label>Confirmer *</label><input type="password" id="reg-pass2" placeholder="••••••••"/></div>
       <button class="btn-primary btn-full-hop" onclick="doRegister()">Créer mon dossier</button>
       <p class="auth-link-hop">Déjà inscrit ? <a onclick="showPage('login')">Se connecter</a></p>
-      <p class="auth-link-hop"><a onclick="showPage('home')">← Retour</a></p>
+      <p class="auth-link-hop"><a onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</a></p>
     </div>
   </div>
 </div>
@@ -1129,7 +1129,7 @@ body {
 <div id="page-rdv" class="page">
   <div class="subpage-nav-hop">
     <span class="subpage-nav-title-hop">🌸 Demande de rendez-vous médical</span>
-    <button class="btn-outline-hop" onclick="showPage('home')">← Retour</button>
+    <button class="btn-outline-hop" onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</button>
   </div>
   <div id="rdv-auth-wall" style="display:none;min-height:80vh;background:var(--hop-bg);display:flex;align-items:center;justify-content:center;padding:2rem">
     <div style="background:var(--hop-card);border:1px solid var(--hop-border);border-radius:12px;padding:2.5rem;max-width:460px;width:100%;text-align:center">
@@ -1224,7 +1224,7 @@ body {
 <div id="page-postuler" class="page">
   <div class="subpage-nav-hop">
     <span class="subpage-nav-title-hop">🌸 Candidature médicale</span>
-    <button class="btn-outline-hop" onclick="showPage('home')">← Retour</button>
+    <button class="btn-outline-hop" onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</button>
   </div>
   <div id="postuler-auth-wall" style="display:none;min-height:80vh;background:var(--hop-bg);display:flex;align-items:center;justify-content:center;padding:2rem">
     <div style="background:var(--hop-card);border:1px solid var(--hop-border);border-radius:12px;padding:2.5rem;max-width:460px;width:100%;text-align:center">
@@ -1308,7 +1308,7 @@ body {
         <div id="dash-username-display" style="font-size:13px;color:var(--hop-dark);font-weight:600"></div>
         <span class="grade-pill-hop" id="dash-grade-pill"></span>
       </div>
-      <button class="btn-outline-hop" onclick="showPage('home')">Site public</button>
+      <button class="btn-outline-hop" onclick="showPage('home'); setTimeout(loadMonument, 200);">Site public</button>
       <button class="btn-danger-hop" onclick="logout()">Déconnexion</button>
     </div>
   </div>
@@ -1563,6 +1563,8 @@ function showPage(id) {
   const target = document.getElementById('page-' + id);
   if (target) target.classList.add('active');
   window.scrollTo(0,0);
+  // Reload monument with current user context when returning to home
+  if (id === 'home') setTimeout(loadMonument, 100);
   const nav = document.getElementById('main-nav');
   if (nav) nav.style.display = (id === 'dashboard') ? 'none' : 'flex';
 
@@ -3215,7 +3217,8 @@ async function loadMonument() {
   // Show "Ajouter un défunt" button for médecins+
   if (btnZone) {
     const u = state.currentUser;
-    const canAdd = u && u.isStaff && gradeRankHop(u.grade) <= 2; // Chef, Senior, Médecin
+    const canAdd = u && u.isStaff && gradeRankHop(u.grade) <= 2;
+    console.log('Monument: user=', u?.username, 'grade=', u?.grade, 'canAdd=', canAdd);
     btnZone.innerHTML = canAdd ? `
       <div id="add-mort-form" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(155,89,182,0.2);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:1rem">
         <div style="font-size:13px;font-weight:700;color:#9b59b6;text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Ajouter un défunt au monument</div>
