@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Hôpital de Konoha — Ninja Road FiveM</title>
 <style>/* ============================================================
    HÔPITAL DE KONOHA — NINJA ROAD FiveM
@@ -724,9 +722,7 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
-</style>
-</head>
-<body>
+</style></head><body>
 
 
 <canvas id="petals-canvas"></canvas>
@@ -1310,6 +1306,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('annuaire',this)">📒 Annuaire</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
@@ -1331,6 +1328,7 @@ body {
       <div class="dash-tab-hop" id="dash-annuaire"></div>
       <div class="dash-tab-hop" id="dash-membres"></div>
       <div class="dash-tab-hop" id="dash-ajout"></div>
+      <div class="dash-tab-hop" id="dash-cours"></div>
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
@@ -1837,6 +1835,7 @@ function switchDashTab(name, btn) {
   if (name === 'ajout')         renderAjoutContent(g);
   if (name === 'logs')          renderLogsContent(g);
   if (name === 'dossiers')      renderDossiersContent(g);
+  if (name === 'cours')         renderCoursContent(g);
 }
 
 function switchCitizenTab(name, btn) {
@@ -2909,5 +2908,177 @@ async function deleteDossier(index) {
 
   await syncFromSupabase();
   renderDossiersContent(state.currentUser.grade);
+}
+
+// ============================================================
+// COURS MÉDICAUX
+// ============================================================
+async function renderCoursContent(g) {
+  const el = document.getElementById('dash-cours');
+  if (!el) return;
+  if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
+
+  const isChef = gradeRankHop(g) <= 0;
+
+  let cours = [];
+  try {
+    const res = await sbGet('cours_hop', '?order=created_at.desc');
+    if (Array.isArray(res)) cours = res;
+  } catch(e) {
+    cours = JSON.parse(localStorage.getItem('hop_cours') || '[]');
+  }
+
+  let html = `<h2 class="dash-section-title-hop">📚 Cours Médicaux</h2>
+    <div style="background:rgba(139,94,131,0.05);border:1px solid var(--hop-border2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1.5rem;font-size:12px;color:var(--hop-mauve2)">
+      📖 Les cours sont publiés par la direction médicale. Cliquez sur un cours pour accéder au contenu.
+    </div>`;
+
+  // Form — Chef Médecin only
+  if (isChef) {
+    html += `<div class="dash-block-hop" style="padding:1.5rem;margin-bottom:1.5rem">
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">➕ Publier un nouveau cours</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0">
+          <label>Titre du cours *</label>
+          <input type="text" id="cours-titre" placeholder="Ex: Techniques de guérison au chakra"/>
+        </div>
+        <div class="form-group-hop" style="margin:0">
+          <label>Catégorie</label>
+          <select id="cours-categorie">
+            <option value="">-- Choisir --</option>
+            <option>Soins de combat</option>
+            <option>Chakra médical</option>
+            <option>Pharmacologie ninja</option>
+            <option>Médecine naturelle</option>
+            <option>Analyses médicales</option>
+            <option>Rééducation</option>
+            <option>Urgences médicales</option>
+            <option>Protocoles internes</option>
+            <option>Autre</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0">
+          <label>Niveau requis</label>
+          <select id="cours-niveau">
+            <option value="tous">Tout le personnel</option>
+            <option value="infirmier">Infirmier·ère et +</option>
+            <option value="medecin">Médecin et +</option>
+            <option value="senior">Médecin Senior et +</option>
+          </select>
+        </div>
+        <div class="form-group-hop" style="margin:0">
+          <label>Lien externe (Google Doc, Canva...)</label>
+          <input type="url" id="cours-lien" placeholder="https://docs.google.com/..."/>
+        </div>
+      </div>
+      <div class="form-group-hop" style="margin-bottom:0.75rem">
+        <label>Description / Contenu du cours *</label>
+        <textarea id="cours-desc" rows="5" placeholder="Décrivez le contenu du cours, les objectifs, les points clés à retenir..."></textarea>
+      </div>
+      <button class="btn-primary" onclick="saveCours()">📚 Publier le cours</button>
+      <div id="cours-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">✓ Cours publié avec succès !</div>
+    </div>`;
+  }
+
+  // List of cours
+  if (cours.length === 0) {
+    html += '<div class="dash-block-hop" style="padding:2rem;text-align:center"><p style="color:var(--hop-muted)">Aucun cours publié pour le moment.</p></div>';
+  } else {
+    const niveauLabels = { tous:'Tout le personnel', infirmier:'Infirmier·ère +', medecin:'Médecin +', senior:'Médecin Senior +' };
+    const catColors = {
+      'Soins de combat':'#e74c3c', 'Chakra médical':'#8e44ad', 'Pharmacologie ninja':'#27ae60',
+      'Médecine naturelle':'#16a085', 'Analyses médicales':'#2980b9', 'Rééducation':'#f39c12',
+      'Urgences médicales':'#c0392b', 'Protocoles internes':'#7f8c8d'
+    };
+
+    cours.forEach((c, i) => {
+      const catColor = catColors[c.categorie] || 'var(--hop-mauve)';
+      html += `<div class="detail-card-hop" style="margin-bottom:0.75rem">
+        <div class="detail-card-header-hop" onclick="toggleCoursDetail(${i})" style="cursor:pointer">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <span style="font-size:10px;padding:2px 10px;border-radius:20px;font-weight:700;background:${catColor}22;color:${catColor};border:1px solid ${catColor}44">${c.categorie||'Général'}</span>
+              <span style="font-size:10px;color:var(--hop-muted);padding:2px 8px;background:var(--hop-light);border-radius:10px">${niveauLabels[c.niveau]||'Tout le personnel'}</span>
+            </div>
+            <div class="detail-title-hop" style="font-size:15px">${c.titre||'—'}</div>
+            <div class="detail-meta-hop">
+              <span style="font-size:11px;color:var(--hop-muted)">📅 ${c.date||'—'}</span>
+              <span style="font-size:11px;color:var(--hop-muted)">✍ ${c.auteur||'Direction médicale'}</span>
+            </div>
+          </div>
+          <span class="detail-toggle-icon-hop" id="cours-icon-${i}">▼</span>
+        </div>
+        <div class="detail-card-body-hop" id="cours-body-${i}" style="display:none;padding:1.25rem">
+          <div class="detail-section-hop">
+            <div class="detail-section-label-hop">📋 Contenu du cours</div>
+            <div class="detail-section-text-hop" style="white-space:pre-wrap">${c.description||c.contenu||'—'}</div>
+          </div>
+          ${c.lien ? `
+          <div style="margin-top:1rem">
+            <a href="${c.lien}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--hop-mauve),var(--hop-rose2));color:white;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;font-family:'Nunito',sans-serif">
+              🔗 Accéder au cours complet
+            </a>
+          </div>` : ''}
+          <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
+            Publié le ${c.date||'—'} par ${c.auteur||'—'}
+          </div>
+          ${isChef ? `<button onclick="deleteCours(${c.id||i})" style="margin-top:0.5rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:4px 12px;border-radius:4px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif">🗑 Supprimer ce cours</button>` : ''}
+        </div>
+      </div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+async function saveCours() {
+  const titre     = document.getElementById('cours-titre')?.value.trim();
+  const categorie = document.getElementById('cours-categorie')?.value;
+  const niveau    = document.getElementById('cours-niveau')?.value;
+  const lien      = document.getElementById('cours-lien')?.value.trim();
+  const desc      = document.getElementById('cours-desc')?.value.trim();
+
+  if (!titre || !desc) { alert('Titre et contenu sont obligatoires.'); return; }
+
+  const u = state.currentUser;
+  const entry = {
+    titre, categorie, niveau, lien: lien||null,
+    description: desc,
+    auteur: u.fullname || u.username,
+    date: new Date().toLocaleDateString('fr-FR')
+  };
+
+  try { await sbPost('cours_hop', entry); } catch(e) { console.warn(e); }
+
+  const list = JSON.parse(localStorage.getItem('hop_cours') || '[]');
+  list.unshift(entry);
+  localStorage.setItem('hop_cours', JSON.stringify(list));
+
+  ['cours-titre','cours-lien','cours-desc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+
+  const ok = document.getElementById('cours-ok');
+  if (ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none',3000); }
+
+  renderCoursContent(state.currentUser.grade);
+}
+
+async function deleteCours(id) {
+  if (!confirm('Supprimer ce cours définitivement ?')) return;
+  try { await sbDelete('cours_hop', '?id=eq.'+id); } catch(e) {}
+  const list = JSON.parse(localStorage.getItem('hop_cours') || '[]');
+  const filtered = list.filter(c => c.id !== id);
+  localStorage.setItem('hop_cours', JSON.stringify(filtered));
+  renderCoursContent(state.currentUser.grade);
+}
+
+function toggleCoursDetail(i) {
+  const body = document.getElementById('cours-body-'+i);
+  const icon = document.getElementById('cours-icon-'+i);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
 }
 </script></body></html>
