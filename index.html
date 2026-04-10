@@ -2737,7 +2737,7 @@ function renderDossiersContent(g) {
             <div class="detail-grid-hop">
               <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${d.patient||'—'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Soignant</span><span class="detail-field-val-hop">${d.soignant||'—'}</span></div>
-              ${d.groupe_sanguin ? `<div class="detail-field-hop"><span class="detail-field-label-hop">Groupe sanguin</span><span class="detail-field-val-hop" style="font-weight:700;color:var(--hop-mauve2)">${d.groupe_sanguin}</span></div>` : ''}
+              <div class="detail-field-hop"><span class="detail-field-label-hop">Groupe sanguin</span><span class="detail-field-val-hop" style="font-weight:700;color:var(--hop-mauve2)">${d.groupe_sanguin||'— Inconnu —'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Type / Motif</span><span class="detail-field-val-hop">${blessure}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${gc};font-weight:700">${d.gravite||d.gravité||'—'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Traitement</span><span class="detail-field-val-hop">${d.traitement||'—'}</span></div>
