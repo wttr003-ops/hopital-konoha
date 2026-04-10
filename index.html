@@ -1017,7 +1017,24 @@ body {
     </div>
   </section>
 
-  <footer class="footer-hop">
+  
+  <!-- MONUMENT AUX MORTS -->
+  <section id="monument" style="padding:5rem 0;background:linear-gradient(180deg,#1a0a2e 0%,#0d0618 100%)">
+    <div class="container-hop">
+      <div style="text-align:center;margin-bottom:3rem">
+        <div style="font-size:3rem;margin-bottom:1rem">🕯️</div>
+        <h2 style="font-family:'Playfair Display',serif;font-size:2.5rem;color:#e8d5f0;margin-bottom:0.5rem">Monument aux Morts</h2>
+        <p style="color:#b8a0cc;font-size:1rem;font-style:italic">En mémoire des âmes qui ont servi et protégé Konoha</p>
+        <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#9b59b6,transparent);margin:1rem auto"></div>
+      </div>
+      <div id="monument-list" style="max-width:800px;margin:0 auto 3rem">
+        <p style="color:#b8a0cc;text-align:center;font-style:italic">Chargement...</p>
+      </div>
+      <div id="monument-btn-zone" style="text-align:center;max-width:800px;margin:0 auto"></div>
+    </div>
+  </section>
+
+<footer class="footer-hop">
     <div class="footer-inner-hop">
       <div class="footer-logo-hop">🌸</div>
       <div>
@@ -3132,5 +3149,150 @@ function toggleCoursDetail(i) {
   const open = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'block';
   if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// ============================================================
+// MONUMENT AUX MORTS
+// ============================================================
+async function loadMonument() {
+  const el = document.getElementById('monument-list');
+  const btnZone = document.getElementById('monument-btn-zone');
+  if (!el) return;
+
+  let morts = [];
+  try {
+    const res = await sbGet('monument_hop', '?order=created_at.asc');
+    if (Array.isArray(res)) morts = res;
+  } catch(e) {
+    morts = JSON.parse(localStorage.getItem('hop_monument') || '[]');
+  }
+
+  if (morts.length === 0) {
+    el.innerHTML = '<p style="color:#b8a0cc;text-align:center;font-style:italic;padding:2rem">Aucun nom inscrit pour le moment.</p>';
+  } else {
+    el.innerHTML = morts.map(m => {
+      // Get messages for this person
+      const messages = m.messages ? (typeof m.messages === 'string' ? JSON.parse(m.messages) : m.messages) : [];
+      const hasMsg = messages.length > 0;
+      // Check if current visitor already left a message
+      const visitorId = getVisitorId();
+      const alreadyLeft = messages.some(msg => msg.visitor_id === visitorId);
+
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(155,89,182,0.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+          <div style="font-size:2rem">🕯️</div>
+          <div>
+            <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:#e8d5f0;font-weight:700">${m.nom}</div>
+            <div style="font-size:12px;color:#9b59b6;margin-top:2px">${m.grade||''} ${m.grade&&m.date?'•':''} ${m.date||''}</div>
+          </div>
+        </div>
+        ${m.description ? `<p style="color:#b8a0cc;font-size:14px;font-style:italic;margin-bottom:1rem;padding-left:3.5rem">"${m.description}"</p>` : ''}
+        
+        ${hasMsg ? `<div style="padding-left:3.5rem;margin-bottom:1rem">
+          <div style="font-size:11px;color:#9b59b6;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem">${messages.length} message(s) de condoléances</div>
+          ${messages.map(msg => `<div style="background:rgba(155,89,182,0.05);border-left:2px solid #9b59b6;padding:8px 12px;margin-bottom:6px;border-radius:0 6px 6px 0">
+            <div style="font-size:13px;color:#d4b8e8">${msg.texte}</div>
+            <div style="font-size:10px;color:#7f8c8d;margin-top:3px">${msg.auteur||'Anonyme'} — ${msg.date||''}</div>
+          </div>`).join('')}
+        </div>` : ''}
+
+        ${!alreadyLeft ? `<div style="padding-left:3.5rem">
+          <div id="msg-form-${m.id}" style="display:none">
+            <textarea id="msg-text-${m.id}" rows="2" placeholder="Laissez un message en mémoire de ${m.nom}..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:8px;color:#e8d5f0;font-family:'Nunito',sans-serif;font-size:13px;resize:vertical"></textarea>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <input type="text" id="msg-auteur-${m.id}" placeholder="Votre nom (optionnel)" style="flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:6px 10px;color:#e8d5f0;font-family:'Nunito',sans-serif;font-size:12px"/>
+              <button onclick="sendCondoleance(${m.id})" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);color:white;border:none;border-radius:6px;padding:6px 16px;cursor:pointer;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600">Envoyer</button>
+            </div>
+          </div>
+          <button onclick="toggleMsgForm(${m.id})" id="btn-msg-${m.id}" style="background:rgba(155,89,182,0.1);color:#9b59b6;border:1px solid rgba(155,89,182,0.3);padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;margin-top:0.5rem">
+            💬 Laisser un message
+          </button>
+        </div>` : `<div style="padding-left:3.5rem;font-size:12px;color:#7f8c8d;font-style:italic">✓ Vous avez déjà laissé un message.</div>`}
+      </div>`;
+    }).join('');
+  }
+
+  // Show "Ajouter un défunt" button for médecins+
+  if (btnZone) {
+    const u = state.currentUser;
+    const canAdd = u && u.isStaff && gradeRankHop(u.grade) <= 2; // Chef, Senior, Médecin
+    btnZone.innerHTML = canAdd ? `
+      <div id="add-mort-form" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(155,89,182,0.2);border-radius:12px;padding:1.5rem;text-align:left;margin-bottom:1rem">
+        <div style="font-size:13px;font-weight:700;color:#9b59b6;text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Ajouter un défunt au monument</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+          <div><label style="font-size:11px;color:#b8a0cc;display:block;margin-bottom:4px">Nom et Prénom *</label>
+            <input type="text" id="mort-nom" placeholder="Ex: Obito Uchiha" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:8px;color:#e8d5f0;font-family:'Nunito',sans-serif;font-size:13px;box-sizing:border-box"/></div>
+          <div><label style="font-size:11px;color:#b8a0cc;display:block;margin-bottom:4px">Grade / Rang</label>
+            <input type="text" id="mort-grade" placeholder="Ex: Jonin" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:8px;color:#e8d5f0;font-family:'Nunito',sans-serif;font-size:13px;box-sizing:border-box"/></div>
+        </div>
+        <div style="margin-bottom:0.75rem"><label style="font-size:11px;color:#b8a0cc;display:block;margin-bottom:4px">Date / Circonstances</label>
+          <input type="text" id="mort-date" placeholder="Ex: 10/04/2026 — Mort au combat" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:8px;color:#e8d5f0;font-family:'Nunito',sans-serif;font-size:13px;box-sizing:border-box"/></div>
+        <div style="margin-bottom:1rem"><label style="font-size:11px;color:#b8a0cc;display:block;margin-bottom:4px">Hommage / Description</label>
+          <textarea id="mort-desc" rows="2" placeholder="Un hommage en quelques mots..." style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(155,89,182,0.3);border-radius:6px;padding:8px;color:#e8d5f0;font-family:'Nunito',sans-serif;font-size:13px;resize:vertical;box-sizing:border-box"></textarea></div>
+        <button onclick="saveMort()" style="background:linear-gradient(135deg,#8e44ad,#9b59b6);color:white;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-size:13px;font-family:'Nunito',sans-serif;font-weight:600">🕯️ Inscrire au monument</button>
+      </div>
+      <button onclick="document.getElementById('add-mort-form').style.display=document.getElementById('add-mort-form').style.display==='none'?'block':'none'" style="background:rgba(155,89,182,0.1);color:#9b59b6;border:1px solid rgba(155,89,182,0.3);padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">
+        ➕ Ajouter un défunt
+      </button>` : '';
+  }
+}
+
+function getVisitorId() {
+  let id = localStorage.getItem('hop_visitor_id');
+  if (!id) { id = 'v_' + Math.random().toString(36).substr(2,12); localStorage.setItem('hop_visitor_id', id); }
+  return id;
+}
+
+function toggleMsgForm(id) {
+  const form = document.getElementById('msg-form-'+id);
+  const btn  = document.getElementById('btn-msg-'+id);
+  if (!form) return;
+  const open = form.style.display !== 'none';
+  form.style.display = open ? 'none' : 'block';
+  if (btn) btn.textContent = open ? '💬 Laisser un message' : '✕ Annuler';
+}
+
+async function sendCondoleance(mortId) {
+  const texte  = document.getElementById('msg-text-'+mortId)?.value.trim();
+  const auteur = document.getElementById('msg-auteur-'+mortId)?.value.trim() || 'Anonyme';
+  if (!texte) { alert('Écrivez un message avant d\'envoyer.'); return; }
+
+  const visitorId = getVisitorId();
+  const msg = { texte, auteur, visitor_id: visitorId, date: new Date().toLocaleDateString('fr-FR') };
+
+  try {
+    // Get current messages
+    const res = await sbGet('monument_hop', '?id=eq.'+mortId);
+    if (Array.isArray(res) && res[0]) {
+      let messages = [];
+      try { messages = JSON.parse(res[0].messages||'[]'); } catch(e) {}
+      // Check not already sent
+      if (messages.some(m => m.visitor_id === visitorId)) { alert('Vous avez déjà laissé un message.'); return; }
+      messages.push(msg);
+      await fetch(SB_URL+'/rest/v1/monument_hop?id=eq.'+mortId, {
+        method:'PATCH',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body: JSON.stringify({ messages: JSON.stringify(messages) })
+      });
+    }
+  } catch(e) { console.warn(e); }
+
+  alert('✓ Votre message a été envoyé. Merci de ce geste.');
+  loadMonument();
+}
+
+async function saveMort() {
+  const nom   = document.getElementById('mort-nom')?.value.trim();
+  const grade = document.getElementById('mort-grade')?.value.trim();
+  const date  = document.getElementById('mort-date')?.value.trim();
+  const desc  = document.getElementById('mort-desc')?.value.trim();
+  if (!nom) { alert('Le nom est obligatoire.'); return; }
+
+  const entry = { nom, grade: grade||null, date: date||new Date().toLocaleDateString('fr-FR'), description: desc||null, messages: '[]', added_by: state.currentUser?.fullname||state.currentUser?.username };
+  try { await sbPost('monument_hop', entry); } catch(e) { console.warn(e); }
+  alert('✓ ' + nom + ' a été inscrit au Monument aux Morts.');
+  document.getElementById('add-mort-form').style.display = 'none';
+  ['mort-nom','mort-grade','mort-date','mort-desc'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  loadMonument();
 }
 </script></body></html>
