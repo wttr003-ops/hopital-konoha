@@ -722,20 +722,6 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
-
-/* ===== SECTION SCIENTIFIQUE ===== */
-#nav-science .dash-nav-btn-hop {
-  border-left: 2px solid transparent;
-}
-#nav-science .dash-nav-btn-hop.active,
-#nav-science .dash-nav-btn-hop:hover {
-  border-left-color: #38bdf8 !important;
-  color: #38bdf8 !important;
-  background: rgba(56,189,248,0.08) !important;
-}
-#nav-science > div:first-child {
-  background: linear-gradient(90deg, rgba(56,189,248,0.06), transparent);
-}
 </style></head><body>
 
 
@@ -1065,7 +1051,7 @@ body {
 <!-- LOGIN PAGE -->
 <div id="page-login" class="page">
   <div class="auth-page-hop">
-    <div style="width:100%;max-width:1200px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;align-items:start">
+    <div style="width:100%;max-width:860px;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
 
       <!-- ESPACE PATIENT -->
       <div class="auth-box-hop">
@@ -1101,20 +1087,6 @@ body {
         <p class="auth-link-hop"><a onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</a></p>
       </div>
 
-      <!-- ESPACE SCIENTIFIQUE -->
-      <div class="auth-box-hop" style="border:2px solid #0ea5e9;background:linear-gradient(160deg,#f0f9ff,#e0f2fe)">
-        <div class="auth-logo-hop">🔬</div>
-        <h2 style="color:#0369a1">Espace Scientifique</h2>
-        <p class="auth-sub-hop">Accès réservé à la section scientifique</p>
-        <div class="form-msg-hop error" id="sci-login-err"></div>
-        <div class="form-group-hop"><label>Nom et Prénom</label><input type="text" id="sci-login-user" placeholder="Ex: Kenji Sora"/></div>
-        <div class="form-group-hop"><label>Mot de passe</label>
-          <div style="position:relative"><input type="password" id="sci-login-pass" placeholder="••••••••" style="padding-right:40px"/>
-          <button type="button" onclick="togglePwd('sci-login-pass',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--hop-muted)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
-        </div>
-        <button class="btn-primary btn-full-hop" style="background:linear-gradient(135deg,#0ea5e9,#0369a1)" onclick="doSciLogin()">Se connecter</button>
-        <p class="auth-link-hop"><a onclick="showPage('home');">← Retour</a></p>
-      </div>
 
     </div>
   </div>
@@ -1272,24 +1244,8 @@ body {
   <div class="form-page-hop">
     <div class="form-container-hop">
       <p class="section-tag-hop">Recrutement médical</p>
-      <h2 class="section-title-hop">Candidature <span id="candid-section-title">Soignant</span></h2>
-      <div class="form-msg-hop success" id="post-ok" style="display:none">Candidature envoyée ! Elle sera étudiée par la direction concernée.</div>
-      <div class="form-group-hop" style="margin-bottom:1.25rem">
-        <label style="font-weight:700;font-size:14px">Je postule pour rejoindre *</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px" id="dest-selector">
-          <div onclick="selectDest('medical')" id="dest-medical" style="border:2px solid var(--hop-mauve);border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:rgba(139,94,131,0.08);transition:all 0.2s">
-            <div style="font-size:24px">⚕️</div>
-            <div style="font-weight:700;color:var(--hop-mauve2);margin-top:4px">Section Médicale</div>
-            <div style="font-size:11px;color:var(--hop-muted)">Devenir soignant</div>
-          </div>
-          <div onclick="selectDest('science')" id="dest-science" style="border:2px solid #0ea5e9;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:rgba(14,165,233,0.05);transition:all 0.2s">
-            <div style="font-size:24px">🔬</div>
-            <div style="font-weight:700;color:#0369a1;margin-top:4px">Section Scientifique</div>
-            <div style="font-size:11px;color:var(--hop-muted)">Devenir chercheur</div>
-          </div>
-        </div>
-        <input type="hidden" id="post-dest" value="medical"/>
-      </div>
+      <h2 class="section-title-hop">Candidature <span>Soignant</span></h2>
+      <div class="form-msg-hop success" id="post-ok" style="display:none">Candidature envoyée ! Elle sera étudiée par le Chef Médecin.</div>
       <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="post-nom" placeholder="Ex: Sakura Haruno"/></div>
       <div class="form-group-hop"><label>Niveau ninja actuel *</label>
         <select id="post-niveau">
@@ -1339,6 +1295,7 @@ body {
   </div>
 </div>
 
+
 <!-- DASHBOARD -->
 <div id="page-dashboard" class="page">
   <div class="dash-topbar-hop">
@@ -1363,34 +1320,17 @@ body {
     <aside class="dash-sidebar-hop">
       <div id="dash-sidebar-agent">
         <nav class="dash-nav-hop" id="agent-sidebar-nav" style="display:flex;flex-direction:column">
-          <!-- NAV MÉDICALE (visible pour médecins) -->
-          <div id="nav-medical">
-            <button class="dash-nav-btn-hop active" onclick="switchDashTab('overview',this)">📊 Vue d'ensemble</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('journal',this)">📰 Journal</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('rdvs',this)">📋 Rendez-vous</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('candidatures',this)">👩‍⚕️ Candidatures</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('annuaire',this)">📒 Annuaire</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
-            <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
-              <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
-          </div>
-          <!-- NAV SCIENTIFIQUE (visible pour scientifiques) -->
-          <div id="nav-science" style="display:none">
-            <div style="padding:6px 12px;font-size:10px;font-weight:700;color:rgba(56,189,248,0.6);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid rgba(56,189,248,0.1);margin-bottom:4px">🔬 Section Scientifique</div>
-            <button class="dash-nav-btn-hop sci-btn-nav active" onclick="switchDashTab('overview',this)">📊 Vue d'ensemble</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('journal',this)">📰 Journal</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('rdvs',this)">📋 Rendez-vous</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('candidatures',this)">🔬 Candidatures</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('annuaire',this)">📒 Annuaire</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('membres',this)">👥 Membres</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('cours',this)">📚 Cours scientifiques</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('dossiers',this)">📁 Dossiers scientifiques</button>
-            <button class="dash-nav-btn-hop sci-btn-nav" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
-          </div>
+          <button class="dash-nav-btn-hop active" onclick="switchDashTab('overview',this)">📊 Vue d'ensemble</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('journal',this)">📰 Journal</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('rdvs',this)">📋 Rendez-vous</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('candidatures',this)">👩‍⚕️ Candidatures</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('annuaire',this)">📒 Annuaire</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
+          <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
       </div>
       <div id="dash-sidebar-citizen" style="display:none">
@@ -1522,17 +1462,7 @@ async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
 // ÉTAT GLOBAL
 // ============================================================
 const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier·ère', 'Stagiaire médical'];
-const GRADE_RANK_HOP = {
-  // Grades médicaux
-  'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier·ère':3, 'Stagiaire médical':4,
-  // Grades scientifiques
-  'Directeur Scientifique':0, 'Chercheur Senior':1, 'Chercheur':2, 'Assistant Scientifique':3, 'Stagiaire Scientifique':4,
-  'Citoyen':9
-};
-const SCIENCE_GRADES = ['Directeur Scientifique','Chercheur Senior','Chercheur','Assistant Scientifique','Stagiaire Scientifique'];
-const MEDICAL_GRADES = ['Chef Médecin','Médecin Senior','Médecin','Infirmier·ère','Stagiaire médical'];
-function isScience(grade) { return SCIENCE_GRADES.includes(grade); }
-function isMedical(grade) { return MEDICAL_GRADES.includes(grade); }
+const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier·ère':3, 'Stagiaire médical':4, 'Citoyen':9 };
 
 const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Directeur Scientifique':'badge-chef','Chercheur Senior':'badge-senior','Chercheur':'badge-medecin','Assistant Scientifique':'badge-infirmier','Stagiaire Scientifique':'badge-stagiaire','Médecin Senior':'badge-senior','Médecin':'badge-médecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
 
@@ -1854,7 +1784,6 @@ async function submitPostuler() {
   const motiv= document.getElementById('post-motiv').value.trim();
   const cas  = document.getElementById('post-casier').value;
   const dispo= document.getElementById('post-dispo').value;
-  const dest = document.getElementById('post-dest')?.value || 'medical'; // medical ou science
   if (!nom||!niv||!spec||!motiv||!cas||!dispo) { alert('Veuillez remplir tous les champs.'); return; }
   if (cas==='oui') { alert('Un casier judiciaire disqualifie automatiquement la candidature.'); return; }
 
@@ -2114,11 +2043,9 @@ function renderCandidContent(g) {
   const el = document.getElementById('dash-candidatures');
   if (!el) return;
   if (!canAllHop(g)) { el.innerHTML = noAccessHop('Médecin Senior ou Chef Médecin'); return; }
-  const filteredCandids = getCandidaturesBySection();
-  if (filteredCandids.length === 0) { el.innerHTML = '<h2 class="dash-section-title-hop">Candidatures</h2><p style="color:var(--hop-muted)">Aucune candidature pour votre section.</p>'; return; }
-  const sectionLabel = isScience(g) ? '🔬 Scientifique' : '⚕️ Médicale';
-  let html = '<h2 class="dash-section-title-hop">Candidatures reçues — Section ' + sectionLabel + '</h2><div class="dash-block-hop">';
-  filteredCandids.forEacres.forEach(c => {
+  if (state.candidatures.length === 0) { el.innerHTML = '<h2 class="dash-section-title-hop">Candidatures</h2><p style="color:var(--hop-muted)">Aucune candidature.</p>'; return; }
+  let html = '<h2 class="dash-section-title-hop">Candidatures reçues</h2><div class="dash-block-hop">';
+  state.candidatures.forEach(c => {
     const sc = c.status==='wait'?'s-wait-hop':c.status==='ok'?'s-ok-hop':'s-no-hop';
     const sl = c.status==='wait'?'En attente':c.status==='ok'?'Accepté':'Refusé';
     const canAct = c.status==='wait';
@@ -2190,9 +2117,7 @@ function renderMembresContent(g) {
   const el = document.getElementById('dash-membres');
   if (!el) return;
   if (!canAllHop(g)) { el.innerHTML = noAccessHop('Chef Médecin ou Médecin Senior'); return; }
-  const currentGrade = state.currentUser?.grade;
-  const sciMode = isScience(currentGrade);
-  const staff = Object.entries(state.users).filter(([,u])=>u.isStaff && (sciMode ? isScienceUser(u) : isMedicalUser(u))).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9));
+    const staff = Object.entries(state.users).filter(([,u])=>u.isStaff).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9));
   let html = `<h2 class="dash-section-title-hop">Gestion des membres</h2><div class="dash-block-hop">`;
   staff.forEach(([un,u]) => {
     html += `<div class="membre-row-hop">
@@ -2751,9 +2676,7 @@ function renderDossiersContent(g) {
   if (!el) return;
   if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
 
-  const currentGrade2 = state.currentUser?.grade;
-  const sciMode2 = isScience(currentGrade2);
-  const staff = Object.entries(state.users).filter(([,u])=>u.isStaff && (sciMode2 ? isScienceUser(u) : isMedicalUser(u)));
+    const staff = Object.entries(state.users).filter(([,u])=>u.isStaff);
   const allDossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
   const graviteColors = { 'aucune':'var(--hop-muted)', 'légère':'var(--hop-green)', 'modérée':'var(--hop-gold)', 'grave':'#fb923c', 'critique':'#e74c3c' };
   const statutLabels  = { 'aucun':'—', 'en_traitement':'En traitement', 'gueri':'Guéri', 'surveillance':'Sous surveillance', 'critique':'État critique', 'deces':'Décédé (RP)' };
@@ -3613,137 +3536,5 @@ function toggleMortDetail(i) {
   const open = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'block';
   if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
-}
-
-// ============================================================
-// SECTION SCIENTIFIQUE — Dashboard integration
-// ============================================================
-
-function activateScienceDashboard() {
-  // Hide medical nav, show science nav
-  const navMed = document.getElementById('nav-medical');
-  const navSci = document.getElementById('nav-science');
-  if (navMed) navMed.style.display = 'none';
-  if (navSci) navSci.style.display = 'block';
-
-  // Change header badge color
-  const pill = document.getElementById('dash-grade-pill-hop');
-  if (pill) {
-    pill.style.background = 'linear-gradient(135deg,#0ea5e9,#38bdf8)';
-    pill.style.color = 'white';
-  }
-
-  // Change topbar section label
-  const topbarTitle = document.getElementById('dash-section-label');
-  if (topbarTitle) topbarTitle.textContent = '🔬 Section Scientifique';
-
-  // Update nav buttons styling
-  document.querySelectorAll('.sci-btn-nav').forEach(btn => {
-    btn.style.borderLeft = '2px solid transparent';
-  });
-}
-
-function activateMedicalDashboard() {
-  const navMed = document.getElementById('nav-medical');
-  const navSci = document.getElementById('nav-science');
-  if (navMed) navMed.style.display = 'block';
-  if (navSci) navSci.style.display = 'none';
-}
-
-// Override renderDashboard to activate correct section
-const _origRenderDashboard = renderDashboard;
-function renderDashboard(tab) {
-  _origRenderDashboard(tab);
-  const u = state.currentUser;
-  if (!u) return;
-  if (isScience(u.grade)) {
-    setTimeout(() => activateScienceDashboard(), 50);
-  } else {
-    setTimeout(() => activateMedicalDashboard(), 50);
-  }
-}
-
-// Science-specific: filter members by section
-function isScienceUser(u) {
-  return u && SCIENCE_GRADES.includes(u.grade);
-}
-function isMedicalUser(u) {
-  return u && MEDICAL_GRADES.includes(u.grade);
-}
-
-// ============================================================
-// LOGIN SECTION SCIENTIFIQUE
-// ============================================================
-async function doSciLogin() {
-  const user = document.getElementById('sci-login-user')?.value.trim();
-  const pass = document.getElementById('sci-login-pass')?.value.trim();
-  const err  = document.getElementById('sci-login-err');
-  if (err) err.textContent = '';
-
-  if (!user || !pass) { if(err) err.textContent = 'Veuillez remplir tous les champs.'; return; }
-
-  await syncFromSupabase();
-
-  const username = user.replace(/\s+/g,'_');
-  let found = null;
-  let foundKey = null;
-
-  // Find by fullname + password
-  for (const [key, u] of Object.entries(state.users)) {
-    const fullname = u.fullname || key.replace(/_/g,' ');
-    if (
-      (fullname.toLowerCase() === user.toLowerCase() || key.toLowerCase() === username.toLowerCase()) &&
-      u.password === pass &&
-      u.isStaff &&
-      isScienceUser(u)
-    ) {
-      found = u;
-      foundKey = key;
-      break;
-    }
-  }
-
-  if (!found) {
-    if(err) err.textContent = 'Nom ou mot de passe incorrect, ou vous n\'êtes pas membre de la section scientifique.';
-    return;
-  }
-
-  state.currentUser = { username: foundKey, grade: found.grade, fullname: found.fullname, matricule: found.matricule, section: 'science' };
-  localStorage.setItem('hop_session', JSON.stringify(state.currentUser));
-  startRealtime();
-  showPage('dashboard');
-  setTimeout(() => activateScienceDashboard(), 100);
-}
-
-function selectDest(dest) {
-  document.getElementById('post-dest').value = dest;
-  const medEl = document.getElementById('dest-medical');
-  const sciEl = document.getElementById('dest-science');
-  const titleEl = document.getElementById('candid-section-title');
-  if (medEl && sciEl) {
-    if (dest === 'medical') {
-      medEl.style.background = 'rgba(139,94,131,0.18)';
-      medEl.style.borderWidth = '3px';
-      sciEl.style.background = 'rgba(14,165,233,0.05)';
-      sciEl.style.borderWidth = '2px';
-      if (titleEl) titleEl.textContent = 'Soignant';
-    } else {
-      sciEl.style.background = 'rgba(14,165,233,0.15)';
-      sciEl.style.borderWidth = '3px';
-      medEl.style.background = 'rgba(139,94,131,0.08)';
-      medEl.style.borderWidth = '2px';
-      if (titleEl) titleEl.textContent = 'Scientifique';
-    }
-  }
-}
-
-// Filter candidatures by section for staff/science
-function getCandidaturesBySection() {
-  const g = state.currentUser?.grade;
-  const sci = isScience(g);
-  return state.candidatures.filter(c => {
-    const dest = c.section_dest || 'medical';
-    return sci ? dest === 'science' : dest !== 'science';
-  });
 }
 </script></body></html>
