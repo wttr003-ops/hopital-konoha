@@ -2102,7 +2102,7 @@ function renderAnnuaireContent(g) {
   const staff    = Object.entries(state.users).filter(([,u])=>u.isStaff).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9));
   let html = '<h2 class="dash-section-title-hop">Annuaire</h2>';
   if (citizens.length > 0) {
-    html += `<div class="dash-block-hop" style="margin-bottom:1rem"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Patients inscrits (${citizens.length})</div>`;
+    html += `<div class="dash-block-hop dos-patient-card" data-patient="${patientName.toLowerCase()}" style="margin-bottom:1rem"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Patients inscrits (${citizens.length})</div>`;
     citizens.forEach(([un,u]) => { html += `<div class="membre-row-hop"><div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div><div class="membre-name-hop">${u.fullname||un}</div><span class="grade-pill-hop">${u.grade}</span></div>`; });
     html += '</div>';
   }
@@ -2671,6 +2671,28 @@ const BLESSURES = [
   "Autre (préciser dans description)"
 ];
 
+function filterDossiers() {
+  const q = (document.getElementById('dos-search')?.value || '').toLowerCase().trim();
+  const countEl = document.getElementById('dos-search-count');
+  const emptyEl = document.getElementById('dos-search-empty');
+  const cards   = document.querySelectorAll('.dos-patient-card');
+
+  let visible = 0;
+  cards.forEach(card => {
+    const name = (card.getAttribute('data-patient') || '').toLowerCase();
+    const match = !q || name.includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+
+  if (countEl) {
+    countEl.textContent = q ? visible + ' résultat' + (visible !== 1 ? 's' : '') : '';
+  }
+  if (emptyEl) {
+    emptyEl.style.display = (q && visible === 0) ? 'block' : 'none';
+  }
+}
+
 function renderDossiersContent(g) {
   const el = document.getElementById('dash-dossiers');
   if (!el) return;
@@ -2776,6 +2798,17 @@ function renderDossiersContent(g) {
 
     <!-- Liste dossiers groupés par patient -->
     <div id="dos-panel-list" style="display:none">`;
+  // Barre de recherche
+  html += '<div style="margin-bottom:1rem;position:relative">'
+    + '<input type="text" id="dos-search" placeholder="🔍 Rechercher un patient par nom et prénom..." oninput="filterDossiers()" style="width:100%;padding:11px 16px 11px 46px;border:1.5px solid var(--hop-border2);border-radius:25px;font-family:\'Nunito\',sans-serif;font-size:13px;color:var(--hop-text);background:white;outline:none;box-shadow:0 2px 12px rgba(139,94,131,0.08);" onfocus="this.style.borderColor=\'var(--hop-rose2)\'" onblur="this.style.borderColor=\'var(--hop-border2)\'"/>'
+    + '<svg style="position:absolute;left:15px;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--hop-muted)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<span id="dos-search-count" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--hop-muted)"></span>'
+    + '</div>'
+    + '<div id="dos-search-empty" style="display:none;text-align:center;padding:2rem;color:var(--hop-muted)">'
+    + '<div style="font-size:28px;margin-bottom:0.5rem">&#128269;</div>'
+    + '<div style="font-size:14px">Aucun dossier correspondant.</div>'
+    + '</div>';
+
 
   if (Object.keys(dossiers).length === 0) {
     html += '<div class="dash-block-hop" style="padding:2rem;text-align:center"><p style="color:var(--hop-muted)">Aucun dossier médical enregistré.</p></div>';
