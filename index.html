@@ -1131,7 +1131,7 @@ body {
 <!-- RDV PAGE -->
 <div id="page-rdv" class="page">
   <div class="subpage-nav-hop">
-    <span class="subpage-nav-title-hop">🌸 Demande de rendez-vous médical</span>
+    <span class="subpage-nav-title-hop">🌸 Demande médicale</span>
     <button class="btn-outline-hop" onclick="showPage('home'); setTimeout(loadMonument, 200);">← Retour</button>
   </div>
   <div id="rdv-auth-wall" style="display:none;min-height:80vh;background:var(--hop-bg);display:flex;align-items:center;justify-content:center;padding:2rem">
@@ -1149,7 +1149,28 @@ body {
   <div class="form-page-hop">
     <div class="form-container-hop">
       <p class="section-tag-hop">Formulaire officiel</p>
-      <h2 class="section-title-hop">Demande de <span>Rendez-vous</span></h2>
+      <h2 class="section-title-hop">Demande <span>Médicale</span></h2>
+
+      <!-- SÉLECTEUR TYPE -->
+      <div style="display:flex;gap:12px;margin-bottom:1.5rem">
+        <button id="rdv-type-btn-rdv" onclick="switchRdvType('rdv')" style="flex:1;padding:14px 10px;border:1.5px solid var(--hop-rose2);border-radius:12px;background:var(--hop-light);cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;transition:all 0.15s">
+          <div style="font-size:22px;margin-bottom:6px">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B5E83" stroke-width="1.8" style="display:inline"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">Rendez-vous médical</div>
+          <div style="font-size:11px;color:var(--hop-muted);margin-top:2px">Consultation, soins, urgence</div>
+        </button>
+        <button id="rdv-type-btn-don" onclick="switchRdvType('don')" style="flex:1;padding:14px 10px;border:1.5px solid var(--hop-border2);border-radius:12px;background:white;cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;transition:all 0.15s">
+          <div style="font-size:22px;margin-bottom:6px">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4779A" stroke-width="1.8" style="display:inline"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">Don du sang</div>
+          <div style="font-size:11px;color:var(--hop-muted);margin-top:2px">Aider les patients de Konoha</div>
+        </button>
+      </div>
+
+      <!-- FORMULAIRE RDV CLASSIQUE -->
+      <div id="rdv-form-classic">
       <div class="form-msg-hop success" id="rdv-ok" style="display:none">Votre demande a été enregistrée. Un soignant vous contactera.</div>
       <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="rdv-nom" placeholder="Ex: Naruto Uzumaki"/></div>
       <div class="form-group-hop"><label>Grade / Rang shinobi *</label>
@@ -1189,6 +1210,16 @@ body {
             <option>Suivi médical régulier</option>
             <option>Certificat médical ninja</option>
           </optgroup>
+          <optgroup label="🩸 Don du sang">
+            <option>Don du sang — Groupe A+</option>
+            <option>Don du sang — Groupe A-</option>
+            <option>Don du sang — Groupe B+</option>
+            <option>Don du sang — Groupe B-</option>
+            <option>Don du sang — Groupe AB+</option>
+            <option>Don du sang — Groupe AB-</option>
+            <option>Don du sang — Groupe O+</option>
+            <option>Don du sang — Groupe O-</option>
+          </optgroup>
           <optgroup label="📋 Administratif">
             <option>Consultation avec le médecin référent</option>
             <option>Test de chakra</option>
@@ -1218,6 +1249,67 @@ body {
       <div class="form-group-hop"><label>Date et heure souhaitées</label>
         <input type="text" id="rdv-date" placeholder="Ex: Demain soir vers 21h00"/></div>
       <button class="btn-primary btn-lg-hop" onclick="submitRdv()">Envoyer ma demande</button>
+      </div><!-- fin rdv-form-classic -->
+
+      <!-- FORMULAIRE DON DU SANG -->
+      <div id="rdv-form-don" style="display:none">
+        <div class="form-msg-hop success" id="don-ok" style="display:none">
+          🩸 Votre demande de don a été enregistrée. Un soignant vous contactera pour confirmer votre créneau. Merci !
+        </div>
+        <div style="background:var(--hop-light);border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:var(--hop-mauve2);line-height:1.6;margin-bottom:1.25rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D4779A" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Votre don peut sauver des vies à Konoha. Le don est entièrement bénévole. Un soignant vous contactera pour confirmer votre créneau.
+        </div>
+        <div class="form-group-hop"><label>Nom et Prénom *</label><input type="text" id="don-nom" placeholder="Ex: Naruto Uzumaki"/></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+          <div class="form-group-hop">
+            <label>Groupe sanguin *</label>
+            <select id="don-groupe" onchange="updateDonCompat()">
+              <option value="">-- Sélectionner --</option>
+              <option value="A+">A+</option><option value="A-">A-</option>
+              <option value="B+">B+</option><option value="B-">B-</option>
+              <option value="AB+">AB+</option><option value="AB-">AB-</option>
+              <option value="O+">O+</option><option value="O-">O-</option>
+            </select>
+          </div>
+          <div class="form-group-hop">
+            <label>Dernier don</label>
+            <select id="don-dernier">
+              <option value="jamais">Jamais donné</option>
+              <option value="3mois+">Il y a plus de 3 mois</option>
+              <option value="1-3mois">Il y a 1 à 3 mois</option>
+              <option value="1mois-">Il y a moins d'1 mois</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="don-compat-block" style="display:none;margin-bottom:1rem">
+          <label class="form-label-hop" style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);font-weight:600;display:block;margin-bottom:6px">Compatible pour donner à</label>
+          <div id="don-compat-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+
+        <div class="form-group-hop">
+          <label>Êtes-vous en bonne santé ? *</label>
+          <select id="don-sante">
+            <option value="oui">Oui — aucun symptôme</option>
+            <option value="blessure">Blessure légère en cours de guérison</option>
+            <option value="non">Non — je ne suis pas apte actuellement</option>
+          </select>
+        </div>
+        <div class="form-group-hop">
+          <label>Disponibilité *</label>
+          <input type="text" id="don-dispo" placeholder="Ex: Ce soir après 20h, ou demain matin"/>
+        </div>
+        <div class="form-group-hop">
+          <label>Informations complémentaires</label>
+          <textarea id="don-info" rows="3" placeholder="Allergies, traitements en cours, contre-indications éventuelles..."></textarea>
+        </div>
+        <button class="btn-primary btn-lg-hop" onclick="submitDonSang()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:6px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          Envoyer ma demande de don
+        </button>
+      </div><!-- fin rdv-form-don -->
+
     </div>
   </div>
   </div>
@@ -1759,6 +1851,99 @@ function logout() {
 // ============================================================
 // FORMULAIRES
 // ============================================================
+// ============================================================
+// SÉLECTEUR TYPE RDV / DON DU SANG
+// ============================================================
+function switchRdvType(type) {
+  const classic = document.getElementById('rdv-form-classic');
+  const don     = document.getElementById('rdv-form-don');
+  const btnRdv  = document.getElementById('rdv-type-btn-rdv');
+  const btnDon  = document.getElementById('rdv-type-btn-don');
+  const active  = 'border-color:var(--hop-rose2);background:var(--hop-light)';
+  const normal  = 'border-color:var(--hop-border2);background:white';
+
+  if (type === 'rdv') {
+    if (classic) classic.style.display = 'block';
+    if (don)     don.style.display     = 'none';
+    if (btnRdv)  btnRdv.style.cssText  += ';border-color:var(--hop-rose2);background:var(--hop-light)';
+    if (btnDon)  { btnDon.style.borderColor = 'rgba(200,140,180,0.5)'; btnDon.style.background = 'white'; }
+  } else {
+    if (classic) classic.style.display = 'none';
+    if (don)     don.style.display     = 'block';
+    if (btnDon)  btnDon.style.cssText  += ';border-color:var(--hop-rose2);background:var(--hop-light)';
+    if (btnRdv)  { btnRdv.style.borderColor = 'rgba(200,140,180,0.5)'; btnRdv.style.background = 'white'; }
+  }
+}
+
+const DON_COMPAT = {
+  'O-':  ['O-','O+','A-','A+','B-','B+','AB-','AB+'],
+  'O+':  ['O+','A+','B+','AB+'],
+  'A-':  ['A-','A+','AB-','AB+'],
+  'A+':  ['A+','AB+'],
+  'B-':  ['B-','B+','AB-','AB+'],
+  'B+':  ['B+','AB+'],
+  'AB-': ['AB-','AB+'],
+  'AB+': ['AB+']
+};
+const ALL_GROUPS = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+
+function updateDonCompat() {
+  const g     = document.getElementById('don-groupe')?.value;
+  const block = document.getElementById('don-compat-block');
+  const chips = document.getElementById('don-compat-chips');
+  if (!g || !block || !chips) return;
+  const ok = DON_COMPAT[g] || [];
+  block.style.display = 'flex';
+  block.style.flexDirection = 'column';
+  chips.innerHTML = ALL_GROUPS.map(gr => {
+    const isOk = ok.includes(gr);
+    const bg    = isOk ? 'rgba(107,171,138,0.15)' : 'rgba(192,57,43,0.08)';
+    const color = isOk ? '#27500A' : '#791F1F';
+    const border= isOk ? 'rgba(107,171,138,0.35)' : 'rgba(192,57,43,0.2)';
+    return `<span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${bg};color:${color};border:1px solid ${border}">${gr}</span>`;
+  }).join('');
+}
+
+async function submitDonSang() {
+  const nom    = document.getElementById('don-nom')?.value.trim();
+  const groupe = document.getElementById('don-groupe')?.value;
+  const dernier= document.getElementById('don-dernier')?.value;
+  const sante  = document.getElementById('don-sante')?.value;
+  const dispo  = document.getElementById('don-dispo')?.value.trim();
+  const info   = document.getElementById('don-info')?.value.trim();
+
+  if (!nom || !groupe || !dispo) { alert('Veuillez remplir tous les champs obligatoires (nom, groupe sanguin, disponibilité).'); return; }
+  if (sante === 'non') { alert('Vous ne pouvez pas faire de don si vous n\'êtes pas en bonne santé. Revenez quand vous serez rétabli(e) !'); return; }
+  if (dernier === '1mois-') { alert('Le délai minimum entre deux dons est de 3 mois. Merci de votre générosité !'); return; }
+
+  const author = state.currentUser ? state.currentUser.username : nom;
+  const desc   = `DON DU SANG\nGroupe sanguin : ${groupe}\nDernier don : ${dernier === 'jamais' ? 'Jamais' : dernier}\nÉtat de santé : ${sante}\nDisponibilité : ${dispo}${info ? '\nInfos complémentaires : ' + info : ''}`;
+
+  await sbPost('rdvs', {
+    nom,
+    grade: state.users[author]?.grade || 'Citoyen',
+    motif: '🩸 Don du sang — Groupe ' + groupe,
+    antecedents: 'non',
+    description: desc,
+    douleur: '0',
+    date_souhaitee: dispo,
+    status: 'wait',
+    author,
+    author_display: nom
+  });
+
+  await syncFromSupabase();
+
+  document.getElementById('don-nom').value    = '';
+  document.getElementById('don-groupe').value = '';
+  document.getElementById('don-dispo').value  = '';
+  if (document.getElementById('don-info')) document.getElementById('don-info').value = '';
+  document.getElementById('don-compat-block').style.display = 'none';
+
+  const ok = document.getElementById('don-ok');
+  if (ok) { ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 5000); }
+}
+
 async function submitRdv() {
   const nom  = document.getElementById('rdv-nom').value.trim();
   const grade= document.getElementById('rdv-grade').value;
