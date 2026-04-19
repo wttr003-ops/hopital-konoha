@@ -1422,6 +1422,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
       </div>
@@ -1446,6 +1447,7 @@ body {
       <div class="dash-tab-hop" id="dash-monument"></div>
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
+      <div class="dash-tab-hop" id="dash-frigo"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
       <div class="dash-tab-hop" id="dash-citizen-rdvs"></div>
       <div class="dash-tab-hop" id="dash-citizen-candid"></div>
@@ -2060,6 +2062,7 @@ function switchDashTab(name, btn) {
   if (name === 'dossiers')      renderDossiersContent(g);
   if (name === 'cours')         renderCoursContent(g);
   if (name === 'monument')      renderMonumentDash(g);
+  if (name === 'frigo')         renderFrigoContent(g);
 }
 
 function switchCitizenTab(name, btn) {
@@ -3755,4 +3758,243 @@ function toggleMortDetail(i) {
   body.style.display = open ? 'none' : 'block';
   if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
 }
+
+// ============================================================
+// FRIGO À SANG — Banque de sang de l'Hôpital
+// ============================================================
+const GROUPES_SANG = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+const SANG_COLORS  = {
+  'A+': '#C0392B', 'A-': '#E74C3C',
+  'B+': '#8E44AD', 'B-': '#9B59B6',
+  'AB+':'#2471A3', 'AB-':'#2E86C1',
+  'O+': '#1E8449', 'O-': '#27AE60'
+};
+
+async function renderFrigoContent(g) {
+  const el = document.getElementById('dash-frigo');
+  if (!el) return;
+  if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
+
+  const canEdit = gradeRankHop(g) <= 3;
+  const isDir   = gradeRankHop(g) <= 1;
+
+  // Charger les poches depuis Supabase
+  let poches = [];
+  try {
+    const res = await sbGet('frigo_sang', '?order=created_at.desc');
+    if (Array.isArray(res)) poches = res;
+  } catch(e) {
+    poches = JSON.parse(localStorage.getItem('hop_frigo') || '[]');
+  }
+
+  // Stats par groupe
+  const stats = {};
+  GROUPES_SANG.forEach(g => { stats[g] = { total: 0, dispo: 0, utilisee: 0, perimee: 0 }; });
+  poches.forEach(p => {
+    if (!stats[p.groupe]) return;
+    stats[p.groupe].total++;
+    if (p.statut === 'disponible') stats[p.groupe].dispo++;
+    else if (p.statut === 'utilisee') stats[p.groupe].utilisee++;
+    else if (p.statut === 'perimee') stats[p.groupe].perimee++;
+  });
+
+  const totalDispo = poches.filter(p => p.statut === 'disponible').length;
+  const totalPoches = poches.length;
+
+  let html = `<h2 class="dash-section-title-hop">🧊 Frigo à sang — Banque de l'hôpital</h2>`;
+
+  // Info box
+  html += `<div style="background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.2);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:12px;color:#7B241C;display:flex;align-items:center;gap:8px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="rgba(192,57,43,0.15)"/></svg>
+    Conservation obligatoire entre <strong>+2°C et +6°C</strong>. Chaque poche doit être vérifiée avant utilisation. Durée de conservation max : <strong>42 jours</strong>.
+  </div>`;
+
+  // KPIs
+  html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem">
+    <div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Poches disponibles</div>
+      <div style="font-size:28px;font-weight:700;color:#1E8449;font-family:'Cormorant Garamond',serif">${totalDispo}</div>
+    </div>
+    <div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Total en stock</div>
+      <div style="font-size:28px;font-weight:700;color:var(--hop-mauve2);font-family:'Cormorant Garamond',serif">${totalPoches}</div>
+    </div>
+    <div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Groupes en stock</div>
+      <div style="font-size:28px;font-weight:700;color:var(--hop-rose2);font-family:'Cormorant Garamond',serif">${Object.values(stats).filter(s=>s.dispo>0).length}</div>
+    </div>
+  </div>`;
+
+  // Grille des groupes sanguins
+  html += `<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">
+      Stock par groupe sanguin
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0">`;
+
+  GROUPES_SANG.forEach((gr, i) => {
+    const s = stats[gr];
+    const col = SANG_COLORS[gr];
+    const border = i % 4 !== 3 ? 'border-right:1px solid var(--hop-border);' : '';
+    const borderB = i < 4 ? 'border-bottom:1px solid var(--hop-border);' : '';
+    const isEmpty = s.dispo === 0;
+    html += `<div style="padding:12px;text-align:center;${border}${borderB}${isEmpty?'opacity:0.55':''}">
+      <div style="width:36px;height:36px;border-radius:50%;background:${col}20;border:2px solid ${col};display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:12px;font-weight:700;color:${col}">${gr}</div>
+      <div style="font-size:18px;font-weight:700;color:${isEmpty?'var(--hop-muted)':col};font-family:'Cormorant Garamond',serif">${s.dispo}</div>
+      <div style="font-size:10px;color:var(--hop-muted)">dispo</div>
+      ${s.utilisee > 0 ? `<div style="font-size:10px;color:var(--hop-muted);margin-top:2px">${s.utilisee} utilisée${s.utilisee>1?'s':''}</div>` : ''}
+    </div>`;
+  });
+
+  html += `</div></div>`;
+
+  // Formulaire ajout poche
+  if (canEdit) {
+    html += `<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:4px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Enregistrer une nouvelle poche
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0">
+          <label>Groupe sanguin *</label>
+          <select id="frigo-groupe">
+            <option value="">-- Choisir --</option>
+            ${GROUPES_SANG.map(gr => `<option value="${gr}">${gr}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group-hop" style="margin:0">
+          <label>Donneur (nom)</label>
+          <input type="text" id="frigo-donneur" placeholder="Ex: Naruto Uzumaki"/>
+        </div>
+        <div class="form-group-hop" style="margin:0">
+          <label>Date de collecte</label>
+          <input type="text" id="frigo-date" placeholder="Ex: 19/04/2025"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0">
+          <label>Volume (mL)</label>
+          <select id="frigo-volume">
+            <option value="250">250 mL — Demi-poche</option>
+            <option value="450" selected>450 mL — Poche standard</option>
+            <option value="500">500 mL — Poche complète</option>
+          </select>
+        </div>
+        <div class="form-group-hop" style="margin:0">
+          <label>Référence poche</label>
+          <input type="text" id="frigo-ref" placeholder="Auto-générée si vide"/>
+        </div>
+      </div>
+      <div class="form-group-hop" style="margin-bottom:0.75rem">
+        <label>Notes / Observations</label>
+        <input type="text" id="frigo-notes" placeholder="Ex: Don effectué suite à urgence combat..."/>
+      </div>
+      <button class="btn-primary" onclick="savePocheSang()" style="width:auto;padding:9px 24px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" style="display:inline;vertical-align:middle;margin-right:5px"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Enregistrer la poche
+      </button>
+      <div id="frigo-ok" class="form-msg-hop success" style="display:none;margin-top:8px">✓ Poche enregistrée dans le frigo !</div>
+    </div>`;
+  }
+
+  // Liste des poches
+  html += `<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
+    <div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Toutes les poches (${poches.length})</div>
+      <div style="display:flex;gap:6px">
+        ${['tous','disponible','utilisee','perimee'].map(f =>
+          `<button onclick="filtrerFrigo('${f}',this)" data-frigo-filter="${f}" style="padding:4px 12px;border-radius:20px;border:1px solid var(--hop-border2);font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;background:${f==='tous'?'var(--hop-mauve)':'white'};color:${f==='tous'?'white':'var(--hop-muted)'}">${f==='tous'?'Toutes':f==='disponible'?'Disponibles':f==='utilisee'?'Utilisées':'Périmées'}</button>`
+        ).join('')}
+      </div>
+    </div>`;
+
+  if (poches.length === 0) {
+    html += `<div style="padding:2rem;text-align:center;color:var(--hop-muted)">
+      <div style="font-size:32px;margin-bottom:8px">🧊</div>
+      <div style="font-size:14px">Aucune poche enregistrée pour le moment.</div>
+    </div>`;
+  } else {
+    poches.forEach(p => {
+      const col = SANG_COLORS[p.groupe] || '#C0392B';
+      const statutLabel = p.statut === 'disponible' ? 'Disponible' : p.statut === 'utilisee' ? 'Utilisée' : 'Périmée';
+      const statutStyle = p.statut === 'disponible'
+        ? 'background:rgba(30,132,73,0.12);color:#1A5C33;border:1px solid rgba(30,132,73,0.3)'
+        : p.statut === 'utilisee'
+        ? 'background:rgba(139,94,131,0.12);color:var(--hop-mauve2);border:1px solid var(--hop-border2)'
+        : 'background:rgba(192,57,43,0.1);color:#7B241C;border:1px solid rgba(192,57,43,0.2)';
+      html += `<div class="frigo-poche-row" data-statut="${p.statut}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--hop-border);transition:background 0.15s" onmouseover="this.style.background='var(--hop-light)'" onmouseout="this.style.background=''">
+        <div style="width:38px;height:38px;border-radius:50%;background:${col}18;border:2px solid ${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${col};flex-shrink:0">${p.groupe}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">${p.reference||'—'} · ${p.volume||450} mL</div>
+          <div style="font-size:11px;color:var(--hop-muted);margin-top:1px">Donneur : ${p.donneur||'Anonyme'} · ${p.date_collecte||p.date||'—'}</div>
+          ${p.notes ? `<div style="font-size:11px;color:var(--hop-muted);font-style:italic">${p.notes}</div>` : ''}
+        </div>
+        <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;${statutStyle}">${statutLabel}</span>
+        ${canEdit && p.statut === 'disponible' ? `<button onclick="utiliserPoche(${p.id})" style="background:rgba(139,94,131,0.1);color:var(--hop-mauve2);border:1px solid var(--hop-border2);padding:5px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">Utiliser</button>` : ''}
+        ${isDir ? `<button onclick="supprimerPoche(${p.id})" style="background:none;color:var(--hop-muted);border:none;cursor:pointer;font-size:14px;padding:2px 6px">×</button>` : ''}
+      </div>`;
+    });
+  }
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+async function savePocheSang() {
+  const groupe  = document.getElementById('frigo-groupe')?.value;
+  const donneur = document.getElementById('frigo-donneur')?.value.trim();
+  const date    = document.getElementById('frigo-date')?.value.trim() || new Date().toLocaleDateString('fr-FR');
+  const volume  = document.getElementById('frigo-volume')?.value || '450';
+  const notes   = document.getElementById('frigo-notes')?.value.trim();
+  let   ref     = document.getElementById('frigo-ref')?.value.trim();
+
+  if (!groupe) { alert('Le groupe sanguin est obligatoire.'); return; }
+  if (!ref) { ref = 'POCH-' + groupe.replace('+','P').replace('-','M') + '-' + Date.now().toString().slice(-5); }
+
+  const u = state.currentUser;
+  const entry = {
+    groupe, donneur: donneur||'Anonyme', date_collecte: date,
+    volume: parseInt(volume), reference: ref, notes: notes||null,
+    statut: 'disponible', created_by: u?.username
+  };
+
+  try { await sbPost('frigo_sang', entry); } catch(e) { console.warn('frigo save:', e); }
+
+  const cached = JSON.parse(localStorage.getItem('hop_frigo') || '[]');
+  cached.unshift(entry);
+  localStorage.setItem('hop_frigo', JSON.stringify(cached));
+
+  ['frigo-groupe','frigo-donneur','frigo-date','frigo-ref','frigo-notes'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+
+  const ok = document.getElementById('frigo-ok');
+  if (ok) { ok.style.display = 'block'; setTimeout(() => ok.style.display = 'none', 3000); }
+
+  renderFrigoContent(state.currentUser.grade);
+}
+
+async function utiliserPoche(id) {
+  if (!confirm('Marquer cette poche comme utilisée ?')) return;
+  try { await sbPatch('frigo_sang', '?id=eq.' + id, { statut: 'utilisee' }); } catch(e) {}
+  renderFrigoContent(state.currentUser.grade);
+}
+
+async function supprimerPoche(id) {
+  if (!confirm('Supprimer définitivement cette poche ?')) return;
+  try { await fetch(SB_URL + '/rest/v1/frigo_sang?id=eq.' + id, { method:'DELETE', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY} }); } catch(e) {}
+  renderFrigoContent(state.currentUser.grade);
+}
+
+function filtrerFrigo(statut, btn) {
+  document.querySelectorAll('[data-frigo-filter]').forEach(b => {
+    b.style.background = 'white'; b.style.color = 'var(--hop-muted)';
+  });
+  btn.style.background = 'var(--hop-mauve)'; btn.style.color = 'white';
+  document.querySelectorAll('.frigo-poche-row').forEach(row => {
+    row.style.display = (statut === 'tous' || row.getAttribute('data-statut') === statut) ? 'flex' : 'none';
+  });
+}
+
 </script></body></html>
