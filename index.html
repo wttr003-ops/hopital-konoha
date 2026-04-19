@@ -2102,7 +2102,7 @@ function renderAnnuaireContent(g) {
   const staff    = Object.entries(state.users).filter(([,u])=>u.isStaff).sort((a,b)=>(GRADE_RANK_HOP[a[1].grade]??9)-(GRADE_RANK_HOP[b[1].grade]??9));
   let html = '<h2 class="dash-section-title-hop">Annuaire</h2>';
   if (citizens.length > 0) {
-    html += `<div class="dash-block-hop dos-patient-card" data-patient="${patientName.toLowerCase()}" style="margin-bottom:1rem"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Patients inscrits (${citizens.length})</div>`;
+    html += `<div class="dash-block-hop" style="margin-bottom:1rem"><div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Patients inscrits (${citizens.length})</div>`;
     citizens.forEach(([un,u]) => { html += `<div class="membre-row-hop"><div class="avatar-hop">${(u.fullname||un).slice(0,2).toUpperCase()}</div><div class="membre-name-hop">${u.fullname||un}</div><span class="grade-pill-hop">${u.grade}</span></div>`; });
     html += '</div>';
   }
@@ -2821,7 +2821,7 @@ function renderDossiersContent(g) {
       const sc = lastStatut==='gueri'?'s-ok-hop':lastStatut==='deces'?'s-no-hop':'s-wait-hop';
       const sl = statutLabels[lastStatut] || lastStatut;
 
-      html += `<div class="dash-block-hop" style="margin-bottom:1rem">
+      html += `<div class="dash-block-hop dos-patient-card" data-patient="${patientName.toLowerCase()}" style="margin-bottom:1rem">
         <div style="padding:0.75rem 1.25rem;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleDosPatient('${safeId}')">
           <div>
             <div style="font-weight:700;font-size:14px;color:var(--hop-mauve2)">📁 ${patientName}</div>
