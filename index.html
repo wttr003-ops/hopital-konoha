@@ -2826,11 +2826,11 @@ syncFromSupabase().then(() => {
 // ============================================================
 const BLESSURES = [
   "-- Choisir (optionnel) --",
-  "--- Blessures de combat ---",
+  "--- ⚔️ Blessures de combat ---",
   "Blessure par arme tranchante (katana)",
   "Blessure par arme tranchante (kunai/shuriken)",
   "Blessure par arme contondante",
-  "Blessure par arme a feu / projectile",
+  "Blessure par arme à feu / projectile",
   "Brûlure (Katon / feu)",
   "Brûlure électrique (Raiton / foudre)",
   "Traumatisme par explosion (Doton)",
@@ -2846,16 +2846,40 @@ const BLESSURES = [
   "Infection / Septicémie",
   "Traumatisme psychologique",
   "Blessures multiples combinées",
-  "--- Soins généraux ---",
+  "--- 🏥 Soins généraux ---",
   "Prise de sang",
   "Check-up général",
-  "Mise a jour du dossier médical",
+  "Mise à jour du dossier médical",
   "Suivi médical régulier",
   "Test de chakra",
   "Évaluation médicale (retour de mission)",
   "Certificat médical ninja",
   "Renouvellement d'ordonnance",
   "Consultation préventive",
+  "--- 🩸 Don du sang ---",
+  "Don du sang — Groupe A+",
+  "Don du sang — Groupe A-",
+  "Don du sang — Groupe B+",
+  "Don du sang — Groupe B-",
+  "Don du sang — Groupe AB+",
+  "Don du sang — Groupe AB-",
+  "Don du sang — Groupe O+",
+  "Don du sang — Groupe O-",
+  "--- 💊 Pharmacologie & Antidotes ---",
+  "Administration d'antidote",
+  "Préparation de pilule médicale",
+  "Traitement antiparasitaire",
+  "Perfusion de chakra médical",
+  "--- 🔬 Analyses & Diagnostics ---",
+  "Analyse du flux de chakra",
+  "Détection de poison / venin",
+  "Diagnostic de malédiction",
+  "Bilan sanguin complet",
+  "--- 🦾 Rééducation ---",
+  "Rééducation post-blessure",
+  "Reconstruction musculaire",
+  "Thérapie chakra-physique",
+  "Réadaptation au combat",
   "Autre (préciser dans description)"
 ];
 
@@ -2950,7 +2974,24 @@ function renderDossiersContent(g) {
         </div>
         <div class="form-group-hop" style="margin:0"><label>Type / Motif <span style="font-size:10px;color:var(--hop-muted)">(optionnel)</span></label>
           <select id="dos-blessure">
-            ${BLESSURES.map(b => b.startsWith('---') ? `<option disabled>${b}</option>` : `<option>${b}</option>`).join('')}
+            ${(function() {
+              let out = '';
+              let inGroup = false;
+              BLESSURES.forEach(b => {
+                if (b === '-- Choisir (optionnel) --') {
+                  out += '<option value="">-- Choisir (optionnel) --</option>';
+                } else if (b.startsWith('---')) {
+                  if (inGroup) out += '</optgroup>';
+                  const label = b.replace(/---/g,'').trim();
+                  out += '<optgroup label="' + label + '">';
+                  inGroup = true;
+                } else {
+                  out += '<option>' + b + '</option>';
+                }
+              });
+              if (inGroup) out += '</optgroup>';
+              return out;
+            })()}
           </select>
         </div>
         <div class="form-group-hop" style="margin:0"><label>Gravité</label>
