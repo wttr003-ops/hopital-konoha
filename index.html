@@ -1422,6 +1422,13 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('planning',this)">📅 Planning</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📝 Rapports mission</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('planning',this)">📅 Planning</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
@@ -1447,6 +1454,13 @@ body {
       <div class="dash-tab-hop" id="dash-monument"></div>
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
+      <div class="dash-tab-hop" id="dash-presences-hop"></div>
+      <div class="dash-tab-hop" id="dash-rapports-hop"></div>
+      <div class="dash-tab-hop" id="dash-planning-hop"></div>
+      <div class="dash-tab-hop" id="dash-salaires-hop"></div>
+      <div class="dash-tab-hop" id="dash-rapports-hop"></div>
+      <div class="dash-tab-hop" id="dash-planning-hop"></div>
+      <div class="dash-tab-hop" id="dash-salaires-hop"></div>
       <div class="dash-tab-hop" id="dash-frigo"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
       <div class="dash-tab-hop" id="dash-citizen-rdvs"></div>
@@ -2061,6 +2075,13 @@ function switchDashTab(name, btn) {
   if (name === 'logs')          renderLogsContent(g);
   if (name === 'dossiers')      renderDossiersContent(g);
   if (name === 'cours')         renderCoursContent(g);
+  if (name === 'presences')     renderPresencesHop(g);
+  if (name === 'rapports')      renderRapportsHop(g);
+  if (name === 'planning')      renderPlanningHop(g);
+  if (name === 'salaires')      renderSalairesHop(g);
+  if (name === 'rapports')      renderRapportsHop(g);
+  if (name === 'planning')      renderPlanningHop(g);
+  if (name === 'salaires')      renderSalairesHop(g);
   if (name === 'monument')      renderMonumentDash(g);
   if (name === 'frigo')         renderFrigoContent(g);
 }
@@ -4036,6 +4057,774 @@ function filtrerFrigo(statut, btn) {
   document.querySelectorAll('.frigo-poche-row').forEach(row => {
     row.style.display = (statut === 'tous' || row.getAttribute('data-statut') === statut) ? 'flex' : 'none';
   });
+}
+
+
+// ============================================================
+// PRÉSENCES HÔPITAL DE KONOHA
+// ============================================================
+const SALAIRES_HOP = {
+  'Chef Médecin':      200,
+  'Médecin Senior':    150,
+  'Médecin':           120,
+  'Infirmier Senior':  100,
+  'Infirmier':          80,
+  'Stagiaire Médical':  50,
+  'Recrue Médicale':    50
+};
+
+function formatDureeHop(ms) {
+  if (!ms || ms < 0) return '0h00';
+  var s = Math.floor(ms/1000);
+  var h = Math.floor(s/3600);
+  var m = Math.floor((s%3600)/60);
+  return h + 'h' + String(m).padStart(2,'0');
+}
+
+function showPresenceNotifHop(msg) {
+  var notif = document.getElementById('presence-notif-hop');
+  if (!notif) return;
+  notif.textContent = msg;
+  notif.style.display = 'block';
+  setTimeout(function(){notif.style.display='none';}, 4000);
+}
+
+async function renderPresencesHop(g) {
+  const el = document.getElementById('dash-presences-hop');
+  if (!el) return;
+  const u = state.currentUser;
+  const isDir = gradeRankHop(g) <= 1;
+
+  const serviceKey = 'hop_service_' + u.username;
+  const serviceData = JSON.parse(localStorage.getItem(serviceKey) || 'null');
+  const inService = serviceData && serviceData.prise && !serviceData.fin;
+
+  let presences = [];
+  try {
+    const res = await sbGet('presences_hop', '?order=created_at.desc');
+    if (Array.isArray(res)) presences = res;
+  } catch(e) { console.warn('presences hop:', e); }
+
+  const myPresences = presences.filter(function(p){ return p.username === u.username; });
+  const taux = SALAIRES_HOP[g] || 50;
+
+  // Calcul semaine en cours
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0,0,0,0);
+  const weekPresences = myPresences.filter(function(p){
+    return p.fin && new Date(p.created_at) >= weekStart;
+  });
+  var heuresS = 0;
+  weekPresences.forEach(function(p){
+    if(p.duree_ms) heuresS += p.duree_ms;
+  });
+  var salaireS = Math.round((heuresS/3600000)*taux);
+
+  let html = '<h2 class="dash-section-title-hop">⏱️ Présences — Hôpital de Konoha</h2>';
+  html += '<div id="presence-notif-hop" style="display:none;background:rgba(139,94,131,0.15);border:1px solid var(--hop-border2);border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--hop-text)"></div>';
+
+  // Service en cours
+  if (inService) {
+    var debut = new Date(serviceData.prise);
+    html += '<div style="background:rgba(107,171,138,0.1);border:1px solid rgba(107,171,138,0.35);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">'
+      + '<div>'
+      + '<div style="font-size:14px;font-weight:700;color:#1E7A45">🟢 Service en cours</div>'
+      + '<div style="font-size:12px;color:var(--hop-muted);margin-top:3px">Prise de service : ' + debut.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' — ' + debut.toLocaleDateString('fr-FR') + '</div>'
+      + '</div>'
+      + '<button onclick="finDeServiceHop()" style="padding:8px 18px;background:rgba(192,57,43,0.12);color:#c0392b;border:1px solid rgba(192,57,43,0.3);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Fin de service</button>'
+      + '</div>';
+  } else {
+    html += '<div style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">'
+      + '<div>'
+      + '<div style="font-size:14px;font-weight:700;color:var(--hop-mauve2)">⚪ Hors service</div>'
+      + '<div style="font-size:12px;color:var(--hop-muted);margin-top:3px">Cliquez sur Prise de service pour commencer</div>'
+      + '</div>'
+      + '<button onclick="priseDeServiceHop()" style="padding:8px 18px;background:rgba(107,171,138,0.15);color:#1E7A45;border:1px solid rgba(107,171,138,0.4);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Prise de service</button>'
+      + '</div>';
+  }
+
+  // KPIs semaine
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem">'
+    + '<div class="dash-block-hop" style="padding:1rem;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Heures cette semaine</div><div style="font-size:24px;font-weight:700;color:var(--hop-mauve2);font-family:\'Cormorant Garamond\',serif">' + formatDureeHop(heuresS) + '</div></div>'
+    + '<div class="dash-block-hop" style="padding:1rem;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Salaire estimé</div><div style="font-size:24px;font-weight:700;color:#1E7A45;font-family:\'Cormorant Garamond\',serif">' + salaireS.toLocaleString('fr-FR') + ' Ryos</div></div>'
+    + '<div class="dash-block-hop" style="padding:1rem;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Taux horaire</div><div style="font-size:24px;font-weight:700;color:var(--hop-rose2);font-family:\'Cormorant Garamond\',serif">' + taux + ' R/h</div></div>'
+    + '</div>';
+
+  // Mes présences
+  html += '<div class="dash-block-hop" style="overflow:hidden;margin-bottom:1.25rem">'
+    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Mes dernières présences</div>';
+
+  if (myPresences.length === 0) {
+    html += '<div style="padding:1.5rem;text-align:center;color:var(--hop-muted)">Aucune présence enregistrée.</div>';
+  } else {
+    myPresences.slice(0,10).forEach(function(p) {
+      var debut2 = p.prise ? new Date(p.prise).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '--';
+      var fin2   = p.fin   ? new Date(p.fin).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})   : 'En cours';
+      var date2  = p.prise ? new Date(p.prise).toLocaleDateString('fr-FR') : '--';
+      var duree2 = p.duree_ms ? formatDureeHop(p.duree_ms) : '--';
+      var sal2   = p.duree_ms ? Math.round((p.duree_ms/3600000)*taux) : 0;
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:0.5px solid var(--hop-border)">'
+        + '<div>'
+        + '<div style="font-size:13px;font-weight:600;color:var(--hop-text)">' + date2 + '</div>'
+        + '<div style="font-size:11px;color:var(--hop-muted)">' + debut2 + ' → ' + fin2 + ' — ' + duree2 + '</div>'
+        + '</div>'
+        + '<div style="font-size:13px;font-weight:700;color:#1E7A45">' + (p.fin ? sal2.toLocaleString('fr-FR') + ' Ryos' : '⏳') + '</div>'
+        + '</div>';
+    });
+  }
+  html += '</div>';
+
+  // Fiches agents (direction)
+  if (isDir) {
+    html += '<div class="dash-block-hop" style="overflow:hidden">'
+      + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Fiches présences — Tout le personnel</div>';
+
+    const byStaff = {};
+    presences.filter(function(p){return p.fin;}).forEach(function(p){
+      if (!byStaff[p.username]) byStaff[p.username] = {nom:p.nom||p.username, grade:p.grade||'--', total:0, services:0};
+      byStaff[p.username].total += p.duree_ms||0;
+      byStaff[p.username].services++;
+    });
+
+    const staffList = Object.values(byStaff).sort(function(a,b){return b.total-a.total;});
+    if (staffList.length === 0) {
+      html += '<div style="padding:1.5rem;text-align:center;color:var(--hop-muted)">Aucune présence enregistrée.</div>';
+    } else {
+      staffList.forEach(function(s) {
+        var taux2 = SALAIRES_HOP[s.grade] || 50;
+        var sal3  = Math.round((s.total/3600000)*taux2);
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:0.5px solid var(--hop-border)">'
+          + '<div style="width:32px;height:32px;border-radius:50%;background:var(--hop-light);border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'
+          + s.nom.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)
+          + '</div>'
+          + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--hop-text)">' + s.nom + '</div>'
+          + '<div style="font-size:11px;color:var(--hop-muted)">' + s.grade + ' — ' + s.services + ' service(s)</div></div>'
+          + '<div style="text-align:right">'
+          + '<div style="font-size:13px;font-weight:700;color:var(--hop-mauve2)">' + formatDureeHop(s.total) + '</div>'
+          + '<div style="font-size:11px;color:#1E7A45">' + sal3.toLocaleString('fr-FR') + ' Ryos</div>'
+          + '</div></div>';
+      });
+    }
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function priseDeServiceHop() {
+  const u = state.currentUser;
+  const serviceKey = 'hop_service_' + u.username;
+  const existing = JSON.parse(localStorage.getItem(serviceKey) || 'null');
+  if (existing && existing.prise && !existing.fin) {
+    showPresenceNotifHop('⚠️ Vous êtes déjà en service. Terminez votre service en cours avant d\'en commencer un nouveau.');
+    return;
+  }
+  const now = new Date();
+  localStorage.setItem(serviceKey, JSON.stringify({ prise: now.toISOString() }));
+  showPresenceNotifHop('✅ Prise de service enregistrée à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
+  await renderPresencesHop(state.currentUser.grade);
+}
+
+async function finDeServiceHop() {
+  const u = state.currentUser;
+  const serviceKey = 'hop_service_' + u.username;
+  const serviceData = JSON.parse(localStorage.getItem(serviceKey) || 'null');
+  if (!serviceData || !serviceData.prise) {
+    showPresenceNotifHop('⚠️ Aucun service en cours.');
+    return;
+  }
+  const debut = new Date(serviceData.prise);
+  const fin   = new Date();
+  const dureeMs = fin - debut;
+  const maxMs   = 12 * 3600000;
+  const dureeOk = Math.min(dureeMs, maxMs);
+
+  if (dureeMs < 60000) {
+    showPresenceNotifHop('⚠️ Service trop court (moins d\'1 minute). Minimum requis : 1 minute.');
+    return;
+  }
+
+  const taux = SALAIRES_HOP[u.grade] || 50;
+  const salaire = Math.round((dureeOk/3600000)*taux);
+
+  try {
+    await sbPost('presences_hop', {
+      username: u.username,
+      nom: state.users[u.username]?.fullname || u.username,
+      grade: u.grade,
+      prise: serviceData.prise,
+      fin: fin.toISOString(),
+      duree_ms: dureeOk,
+      salaire: salaire
+    });
+  } catch(e) { console.warn('fin service hop:', e); }
+
+  localStorage.removeItem(serviceKey);
+  showPresenceNotifHop('✅ Service terminé — Durée : ' + formatDureeHop(dureeOk) + ' — Salaire : ' + salaire.toLocaleString('fr-FR') + ' Ryos');
+  await renderPresencesHop(state.currentUser.grade);
+}
+
+
+// ============================================================
+// RAPPORTS DE MISSION — Hôpital de Konoha
+// ============================================================
+async function renderRapportsHop(g) {
+  const el = document.getElementById('dash-rapports-hop');
+  if (!el) return;
+  const u = state.currentUser;
+  const isHigh = gradeRankHop(g) <= 2;
+
+  let rapports = [];
+  try {
+    const res = await sbGet('rapports_hop', '?order=created_at.desc');
+    if (Array.isArray(res)) rapports = res;
+  } catch(e) { console.warn('rapports hop:', e); }
+
+  let html = '<h2 class="dash-section-title-hop">\uD83D\uDCDD Rapports de mission</h2>';
+
+  // Formulaire création
+  html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Rédiger un rapport</div>'
+    + '<div class="form-group-hop"><label>Titre du rapport *</label><input type="text" id="rap-titre-hop" placeholder="Ex: Prise en charge urgence combat du 23/04"/></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">'
+    + '<div class="form-group-hop"><label>Type</label><select id="rap-type-hop">'
+    + '<option>Rapport de soins</option><option>Rapport d\'urgence</option><option>Rapport de mission</option><option>Bilan de service</option><option>Rapport d\'incident</option><option>Autre</option>'
+    + '</select></div>'
+    + '<div class="form-group-hop"><label>Priorité</label><select id="rap-priorite-hop">'
+    + '<option value="normale">Normale</option><option value="haute">Haute</option><option value="critique">Critique</option>'
+    + '</select></div>'
+    + '</div>'
+    + '<div class="form-group-hop"><label>Contenu *</label><textarea id="rap-contenu-hop" rows="4" placeholder="Décrivez en détail la mission, les soins prodigués, les patients traités..."></textarea></div>'
+    + '<div class="form-group-hop"><label>Patients concernés</label><input type="text" id="rap-patients-hop" placeholder="Ex: Naruto Uzumaki, Sakura Haruno..."/></div>'
+    + '<button class="btn-primary" onclick="submitRapportHop()" style="width:auto;padding:9px 24px">Soumettre le rapport</button>'
+    + '<div id="rap-ok-hop" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Rapport soumis avec succès !</div>'
+    + '</div>';
+
+  // Filtres
+  html += '<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">'
+    + '<input type="text" id="rap-search-hop" placeholder="\uD83D\uDD0D Rechercher..." oninput="filterRapportsHop()" style="flex:1;min-width:140px;padding:7px 12px;border:1px solid var(--hop-border);border-radius:8px;font-size:13px;background:white;color:var(--hop-text)"/>'
+    + ['Tous','Rapport de soins','Rapport d\'urgence','Rapport de mission','Bilan de service','Rapport d\'incident'].map(function(t,i){
+        return '<button onclick="filterRapportsHopType(\''+t+'\',this)" style="padding:5px 12px;border-radius:20px;border:1px solid var(--hop-border2);font-size:11px;cursor:pointer;font-family:\'Nunito\',sans-serif;background:'+(i===0?'var(--hop-mauve)':'white')+';color:'+(i===0?'white':'var(--hop-muted)')+'">'+t+'</button>';
+      }).join('')
+    + '</div>';
+
+  // Liste rapports
+  if (rapports.length === 0) {
+    html += '<div class="dash-block-hop" style="padding:2rem;text-align:center;color:var(--hop-muted)"><div style="font-size:32px;margin-bottom:8px">\uD83D\uDCDD</div><div>Aucun rapport pour le moment.</div></div>';
+  } else {
+    html += '<div id="rap-list-hop">';
+    rapports.forEach(function(r) {
+      var prioColor = r.priorite==='critique' ? '#c0392b' : r.priorite==='haute' ? '#e67e22' : '#27ae60';
+      var prioBg   = r.priorite==='critique' ? 'rgba(192,57,43,0.1)' : r.priorite==='haute' ? 'rgba(230,126,34,0.1)' : 'rgba(39,174,96,0.1)';
+      var date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '--';
+      var heure= r.created_at ? new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+      html += '<div class="dash-block-hop rap-item-hop" data-type="'+r.type_rapport+'" style="padding:1rem;margin-bottom:0.75rem">'
+        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
+        + '<div>'
+        + '<div style="font-size:14px;font-weight:700;color:var(--hop-mauve2)">'+r.titre+'</div>'
+        + '<div style="font-size:11px;color:var(--hop-muted);margin-top:2px">'+r.auteur+' &middot; '+date+' '+heure+' &middot; '+r.type_rapport+'</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:6px">'
+        + '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+prioBg+';color:'+prioColor+'">'+r.priorite+'</span>'
+        + (isHigh || r.username===u.username ? '<button onclick="deleteRapportHop('+r.id+')" style="background:none;color:var(--hop-muted);border:none;cursor:pointer;font-size:14px">\u00d7</button>' : '')
+        + '</div></div>'
+        + '<div style="font-size:13px;color:var(--hop-text);line-height:1.6;white-space:pre-line">'+r.contenu+'</div>'
+        + (r.patients ? '<div style="font-size:11px;color:var(--hop-muted);margin-top:6px">\uD83D\uDC65 Patients : '+r.patients+'</div>' : '')
+        + '</div>';
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+async function submitRapportHop() {
+  var titre   = document.getElementById('rap-titre-hop')?.value.trim();
+  var type    = document.getElementById('rap-type-hop')?.value;
+  var prio    = document.getElementById('rap-priorite-hop')?.value;
+  var contenu = document.getElementById('rap-contenu-hop')?.value.trim();
+  var patients= document.getElementById('rap-patients-hop')?.value.trim();
+  if (!titre || !contenu) { alert('Titre et contenu obligatoires.'); return; }
+  var u = state.currentUser;
+  try {
+    await sbPost('rapports_hop', {
+      titre, type_rapport:type, priorite:prio, contenu, patients:patients||null,
+      auteur: state.users[u.username]?.fullname||u.username,
+      username: u.username, grade: u.grade
+    });
+  } catch(e) { console.warn('submit rapport hop:', e); }
+  ['rap-titre-hop','rap-contenu-hop','rap-patients-hop'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var ok=document.getElementById('rap-ok-hop');
+  if(ok){ok.style.display='block';setTimeout(function(){ok.style.display='none';},3000);}
+  await renderRapportsHop(state.currentUser.grade);
+}
+
+async function deleteRapportHop(id) {
+  if (!confirm('Supprimer ce rapport ?')) return;
+  try {
+    await fetch(SB_URL+'/rest/v1/rapports_hop?id=eq.'+id,{method:'DELETE',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+  } catch(e) {}
+  await renderRapportsHop(state.currentUser.grade);
+}
+
+function filterRapportsHop() {
+  var q = (document.getElementById('rap-search-hop')?.value||'').toLowerCase();
+  document.querySelectorAll('.rap-item-hop').forEach(function(r){
+    var txt = r.textContent.toLowerCase();
+    r.style.display = (!q||txt.includes(q)) ? 'block' : 'none';
+  });
+}
+
+function filterRapportsHopType(type, btn) {
+  document.querySelectorAll('#dash-rapports-hop button').forEach(function(b){
+    if(b.textContent===btn.textContent||b===btn){ b.style.background=b===btn?'var(--hop-mauve)':'white'; b.style.color=b===btn?'white':'var(--hop-muted)'; }
+  });
+  document.querySelectorAll('.rap-item-hop').forEach(function(r){
+    r.style.display=(type==='Tous'||r.getAttribute('data-type')===type)?'block':'none';
+  });
+}
+
+// ============================================================
+// PLANNING — Hôpital de Konoha
+// ============================================================
+async function renderPlanningHop(g) {
+  const el = document.getElementById('dash-planning-hop');
+  if (!el) return;
+  const u = state.currentUser;
+  const isDir = gradeRankHop(g) <= 1;
+  const canAdd = gradeRankHop(g) <= 3;
+
+  if (!window._planWeekHop) window._planWeekHop = 0;
+  const offset = window._planWeekHop;
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((today.getDay()+6)%7) + offset*7);
+  monday.setHours(0,0,0,0);
+  const days = [];
+  for (var i=0;i<7;i++) { var d=new Date(monday); d.setDate(monday.getDate()+i); days.push(d); }
+  const dayNames = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+  let plannings = [];
+  try {
+    var start = monday.toISOString().split('T')[0];
+    var end = new Date(monday); end.setDate(monday.getDate()+6);
+    var endStr = end.toISOString().split('T')[0];
+    const res = await sbGet('planning_hop','?date=gte.'+start+'&date=lte.'+endStr+'&order=date.asc,heure_debut.asc');
+    if (Array.isArray(res)) plannings = res;
+  } catch(e) {}
+
+  let html = '<h2 class="dash-section-title-hop">\uD83D\uDCC5 Planning médical</h2>';
+
+  // Nav semaine
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">'
+    + '<button onclick="planWeekHop(-1)" style="padding:6px 14px;background:var(--hop-light);color:var(--hop-mauve2);border:1px solid var(--hop-border2);border-radius:8px;font-size:13px;cursor:pointer">&larr;</button>'
+    + '<span style="font-size:14px;font-weight:600;color:var(--hop-mauve2)">'+(offset===0?'Cette semaine':offset>0?'+'+offset+' semaine(s)':offset+' semaine(s)')+'</span>'
+    + '<button onclick="planWeekHop(1)" style="padding:6px 14px;background:var(--hop-light);color:var(--hop-mauve2);border:1px solid var(--hop-border2);border-radius:8px;font-size:13px;cursor:pointer">&rarr;</button>'
+    + '</div>';
+
+  // Grille semaine
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1.25rem">';
+  days.forEach(function(day, i) {
+    var isToday = day.toDateString()===today.toDateString();
+    var dayPlan = plannings.filter(function(p){return p.date===day.toISOString().split('T')[0];});
+    html += '<div style="background:'+(isToday?'var(--hop-light)':'white')+';border:1.5px solid '+(isToday?'var(--hop-rose2)':'var(--hop-border)')+';border-radius:10px;padding:8px;min-height:80px">'
+      + '<div style="font-size:10px;font-weight:700;color:'+(isToday?'var(--hop-rose2)':'var(--hop-muted)')+';margin-bottom:4px">'+dayNames[i]+'<br>'+day.getDate()+'/'+String(day.getMonth()+1).padStart(2,'0')+'</div>';
+    dayPlan.forEach(function(p) {
+      var col = p.type==='garde' ? '#c0392b' : p.type==='consultation' ? '#2563eb' : p.type==='urgence' ? '#e67e22' : 'var(--hop-mauve)';
+      html += '<div style="background:rgba(0,0,0,0.06);border-left:3px solid '+col+';padding:3px 5px;margin-bottom:3px;border-radius:0 4px 4px 0;cursor:pointer" onclick="planDelHop('+p.id+')">'
+        + '<div style="font-size:10px;font-weight:600;color:'+col+'">'+p.heure_debut+' '+p.titre+'</div>'
+        + '<div style="font-size:10px;color:var(--hop-muted)">'+p.agent+'</div>'
+        + '</div>';
+    });
+    if (canAdd) {
+      html += '<button onclick="planOpenModalHop(\''+day.toISOString().split('T')[0]+'\')" style="width:100%;padding:3px;background:none;color:var(--hop-muted);border:1px dashed var(--hop-border);border-radius:5px;font-size:11px;cursor:pointer;margin-top:4px">+ Ajouter</button>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  // Modal ajout
+  html += '<div id="plan-modal-hop" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center">'
+    + '<div style="background:white;border-radius:14px;padding:1.5rem;max-width:420px;width:90%">'
+    + '<div style="font-size:15px;font-weight:700;color:var(--hop-mauve2);margin-bottom:1rem">\uD83D\uDCC5 Ajouter une entr\u00e9e</div>'
+    + '<div class="form-group-hop"><label>Titre *</label><input type="text" id="pm-titre-hop" placeholder="Ex: Garde de nuit, Consultation..."/></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">'
+    + '<div class="form-group-hop"><label>Heure d\u00e9but</label><input type="time" id="pm-heure-hop" value="08:00"/></div>'
+    + '<div class="form-group-hop"><label>Type</label><select id="pm-type-hop"><option value="garde">Garde</option><option value="consultation">Consultation</option><option value="urgence">Urgence</option><option value="formation">Formation</option><option value="autre">Autre</option></select></div>'
+    + '</div>'
+    + '<div class="form-group-hop"><label>Agent</label><input type="text" id="pm-agent-hop" placeholder="Nom du soignant"/></div>'
+    + '<div style="display:flex;gap:8px;margin-top:0.5rem">'
+    + '<button onclick="planConfirmHop()" style="flex:1;padding:9px;background:var(--hop-mauve);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Ajouter</button>'
+    + '<button onclick="planCloseModalHop()" style="padding:9px 16px;background:none;color:var(--hop-muted);border:1px solid var(--hop-border);border-radius:8px;cursor:pointer">Annuler</button>'
+    + '</div></div></div>';
+
+  el.innerHTML = html;
+  el.querySelector('#plan-modal-hop').style.display = 'none';
+}
+
+var _planDateHop = '';
+function planWeekHop(d) { window._planWeekHop=(window._planWeekHop||0)+d; renderPlanningHop(state.currentUser.grade); }
+function planOpenModalHop(date) {
+  _planDateHop = date;
+  var modal = document.getElementById('plan-modal-hop');
+  var u = state.currentUser;
+  var nom = state.users[u.username]?.fullname||u.username;
+  if(document.getElementById('pm-agent-hop')) document.getElementById('pm-agent-hop').value=nom;
+  if(modal){ modal.style.cssText='display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center'; }
+}
+function planCloseModalHop() { var m=document.getElementById('plan-modal-hop'); if(m) m.style.display='none'; }
+async function planConfirmHop() {
+  var titre = document.getElementById('pm-titre-hop')?.value.trim();
+  var heure = document.getElementById('pm-heure-hop')?.value||'08:00';
+  var type  = document.getElementById('pm-type-hop')?.value||'autre';
+  var agent = document.getElementById('pm-agent-hop')?.value.trim()||state.currentUser.username;
+  if (!titre) { alert('Titre obligatoire.'); return; }
+  try { await sbPost('planning_hop',{titre,heure_debut:heure,type,agent,date:_planDateHop,username:state.currentUser.username}); } catch(e){}
+  planCloseModalHop();
+  await renderPlanningHop(state.currentUser.grade);
+}
+async function planDelHop(id) {
+  if (!confirm('Supprimer cette entr\u00e9e ?')) return;
+  try { await fetch(SB_URL+'/rest/v1/planning_hop?id=eq.'+id,{method:'DELETE',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}); } catch(e){}
+  await renderPlanningHop(state.currentUser.grade);
+}
+
+// ============================================================
+// SALAIRES — Hôpital de Konoha
+// ============================================================
+function renderSalairesHop(g) {
+  const el = document.getElementById('dash-salaires-hop');
+  if (!el) return;
+  const isDir = gradeRankHop(g) <= 1;
+
+  const grades = [
+    { grade:'Chef M\u00e9decin',      icon:'\uD83C\uDFE5', color:'#c49a1a', rank:0 },
+    { grade:'M\u00e9decin Senior',    icon:'\uD83D\uDC68\u200D\u2695\uFE0F', color:'#8b5e83', rank:1 },
+    { grade:'M\u00e9decin',           icon:'\uD83D\uDC89', color:'#6b3f6b', rank:2 },
+    { grade:'Infirmier Senior',       icon:'\uD83D\uDC9A', color:'#2563eb', rank:3 },
+    { grade:'Infirmier',              icon:'\u2695\uFE0F', color:'#27ae60', rank:4 },
+    { grade:'Stagiaire M\u00e9dical', icon:'\uD83D\uDCCB', color:'#8a7a5a', rank:5 },
+    { grade:'Recrue M\u00e9dicale',   icon:'\uD83C\uDF3F', color:'#8a7a5a', rank:6 },
+  ];
+
+  let html = '<h2 class="dash-section-title-hop">\uD83D\uDCB0 Salaires — Hôpital de Konoha</h2>';
+
+  if (!isDir) {
+    html += '<div style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--hop-muted);margin-bottom:1.25rem">Consultez vos salaires ci-dessous. Seule la Direction peut modifier les taux horaires.</div>';
+  } else {
+    html += '<div style="background:rgba(107,171,138,0.1);border:1px solid rgba(107,171,138,0.3);border-radius:10px;padding:10px 14px;font-size:12px;color:#1E7A45;margin-bottom:1.25rem">\u2699\uFE0F Mode Direction — Vous pouvez modifier les taux horaires. Cliquez sur un montant pour l\'\u00e9diter.</div>';
+  }
+
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">';
+  grades.forEach(function(gr) {
+    var taux = SALAIRES_HOP[gr.grade] || 50;
+    var salMensuel = taux * 160;
+    html += '<div class="dash-block-hop" style="padding:1rem">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+      + '<div style="width:36px;height:36px;border-radius:50%;background:'+gr.color+'22;border:1.5px solid '+gr.color+';display:flex;align-items:center;justify-content:center;font-size:16px">'+gr.icon+'</div>'
+      + '<div><div style="font-size:13px;font-weight:700;color:var(--hop-mauve2)">'+gr.grade+'</div><div style="font-size:10px;color:var(--hop-muted)">Rang '+gr.rank+'</div></div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
+      + '<div style="background:var(--hop-bg);border-radius:6px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Taux / heure</div>'
+      + (isDir
+          ? '<div style="font-size:14px;font-weight:700;color:'+gr.color+';cursor:pointer" onclick="editSalaireHop(\''+gr.grade+'\')" title="Cliquer pour modifier" id="sal-hop-'+gr.grade.replace(/\s/g,'_')+'">' + taux + ' R/h &nbsp;\u270F\uFE0F</div>'
+          : '<div style="font-size:14px;font-weight:700;color:'+gr.color+'">'+taux+' R/h</div>')
+      + '</div>'
+      + '<div style="background:var(--hop-bg);border-radius:6px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Mensuel est.</div>'
+      + '<div style="font-size:14px;font-weight:700;color:#1E7A45">'+salMensuel.toLocaleString('fr-FR')+' R</div>'
+      + '</div></div></div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function editSalaireHop(grade) {
+  var current = SALAIRES_HOP[grade] || 50;
+  var newVal = prompt('Nouveau taux horaire pour ' + grade + ' (actuel : ' + current + ' Ryos/h) :', current);
+  if (!newVal || isNaN(parseInt(newVal))) return;
+  var val = Math.max(1, parseInt(newVal));
+  SALAIRES_HOP[grade] = val;
+  // Sauvegarder en localStorage
+  var overrides = JSON.parse(localStorage.getItem('hop_sal_overrides')||'{}');
+  overrides[grade] = val;
+  localStorage.setItem('hop_sal_overrides', JSON.stringify(overrides));
+  renderSalairesHop(state.currentUser.grade);
+}
+
+// Charger les overrides salaires au démarrage
+(function() {
+  var overrides = JSON.parse(localStorage.getItem('hop_sal_overrides')||'{}');
+  Object.keys(overrides).forEach(function(g) { SALAIRES_HOP[g] = overrides[g]; });
+})();
+
+
+// ============================================================
+// RAPPORTS DE MISSION — HÔPITAL
+// ============================================================
+async function renderRapportsHop(g) {
+  const el = document.getElementById('dash-rapports-hop');
+  if (!el) return;
+  const u = state.currentUser;
+  const isHighRank = gradeRankHop(g) <= 2;
+
+  let rapports = [];
+  try {
+    const res = await sbGet('rapports_hop', '?order=created_at.desc');
+    if (Array.isArray(res)) rapports = res;
+  } catch(e) { console.warn('rapports hop:', e); }
+
+  const TYPES = ['Intervention d\'urgence','Soins post-mission','Don du sang','Opération chirurgicale','Rapport de garde','Consultation','Autre'];
+  const GRAVITES = ['Légère','Modérée','Grave','Critique'];
+  const STATUTS_PAT = ['Soigné — renvoyé','Hospitalisé','En observation','Décédé'];
+
+  let html = '<h2 class="dash-section-title-hop">📋 Rapports de mission</h2>';
+
+  // Formulaire
+  html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Nouveau rapport</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">'
+    + '<div class="form-group-hop" style="margin:0"><label>Type d\'intervention</label>'
+    + '<select id="rap-type">' + TYPES.map(function(t){return '<option>'+t+'</option>';}).join('') + '</select></div>'
+    + '<div class="form-group-hop" style="margin:0"><label>Patient(s)</label>'
+    + '<input id="rap-patients" type="text" placeholder="Nom(s) du/des patient(s)"/></div>'
+    + '</div>'
+    + '<div class="form-group-hop" style="margin-bottom:0.75rem"><label>Rapport détaillé *</label>'
+    + '<textarea id="rap-desc" rows="3" placeholder="Décrivez l\'intervention, les soins, le résultat..."></textarea></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">'
+    + '<div class="form-group-hop" style="margin:0"><label>Gravité</label>'
+    + '<select id="rap-gravite">' + GRAVITES.map(function(g2){return '<option>'+g2+'</option>';}).join('') + '</select></div>'
+    + '<div class="form-group-hop" style="margin:0"><label>Statut patient</label>'
+    + '<select id="rap-statut">' + STATUTS_PAT.map(function(s2){return '<option>'+s2+'</option>';}).join('') + '</select></div>'
+    + '</div>'
+    + '<button class="btn-primary" onclick="soumettreRapportHop()" style="width:auto;padding:9px 24px">Soumettre le rapport</button>'
+    + '<div id="rap-ok" class="form-msg-hop success" style="display:none;margin-top:8px">✓ Rapport enregistré !</div>'
+    + '</div>';
+
+  // Liste des rapports
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
+    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Rapports récents ('+rapports.length+')</div>';
+
+  if (rapports.length === 0) {
+    html += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun rapport enregistré.</div>';
+  } else {
+    rapports.slice(0, 20).forEach(function(r) {
+      var date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '--';
+      var sc = r.statut_patient === 'Décédé'
+        ? 'rgba(192,57,43,0.1);color:#7B241C;border:1px solid rgba(192,57,43,0.25)'
+        : r.statut_patient === 'Soigné — renvoyé'
+          ? 'rgba(107,171,138,0.12);color:#1E7A45;border:1px solid rgba(107,171,138,0.3)'
+          : 'rgba(196,154,26,0.1);color:#7A5A00;border:1px solid rgba(196,154,26,0.25)';
+      html += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
+        + '<div><div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+(r.type_intervention||'--')+' — '+(r.patients||'--')+'</div>'
+        + '<div style="font-size:11px;color:var(--hop-muted)">'+(r.auteur||'--')+' · '+date+' · Gravité : '+(r.gravite||'--')+'</div>'
+        + (r.description ? '<div style="font-size:11px;color:var(--hop-muted);font-style:italic;margin-top:2px">'+r.description.slice(0,80)+(r.description.length>80?'...':'')+'</div>' : '')
+        + '</div>'
+        + '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+sc+';white-space:nowrap">'+(r.statut_patient||'--')+'</span>'
+        + '</div>';
+    });
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function soumettreRapportHop() {
+  const u = state.currentUser;
+  const type = document.getElementById('rap-type')?.value;
+  const patients = document.getElementById('rap-patients')?.value.trim();
+  const desc = document.getElementById('rap-desc')?.value.trim();
+  const gravite = document.getElementById('rap-gravite')?.value;
+  const statut = document.getElementById('rap-statut')?.value;
+
+  if (!desc) { alert('Veuillez remplir le rapport détaillé.'); return; }
+
+  try {
+    await sbPost('rapports_hop', {
+      auteur: state.users[u.username]?.fullname || u.username,
+      grade_auteur: u.grade,
+      type_intervention: type,
+      patients: patients || 'Non précisé',
+      description: desc,
+      gravite: gravite,
+      statut_patient: statut
+    });
+  } catch(e) { console.warn('rapport hop:', e); }
+
+  ['rap-patients','rap-desc'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  var ok = document.getElementById('rap-ok');
+  if (ok) { ok.style.display='block'; setTimeout(function(){ok.style.display='none';},3000); }
+  await renderRapportsHop(state.currentUser.grade);
+}
+
+// ============================================================
+// PLANNING — HÔPITAL
+// ============================================================
+async function renderPlanningHop(g) {
+  const el = document.getElementById('dash-planning-hop');
+  if (!el) return;
+  const u = state.currentUser;
+  const isDir = gradeRankHop(g) <= 1;
+  const canAdd = gradeRankHop(g) <= 3;
+
+  if (!window._planHopWeek) window._planHopWeek = 0;
+  const offset = window._planHopWeek;
+
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - today.getDay() + 1 + (offset * 7));
+  monday.setHours(0,0,0,0);
+
+  const days = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+  const dates = days.map(function(_,i){
+    var d = new Date(monday); d.setDate(monday.getDate()+i); return d;
+  });
+
+  const weekLabel = dates[0].toLocaleDateString('fr-FR',{day:'numeric',month:'long'})
+    + ' au ' + dates[6].toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+
+  let plannings = [];
+  try {
+    const weekStr = monday.toISOString().split('T')[0];
+    const res = await sbGet('planning_hop', '?semaine=eq.'+weekStr+'&order=jour.asc');
+    if (Array.isArray(res)) plannings = res;
+  } catch(e) {}
+
+  const COLORS_HOP = ['var(--hop-mauve)','var(--hop-rose2)','#2563eb','#1E7A45','#C49A1A','#8E44AD'];
+
+  let html = '<h2 class="dash-section-title-hop">📅 Planning de la semaine</h2>';
+
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem">'
+    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
+    + '<span style="font-size:12px;font-weight:700;color:var(--hop-mauve2)">Semaine du '+weekLabel+'</span>'
+    + '<div style="display:flex;gap:4px">'
+    + '<button onclick="window._planHopWeek--;renderPlanningHop(state.currentUser.grade)" style="background:none;border:1px solid var(--hop-border2);color:var(--hop-muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">&#9664;</button>'
+    + '<button onclick="window._planHopWeek=0;renderPlanningHop(state.currentUser.grade)" style="background:none;border:1px solid var(--hop-border2);color:var(--hop-mauve2);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600">Auj.</button>'
+    + '<button onclick="window._planHopWeek++;renderPlanningHop(state.currentUser.grade)" style="background:none;border:1px solid var(--hop-border2);color:var(--hop-muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">&#9654;</button>'
+    + '</div></div>'
+    + '<div style="padding:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
+
+  dates.forEach(function(d, i) {
+    var isToday = d.toDateString() === today.toDateString();
+    var dayPlans = plannings.filter(function(p){return p.jour===i;});
+    var dateLabel = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+    html += '<div>'
+      + '<div style="font-size:10px;font-weight:700;color:'+(isToday?'var(--hop-rose2)':'var(--hop-mauve2)')+';text-align:center;padding:4px;margin-bottom:4px;'+(isToday?'background:var(--hop-light);border-radius:6px':'')+'">'+days[i].slice(0,3)+'<br><span style="font-size:9px;font-weight:400;color:var(--hop-muted)">'+dateLabel+'</span></div>'
+      + '<div style="border:1px solid var(--hop-border);border-radius:6px;min-height:60px;padding:4px;font-size:10px;">';
+    dayPlans.forEach(function(p, pi) {
+      var col = COLORS_HOP[pi % COLORS_HOP.length];
+      html += '<div style="background:'+col+';color:white;padding:2px 5px;border-radius:4px;margin-bottom:3px;font-size:9px;font-weight:600">'+p.heure+'<br><span style="font-weight:400;opacity:0.9">'+p.agent+'</span></div>';
+    });
+    html += '</div></div>';
+  });
+
+  html += '</div>';
+
+  if (canAdd) {
+    html += '<div style="padding:10px 16px;border-top:1px solid var(--hop-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<select id="plan-hop-jour" style="padding:6px 10px;border:1px solid var(--hop-border2);border-radius:8px;font-size:12px;background:var(--hop-bg);color:var(--hop-text)">'
+      + days.map(function(d,i){return '<option value="'+i+'">'+d+'</option>';}).join('')
+      + '</select>'
+      + '<input id="plan-hop-heure" type="text" placeholder="Ex: 08h-16h" style="padding:6px 10px;border:1px solid var(--hop-border2);border-radius:8px;font-size:12px;background:var(--hop-bg);color:var(--hop-text);width:100px"/>'
+      + '<input id="plan-hop-agent" type="text" placeholder="Nom du soignant" style="padding:6px 10px;border:1px solid var(--hop-border2);border-radius:8px;font-size:12px;background:var(--hop-bg);color:var(--hop-text);flex:1;min-width:120px"/>'
+      + '<button onclick="ajouterCreneauHop()" class="btn-primary" style="padding:7px 16px;width:auto">Ajouter</button>'
+      + '</div>';
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+async function ajouterCreneauHop() {
+  var jour   = parseInt(document.getElementById('plan-hop-jour')?.value||'0');
+  var heure  = document.getElementById('plan-hop-heure')?.value.trim();
+  var agent  = document.getElementById('plan-hop-agent')?.value.trim();
+  if (!heure || !agent) { alert('Remplissez l\'heure et le nom du soignant.'); return; }
+
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - today.getDay() + 1 + ((window._planHopWeek||0)*7));
+  monday.setHours(0,0,0,0);
+  const weekStr = monday.toISOString().split('T')[0];
+
+  try { await sbPost('planning_hop', {semaine:weekStr, jour, heure, agent}); } catch(e) { console.warn('planning hop:', e); }
+  await renderPlanningHop(state.currentUser.grade);
+}
+
+// ============================================================
+// SALAIRES — HÔPITAL
+// ============================================================
+function renderSalairesHop(g) {
+  const el = document.getElementById('dash-salaires-hop');
+  if (!el) return;
+  const isDir = gradeRankHop(g) <= 1;
+
+  const savedSalaires = JSON.parse(localStorage.getItem('hop_salaires') || '{}');
+  const GRADES_HOP_SAL = [
+    { grade: 'Chef Médecin',      icon: '👨‍⚕️', default: 200 },
+    { grade: 'Médecin Senior',    icon: '👩‍⚕️', default: 150 },
+    { grade: 'Médecin',           icon: '🩺',  default: 120 },
+    { grade: 'Infirmier Senior',  icon: '💊',  default: 100 },
+    { grade: 'Infirmier',         icon: '🏥',  default: 80  },
+    { grade: 'Stagiaire Médical', icon: '📋',  default: 50  },
+    { grade: 'Recrue Médicale',   icon: '📋',  default: 50  },
+  ];
+
+  let html = '<h2 class="dash-section-title-hop">💰 Barème des salaires</h2>';
+
+  html += '<div style="background:rgba(107,171,138,0.06);border:1px solid rgba(107,171,138,0.25);border-radius:10px;padding:10px 14px;font-size:12px;color:#1E7A45;margin-bottom:1.25rem">'
+    + '💡 Les salaires sont calculés automatiquement à la fin de chaque service en fonction du grade et de la durée. Modifiez les taux ci-dessous.'
+    + '</div>';
+
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
+    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Taux horaires '+(isDir?'— Modifiables':'— Lecture seule')+'</div>';
+
+  GRADES_HOP_SAL.forEach(function(gs) {
+    var taux = savedSalaires[gs.grade] || gs.default;
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid var(--hop-border)">'
+      + '<div style="display:flex;align-items:center;gap:10px">'
+      + '<span style="font-size:18px">'+gs.icon+'</span>'
+      + '<div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+gs.grade+'</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + (isDir
+        ? '<input type="number" id="sal-hop-'+gs.grade.replace(/\s/g,'_')+'" value="'+taux+'" min="0" style="width:75px;padding:5px 8px;border:1px solid var(--hop-border2);border-radius:6px;font-size:12px;background:var(--hop-light);color:var(--hop-text);text-align:center"/>'
+        : '<span style="font-size:15px;font-weight:700;color:var(--hop-mauve2)">'+taux+'</span>')
+      + '<span style="font-size:11px;color:var(--hop-muted)">Ryos/h</span>'
+      + '</div></div>';
+  });
+
+  if (isDir) {
+    html += '<div style="padding:12px 16px;border-top:1px solid var(--hop-border)">'
+      + '<button class="btn-primary" onclick="sauvegarderSalairesHop()" style="width:auto;padding:9px 24px">Sauvegarder les modifications</button>'
+      + '<div id="sal-hop-ok" class="form-msg-hop success" style="display:none;margin-top:8px">✓ Salaires mis à jour !</div>'
+      + '</div>';
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+
+  // Mettre à jour SALAIRES_HOP avec les valeurs sauvegardées
+  GRADES_HOP_SAL.forEach(function(gs) {
+    if (savedSalaires[gs.grade]) SALAIRES_HOP[gs.grade] = savedSalaires[gs.grade];
+  });
+}
+
+function sauvegarderSalairesHop() {
+  const GRADES_HOP_SAL = ['Chef Médecin','Médecin Senior','Médecin','Infirmier Senior','Infirmier','Stagiaire Médical','Recrue Médicale'];
+  const saved = {};
+  GRADES_HOP_SAL.forEach(function(grade) {
+    var el = document.getElementById('sal-hop-'+grade.replace(/\s/g,'_'));
+    if (el) {
+      var val = parseInt(el.value)||50;
+      saved[grade] = val;
+      SALAIRES_HOP[grade] = val;
+    }
+  });
+  localStorage.setItem('hop_salaires', JSON.stringify(saved));
+  var ok = document.getElementById('sal-hop-ok');
+  if (ok) { ok.style.display='block'; setTimeout(function(){ok.style.display='none';},3000); }
 }
 
 </script></body></html>
