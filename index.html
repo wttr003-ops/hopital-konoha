@@ -4106,16 +4106,17 @@ async function renderPresencesHop(g) {
   } catch(e) { console.warn('en service hop:', e); }
 
   const myPresences = presences.filter(function(p){ return p.username === u.username; });
+  const myPresencesNonPayees = myPresences.filter(function(p){ return p.statut_paye !== 'paye'; });
   const taux = SALAIRES_HOP[g] || 50;
 
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   weekStart.setHours(0,0,0,0);
-  const weekTotal = myPresences
+  const weekTotal = myPresencesNonPayees
     .filter(function(p){ return p.fin && new Date(p.created_at||p.prise||'') >= weekStart; })
     .reduce(function(s,p){ return s+(p.salaire||0); }, 0);
-  const allTotal = myPresences.reduce(function(s,p){ return s+(p.salaire||0); }, 0);
-  const totalMs = myPresences.reduce(function(s,p){ return s+(p.duree_ms||0); }, 0);
+  const allTotal = myPresencesNonPayees.reduce(function(s,p){ return s+(p.salaire||0); }, 0);
+  const totalMs = myPresencesNonPayees.reduce(function(s,p){ return s+(p.duree_ms||0); }, 0);
   const totalH = Math.floor(totalMs/3600000);
   const totalM = Math.floor((totalMs%3600000)/60000);
 
@@ -4218,7 +4219,7 @@ async function renderPresencesHop(g) {
   // === FICHES DE PAYE — DIRECTION ===
   if (isDir) {
     var byStaff = {};
-    presences.filter(function(p){return p.fin;}).forEach(function(p){
+    presences.filter(function(p){return p.fin && p.statut_paye !== 'paye';}).forEach(function(p){
       if (!byStaff[p.username]) byStaff[p.username] = {nom:p.nom||p.username, grade:p.grade||'--', total:0, totalMs:0, services:0};
       byStaff[p.username].total   += p.salaire||0;
       byStaff[p.username].totalMs += p.duree_ms||0;
@@ -4663,27 +4664,28 @@ function toggleFicheHop(id) {
 
 async function payerSalaireHop(username, nom, total) {
   var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
-  if (!confirm('Confirmer le paiement de '+nom+' ?\n'+total.toLocaleString('fr-FR')+' Ryos')) return;
+  if (!confirm('Confirmer le paiement de '+nom+' ? '+total.toLocaleString('fr-FR')+' Ryos')) return;
   try {
-    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username),{
+    // Marquer toutes les présences non payées de cet agent comme payées
+    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&statut_paye=is.null&fin=not.is.null', {
       method:'PATCH',
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
       body:JSON.stringify({statut_paye:'paye', paye_par:dirName, paye_le:new Date().toISOString()})
     });
-  } catch(e){console.warn('payer hop:',e);}
+  } catch(e){ console.warn('payer hop:', e); }
   await renderPresencesHop(state.currentUser.grade);
 }
 
 async function remettreAZeroHop(username, nom) {
-  if (!confirm('Remettre \u00e0 z\u00e9ro le solde de '+nom+' ?')) return;
+  if (!confirm('Remettre à zéro le solde de '+nom+' ?')) return;
   var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
   try {
-    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username),{
+    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&statut_paye=is.null', {
       method:'PATCH',
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
       body:JSON.stringify({statut_paye:'paye', paye_par:dirName, paye_le:new Date().toISOString()})
     });
-  } catch(e){console.warn('reset hop:',e);}
+  } catch(e){ console.warn('reset hop:', e); }
   await renderPresencesHop(state.currentUser.grade);
 }
 
