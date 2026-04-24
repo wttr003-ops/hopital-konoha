@@ -1421,13 +1421,10 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📝 Rapports mission</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('planning',this)">📅 Planning</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
       </div>
@@ -4420,100 +4417,6 @@ async function soumettreRapportHop() {
   await renderRapportsHop(state.currentUser.grade);
 }
 
-
-// ============================================================
-// PLANNING — HÔPITAL
-// ============================================================
-async function renderPlanningHop(g) {
-  const el = document.getElementById('dash-planning');
-  if (!el) return;
-  const u = state.currentUser;
-  const isDir = gradeRankHop(g) <= 1;
-  const canAdd = gradeRankHop(g) <= 3;
-
-  if (!window._planHopWeek) window._planHopWeek = 0;
-  const offset = window._planHopWeek;
-
-  const today = new Date();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - today.getDay() + 1 + (offset * 7));
-  monday.setHours(0,0,0,0);
-
-  const days = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-  const dates = days.map(function(_,i){
-    var d = new Date(monday); d.setDate(monday.getDate()+i); return d;
-  });
-
-  const weekLabel = dates[0].toLocaleDateString('fr-FR',{day:'numeric',month:'long'})
-    + ' au ' + dates[6].toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
-
-  let plannings = [];
-  try {
-    const weekStr = monday.toISOString().split('T')[0];
-    const res = await sbGet('planning_hop', '?semaine=eq.'+weekStr+'&order=jour.asc');
-    if (Array.isArray(res)) plannings = res;
-  } catch(e) {}
-
-  const COLORS_HOP = ['var(--hop-mauve)','var(--hop-rose2)','#2563eb','#1E7A45','#C49A1A','#8E44AD'];
-
-  let html = '<h2 class="dash-section-title-hop">📅 Planning de la semaine</h2>';
-
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem">'
-    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
-    + '<span style="font-size:12px;font-weight:700;color:var(--hop-mauve2)">Semaine du '+weekLabel+'</span>'
-    + '<div style="display:flex;gap:4px">'
-    + '<button onclick="window._planHopWeek--;renderPlanningHop(state.currentUser.grade)" style="background:none;border:1px solid var(--hop-border2);color:var(--hop-muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">&#9664;</button>'
-    + '<button onclick="window._planHopWeek=0;renderPlanningHop(state.currentUser.grade)" style="background:none;border:1px solid var(--hop-border2);color:var(--hop-mauve2);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:11px;font-weight:600">Auj.</button>'
-    + '<button onclick="window._planHopWeek++;renderPlanningHop(state.currentUser.grade)" style="background:none;border:1px solid var(--hop-border2);color:var(--hop-muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px">&#9654;</button>'
-    + '</div></div>'
-    + '<div style="padding:10px;display:grid;grid-template-columns:repeat(7,1fr);gap:6px">';
-
-  dates.forEach(function(d, i) {
-    var isToday = d.toDateString() === today.toDateString();
-    var dayPlans = plannings.filter(function(p){return p.jour===i;});
-    var dateLabel = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
-    html += '<div>'
-      + '<div style="font-size:10px;font-weight:700;color:'+(isToday?'var(--hop-rose2)':'var(--hop-mauve2)')+';text-align:center;padding:4px;margin-bottom:4px;'+(isToday?'background:var(--hop-light);border-radius:6px':'')+'">'+days[i].slice(0,3)+'<br><span style="font-size:9px;font-weight:400;color:var(--hop-muted)">'+dateLabel+'</span></div>'
-      + '<div style="border:1px solid var(--hop-border);border-radius:6px;min-height:60px;padding:4px;font-size:10px;">';
-    dayPlans.forEach(function(p, pi) {
-      var col = COLORS_HOP[pi % COLORS_HOP.length];
-      html += '<div style="background:'+col+';color:white;padding:2px 5px;border-radius:4px;margin-bottom:3px;font-size:9px;font-weight:600">'+p.heure+'<br><span style="font-weight:400;opacity:0.9">'+p.agent+'</span></div>';
-    });
-    html += '</div></div>';
-  });
-
-  html += '</div>';
-
-  if (canAdd) {
-    html += '<div style="padding:10px 16px;border-top:1px solid var(--hop-border);display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-      + '<select id="plan-hop-jour" style="padding:6px 10px;border:1px solid var(--hop-border2);border-radius:8px;font-size:12px;background:var(--hop-bg);color:var(--hop-text)">'
-      + days.map(function(d,i){return '<option value="'+i+'">'+d+'</option>';}).join('')
-      + '</select>'
-      + '<input id="plan-hop-heure" type="text" placeholder="Ex: 08h-16h" style="padding:6px 10px;border:1px solid var(--hop-border2);border-radius:8px;font-size:12px;background:var(--hop-bg);color:var(--hop-text);width:100px"/>'
-      + '<input id="plan-hop-agent" type="text" placeholder="Nom du soignant" style="padding:6px 10px;border:1px solid var(--hop-border2);border-radius:8px;font-size:12px;background:var(--hop-bg);color:var(--hop-text);flex:1;min-width:120px"/>'
-      + '<button onclick="ajouterCreneauHop()" class="btn-primary" style="padding:7px 16px;width:auto">Ajouter</button>'
-      + '</div>';
-  }
-  html += '</div>';
-
-  el.innerHTML = html;
-}
-
-async function ajouterCreneauHop() {
-  var jour   = parseInt(document.getElementById('plan-hop-jour')?.value||'0');
-  var heure  = document.getElementById('plan-hop-heure')?.value.trim();
-  var agent  = document.getElementById('plan-hop-agent')?.value.trim();
-  if (!heure || !agent) { alert('Remplissez l\'heure et le nom du soignant.'); return; }
-
-  const today = new Date();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - today.getDay() + 1 + ((window._planHopWeek||0)*7));
-  monday.setHours(0,0,0,0);
-  const weekStr = monday.toISOString().split('T')[0];
-
-  try { await sbPost('planning_hop', {semaine:weekStr, jour, heure, agent}); } catch(e) { console.warn('planning hop:', e); }
-  await renderPlanningHop(state.currentUser.grade);
-}
 
 // ============================================================
 // SALAIRES — HÔPITAL
