@@ -1423,8 +1423,6 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('planning',this)">📅 Planning</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📝 Rapports mission</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('planning',this)">📅 Planning</button>
@@ -1455,11 +1453,7 @@ body {
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
       <div class="dash-tab-hop" id="dash-presences"></div>
-      <div class="dash-tab-hop" id="dash-rapports"></div>
-      <div class="dash-tab-hop" id="dash-planning"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
-      <div class="dash-tab-hop" id="dash-rapports"></div>
-      <div class="dash-tab-hop" id="dash-planning"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
       <div class="dash-tab-hop" id="dash-frigo"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
@@ -2076,8 +2070,6 @@ function switchDashTab(name, btn) {
   if (name === 'dossiers')      renderDossiersContent(g);
   if (name === 'cours')         renderCoursContent(g);
   if (name === 'presences')     renderPresencesHop(g);
-  if (name === 'rapports')      renderRapportsHop(g);
-  if (name === 'planning')      renderPlanningHop(g);
   if (name === 'salaires')      renderSalairesHop(g);
   if (name === 'monument')      renderMonumentDash(g);
   if (name === 'frigo')         renderFrigoContent(g);
@@ -4091,6 +4083,7 @@ async function renderPresencesHop(g) {
   if (!el) return;
   const u = state.currentUser;
   const isDir = gradeRankHop(g) <= 1;
+  const canSee = gradeRankHop(g) <= 3;
 
   const serviceKey = 'hop_service_' + u.username;
   const serviceData = JSON.parse(localStorage.getItem(serviceKey) || 'null');
@@ -4105,109 +4098,149 @@ async function renderPresencesHop(g) {
   const myPresences = presences.filter(function(p){ return p.username === u.username; });
   const taux = SALAIRES_HOP[g] || 50;
 
-  // Calcul semaine en cours
   const weekStart = new Date();
   weekStart.setDate(weekStart.getDate() - weekStart.getDay());
   weekStart.setHours(0,0,0,0);
-  const weekPresences = myPresences.filter(function(p){
-    return p.fin && new Date(p.created_at) >= weekStart;
-  });
-  var heuresS = 0;
-  weekPresences.forEach(function(p){
-    if(p.duree_ms) heuresS += p.duree_ms;
-  });
-  var salaireS = Math.round((heuresS/3600000)*taux);
+  const weekTotal = myPresences
+    .filter(function(p){ return p.fin && new Date(p.created_at||p.prise||'') >= weekStart; })
+    .reduce(function(s,p){ return s+(p.salaire||0); }, 0);
+  const allTotal = myPresences.reduce(function(s,p){ return s+(p.salaire||0); }, 0);
+  const totalMs = myPresences.reduce(function(s,p){ return s+(p.duree_ms||0); }, 0);
+  const totalH = Math.floor(totalMs/3600000);
+  const totalM = Math.floor((totalMs%3600000)/60000);
 
-  let html = '<h2 class="dash-section-title-hop">⏱️ Présences — Hôpital de Konoha</h2>';
+  let html = '<h2 class="dash-section-title-hop">&#9201; Pr\u00e9sences &amp; Salaires</h2>';
   html += '<div id="presence-notif-hop" style="display:none;background:rgba(139,94,131,0.15);border:1px solid var(--hop-border2);border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--hop-text)"></div>';
 
-  // Service en cours
-  if (inService) {
-    var debut = new Date(serviceData.prise);
-    html += '<div style="background:rgba(107,171,138,0.1);border:1px solid rgba(107,171,138,0.35);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">'
-      + '<div>'
-      + '<div style="font-size:14px;font-weight:700;color:#1E7A45">🟢 Service en cours</div>'
-      + '<div style="font-size:12px;color:var(--hop-muted);margin-top:3px">Prise de service : ' + debut.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) + ' — ' + debut.toLocaleDateString('fr-FR') + '</div>'
-      + '</div>'
-      + '<button onclick="finDeServiceHop()" style="padding:8px 18px;background:rgba(192,57,43,0.12);color:#c0392b;border:1px solid rgba(192,57,43,0.3);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Fin de service</button>'
-      + '</div>';
-  } else {
-    html += '<div style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:12px;padding:1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between">'
-      + '<div>'
-      + '<div style="font-size:14px;font-weight:700;color:var(--hop-mauve2)">⚪ Hors service</div>'
-      + '<div style="font-size:12px;color:var(--hop-muted);margin-top:3px">Cliquez sur Prise de service pour commencer</div>'
-      + '</div>'
-      + '<button onclick="priseDeServiceHop()" style="padding:8px 18px;background:rgba(107,171,138,0.15);color:#1E7A45;border:1px solid rgba(107,171,138,0.4);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Prise de service</button>'
-      + '</div>';
-  }
-
-  // KPIs semaine
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem">'
-    + '<div class="dash-block-hop" style="padding:1rem;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Heures cette semaine</div><div style="font-size:24px;font-weight:700;color:var(--hop-mauve2);font-family:\'Cormorant Garamond\',serif">' + formatDureeHop(heuresS) + '</div></div>'
-    + '<div class="dash-block-hop" style="padding:1rem;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Salaire estimé</div><div style="font-size:24px;font-weight:700;color:#1E7A45;font-family:\'Cormorant Garamond\',serif">' + salaireS.toLocaleString('fr-FR') + ' Ryos</div></div>'
-    + '<div class="dash-block-hop" style="padding:1rem;text-align:center"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Taux horaire</div><div style="font-size:24px;font-weight:700;color:var(--hop-rose2);font-family:\'Cormorant Garamond\',serif">' + taux + ' R/h</div></div>'
+  // === MON SERVICE ===
+  html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1rem">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Mon service</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">'
+    + '<div style="background:var(--hop-light);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--hop-muted);margin-bottom:3px">Taux/heure</div><div style="font-size:18px;font-weight:700;color:var(--hop-mauve2)">'+taux+' <span style="font-size:10px;font-weight:400">Ryos</span></div></div>'
+    + '<div style="background:var(--hop-light);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--hop-muted);margin-bottom:3px">Cette semaine</div><div style="font-size:18px;font-weight:700;color:#1E7A45">'+weekTotal+' <span style="font-size:10px;font-weight:400">Ryos</span></div></div>'
+    + '<div style="background:var(--hop-light);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--hop-muted);margin-bottom:3px">Total cumul\u00e9</div><div style="font-size:18px;font-weight:700;color:var(--hop-rose2)">'+allTotal+' <span style="font-size:10px;font-weight:400">Ryos</span></div></div>'
+    + '<div style="background:var(--hop-light);border-radius:8px;padding:10px;text-align:center"><div style="font-size:10px;color:var(--hop-muted);margin-bottom:3px">Heures totales</div><div style="font-size:18px;font-weight:700;color:var(--hop-text)">'+totalH+'h'+String(totalM).padStart(2,'0')+'</div></div>'
     + '</div>';
 
-  // Mes présences
-  html += '<div class="dash-block-hop" style="overflow:hidden;margin-bottom:1.25rem">'
-    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Mes dernières présences</div>';
+  if (!inService) {
+    html += '<button onclick="priseDeServiceHop()" style="width:100%;padding:13px;background:linear-gradient(135deg,#1E7A45,#145A32);color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">&#9654; Prise de service</button>';
+  } else {
+    var priseAt = new Date(serviceData.prise);
+    var diffMs = Math.max(0, new Date() - priseAt);
+    var diffMins = Math.floor(diffMs/60000);
+    var sh = Math.floor(diffMins/60), sm = diffMins%60;
+    var salaireEnCours = Math.round((diffMins/60)*taux);
+    var heureAff = priseAt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    html += '<div style="background:rgba(30,122,69,0.08);border:1px solid rgba(30,122,69,0.25);border-radius:8px;padding:1rem;margin-bottom:1rem;text-align:center">'
+      + '<div style="font-size:12px;color:var(--hop-muted)">En service depuis <strong style="color:var(--hop-text)">'+heureAff+'</strong></div>'
+      + '<div style="font-size:36px;font-weight:700;color:#1E7A45;margin:8px 0;font-family:\'Cormorant Garamond\',serif" id="hop-service-timer">'+sh+'h'+String(sm).padStart(2,'0')+'</div>'
+      + '<div style="font-size:13px;color:var(--hop-muted)">Salaire en cours : <strong style="color:#1E7A45">'+salaireEnCours+' Ryos</strong></div>'
+      + '</div>'
+      + '<button onclick="finDeServiceHop()" style="width:100%;padding:13px;background:linear-gradient(135deg,#922B21,#c0392b);color:white;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer">&#9632; Fin de service</button>';
+  }
+  html += '</div>';
+
+  // === MON HISTORIQUE ===
+  html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1rem">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Mon historique de pr\u00e9sences</div>';
 
   if (myPresences.length === 0) {
-    html += '<div style="padding:1.5rem;text-align:center;color:var(--hop-muted)">Aucune présence enregistrée.</div>';
+    html += '<p style="color:var(--hop-muted);font-size:13px">Aucune pr\u00e9sence enregistr\u00e9e.</p>';
   } else {
-    myPresences.slice(0,10).forEach(function(p) {
-      var debut2 = p.prise ? new Date(p.prise).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '--';
-      var fin2   = p.fin   ? new Date(p.fin).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})   : 'En cours';
-      var date2  = p.prise ? new Date(p.prise).toLocaleDateString('fr-FR') : '--';
-      var duree2 = p.duree_ms ? formatDureeHop(p.duree_ms) : '--';
-      var sal2   = p.duree_ms ? Math.round((p.duree_ms/3600000)*taux) : 0;
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:0.5px solid var(--hop-border)">'
-        + '<div>'
-        + '<div style="font-size:13px;font-weight:600;color:var(--hop-text)">' + date2 + '</div>'
-        + '<div style="font-size:11px;color:var(--hop-muted)">' + debut2 + ' → ' + fin2 + ' — ' + duree2 + '</div>'
-        + '</div>'
-        + '<div style="font-size:13px;font-weight:700;color:#1E7A45">' + (p.fin ? sal2.toLocaleString('fr-FR') + ' Ryos' : '⏳') + '</div>'
+    myPresences.slice(0,15).forEach(function(p) {
+      var ph = Math.floor((p.duree_ms||0)/3600000);
+      var pm = Math.floor(((p.duree_ms||0)%3600000)/60000);
+      var priseStr = p.prise ? new Date(p.prise).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '--';
+      var finStr   = p.fin   ? new Date(p.fin).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})   : '--';
+      var dateStr  = p.prise ? new Date(p.prise).toLocaleDateString('fr-FR') : '--';
+      html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--hop-border)">'
+        + '<div style="width:36px;height:36px;border-radius:50%;background:var(--hop-light);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">&#9201;</div>'
+        + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+dateStr+'</div>'
+        + '<div style="font-size:11px;color:var(--hop-muted)">'+priseStr+' &#8594; '+finStr+' &bull; '+ph+'h'+String(pm).padStart(2,'0')+' &bull; '+(p.grade||g)+'</div></div>'
+        + '<div style="text-align:right"><div style="font-size:15px;font-weight:700;color:#1E7A45">+'+(p.salaire||0)+'</div>'
+        + '<div style="font-size:10px;color:var(--hop-muted)">Ryos</div></div>'
         + '</div>';
     });
   }
   html += '</div>';
 
-  // Fiches agents (direction)
-  if (isDir) {
-    html += '<div class="dash-block-hop" style="overflow:hidden">'
-      + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Fiches présences — Tout le personnel</div>';
+  // === EN SERVICE EN TEMPS RÉEL ===
+  if (canSee) {
+    var enService = presences.filter(function(p){ return !p.fin; });
+    html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1rem">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">&#128994; Personnel en service — Temps r\u00e9el</div>'
+      + '<button onclick="renderPresencesHop(state.currentUser.grade)" style="font-size:11px;padding:3px 10px;background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:6px;cursor:pointer;color:var(--hop-muted)">&#8635; Actualiser</button>'
+      + '</div>';
 
-    const byStaff = {};
+    if (enService.length === 0) {
+      html += '<p style="color:var(--hop-muted);font-size:13px">Aucun soignant en service actuellement.</p>';
+    } else {
+      enService.forEach(function(p) {
+        var priseAt2 = new Date(p.prise||p.created_at||'');
+        var diffMins2 = Math.floor((new Date()-priseAt2)/60000);
+        var h2 = Math.floor(diffMins2/60), m2 = diffMins2%60;
+        var taux2 = SALAIRES_HOP[p.grade] || 50;
+        var sal2 = Math.round((diffMins2/60)*taux2);
+        html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(30,122,69,0.06);border:1px solid rgba(30,122,69,0.2);border-radius:8px;margin-bottom:8px">'
+          + '<div style="width:10px;height:10px;border-radius:50%;background:#1E7A45;flex-shrink:0"></div>'
+          + '<div style="width:34px;height:34px;border-radius:50%;background:var(--hop-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'+(p.nom||p.username||'?').slice(0,2).toUpperCase()+'</div>'
+          + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+(p.nom||p.username)+'</div>'
+          + '<div style="font-size:11px;color:var(--hop-muted)">'+(p.grade||'--')+' &bull; En service depuis '+priseAt2.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' &bull; '+h2+'h'+String(m2).padStart(2,'0')+'</div></div>'
+          + '<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:#1E7A45">'+sal2+' Ryos</div>'
+          + '<div style="font-size:10px;color:var(--hop-muted)">en cours</div></div>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+  }
+
+  // === FICHES DE PAYE — DIRECTION ===
+  if (isDir) {
+    var byStaff = {};
     presences.filter(function(p){return p.fin;}).forEach(function(p){
-      if (!byStaff[p.username]) byStaff[p.username] = {nom:p.nom||p.username, grade:p.grade||'--', total:0, services:0};
-      byStaff[p.username].total += p.duree_ms||0;
+      if (!byStaff[p.username]) byStaff[p.username] = {nom:p.nom||p.username, grade:p.grade||'--', total:0, totalMs:0, services:0};
+      byStaff[p.username].total   += p.salaire||0;
+      byStaff[p.username].totalMs += p.duree_ms||0;
       byStaff[p.username].services++;
     });
 
-    const staffList = Object.values(byStaff).sort(function(a,b){return b.total-a.total;});
+    html += '<div class="dash-block-hop" style="padding:1.25rem">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">&#128203; Fiches de paye</div>';
+
+    var staffList = Object.entries(byStaff).sort(function(a,b){return b[1].total-a[1].total;});
     if (staffList.length === 0) {
-      html += '<div style="padding:1.5rem;text-align:center;color:var(--hop-muted)">Aucune présence enregistrée.</div>';
+      html += '<p style="color:var(--hop-muted)">Aucune fiche disponible.</p>';
     } else {
-      staffList.forEach(function(s) {
-        var taux2 = SALAIRES_HOP[s.grade] || 50;
-        var sal3  = Math.round((s.total/3600000)*taux2);
-        html += '<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:0.5px solid var(--hop-border)">'
-          + '<div style="width:32px;height:32px;border-radius:50%;background:var(--hop-light);border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'
-          + s.nom.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2)
-          + '</div>'
-          + '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--hop-text)">' + s.nom + '</div>'
-          + '<div style="font-size:11px;color:var(--hop-muted)">' + s.grade + ' — ' + s.services + ' service(s)</div></div>'
-          + '<div style="text-align:right">'
-          + '<div style="font-size:13px;font-weight:700;color:var(--hop-mauve2)">' + formatDureeHop(s.total) + '</div>'
-          + '<div style="font-size:11px;color:#1E7A45">' + sal3.toLocaleString('fr-FR') + ' Ryos</div>'
-          + '</div></div>';
+      staffList.forEach(function(entry) {
+        var nom2 = entry[1].nom, d = entry[1];
+        var fh = Math.floor(d.totalMs/3600000), fm = Math.floor((d.totalMs%3600000)/60000);
+        html += '<div style="background:var(--hop-light);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+          + '<div style="width:34px;height:34px;border-radius:50%;background:white;border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'+nom2.slice(0,2).toUpperCase()+'</div>'
+          + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+nom2+'</div>'
+          + '<div style="font-size:11px;color:var(--hop-muted)">'+d.grade+' &bull; '+d.services+' service(s) &bull; '+fh+'h'+String(fm).padStart(2,'0')+'</div></div>'
+          + '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:var(--hop-rose2)">'+d.total.toLocaleString('fr-FR')+'</div>'
+          + '<div style="font-size:10px;color:var(--hop-muted)">Ryos</div></div>'
+          + '</div>';
       });
     }
     html += '</div>';
   }
 
   el.innerHTML = html;
+  if (inService) {
+    if (window._hopServiceTimer) clearInterval(window._hopServiceTimer);
+    var _priseAt = new Date(serviceData.prise);
+    var _taux = taux;
+    window._hopServiceTimer = setInterval(function() {
+      var timerEl = document.getElementById('hop-service-timer');
+      if (!timerEl) { clearInterval(window._hopServiceTimer); return; }
+      var dm = Math.floor((new Date()-_priseAt)/60000);
+      timerEl.textContent = Math.floor(dm/60)+'h'+String(dm%60).padStart(2,'0');
+    }, 30000);
+  }
 }
+
 
 async function priseDeServiceHop() {
   const u = state.currentUser;
