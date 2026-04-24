@@ -1420,9 +1420,9 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('membres',this)">👥 Membres</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
-          <button class="dash-nav-btn-hop" onclick="switchDashTab('monument',this)">🕯️ Monument aux Morts</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📝 Rapports mission</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('planning',this)">📅 Planning</button>
@@ -1453,7 +1453,9 @@ body {
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
       <div class="dash-tab-hop" id="dash-presences"></div>
+      <div class="dash-tab-hop" id="dash-rapports"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
+      <div class="dash-tab-hop" id="dash-rapports"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
       <div class="dash-tab-hop" id="dash-frigo"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
@@ -2070,8 +2072,8 @@ function switchDashTab(name, btn) {
   if (name === 'dossiers')      renderDossiersContent(g);
   if (name === 'cours')         renderCoursContent(g);
   if (name === 'presences')     renderPresencesHop(g);
+  if (name === 'rapports')      renderRapportsHop(g);
   if (name === 'salaires')      renderSalairesHop(g);
-  if (name === 'monument')      renderMonumentDash(g);
   if (name === 'frigo')         renderFrigoContent(g);
 }
 
