@@ -1562,10 +1562,10 @@ async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
 // ============================================================
 // ÉTAT GLOBAL
 // ============================================================
-const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier·ère', 'Stagiaire médical'];
-const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier·ère':3, 'Stagiaire médical':4, 'Citoyen':9 };
+const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier Senior', 'Infirmier', 'Stagiaire Médical', 'Recrue Médicale'];
+const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier Senior':3, 'Infirmier':4, 'Stagiaire Médical':5, 'Recrue Médicale':6, 'Citoyen':9 };
 
-const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Directeur Scientifique':'badge-chef','Chercheur Senior':'badge-senior','Chercheur':'badge-medecin','Assistant Scientifique':'badge-infirmier','Stagiaire Scientifique':'badge-stagiaire','Médecin Senior':'badge-senior','Médecin':'badge-médecin','Infirmier·ère':'badge-infirmier','Stagiaire médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
+const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier Senior':'badge-infirmier','Infirmier':'badge-infirmier','Stagiaire Médical':'badge-stagiaire','Recrue Médicale':'badge-stagiaire','Citoyen':'badge-stagiaire' };
 
 const state = {
   currentUser: null,
@@ -2011,7 +2011,13 @@ async function submitPostuler() {
 // ============================================================
 // DASHBOARD
 // ============================================================
-function gradeRankHop(g) { return GRADE_RANK_HOP[g] ?? 99; }
+function gradeRankHop(g) {
+  if (!g) return 99;
+  if (GRADE_RANK_HOP[g] !== undefined) return GRADE_RANK_HOP[g];
+  var gLow = (g||'').toLowerCase();
+  for (var k in GRADE_RANK_HOP) { if (k.toLowerCase() === gLow) return GRADE_RANK_HOP[k]; }
+  return 99;
+}
 function canAllHop(g)    { return gradeRankHop(g) <= 1; }
 function canRdvsHop(g)   { return gradeRankHop(g) <= 4; }
 
@@ -4082,7 +4088,7 @@ async function renderPresencesHop(g) {
   if (!el) return;
   const u = state.currentUser;
   const isDir = gradeRankHop(g) <= 1;
-  const canSee = gradeRankHop(g) <= 3;
+  const canSee = gradeRankHop(g) <= 6; // Tous les grades hôpital
 
   const serviceKey = 'hop_service_' + u.username;
   const serviceData = JSON.parse(localStorage.getItem(serviceKey) || 'null');
