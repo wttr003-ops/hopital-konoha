@@ -4088,11 +4088,16 @@ async function renderPresencesHop(g) {
   const serviceData = JSON.parse(localStorage.getItem(serviceKey) || 'null');
   const inService = serviceData && serviceData.prise && !serviceData.fin;
 
-  let presences = [];
+  let presences = [], enServiceNow = [];
   try {
     const res = await sbGet('presences_hop', '?order=created_at.desc');
     if (Array.isArray(res)) presences = res;
   } catch(e) { console.warn('presences hop:', e); }
+  // Charger séparément les soignants en service (fin IS NULL) côté Supabase
+  try {
+    const res2 = await sbGet('presences_hop', '?fin=is.null&order=created_at.desc');
+    if (Array.isArray(res2)) enServiceNow = res2;
+  } catch(e) { console.warn('en service hop:', e); }
 
   const myPresences = presences.filter(function(p){ return p.username === u.username; });
   const taux = SALAIRES_HOP[g] || 50;
@@ -4165,7 +4170,7 @@ async function renderPresencesHop(g) {
 
   // === EN SERVICE EN TEMPS RÉEL ===
   if (canSee) {
-    var enService = presences.filter(function(p){ return !p.fin; });
+    var enService = enServiceNow.length > 0 ? enServiceNow : presences.filter(function(p){ return !p.fin; });
     html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1rem">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">'
       + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">&#128994; Personnel en service — Temps r\u00e9el</div>'
@@ -4263,10 +4268,7 @@ async function priseDeServiceHop() {
         username:   u.username,
         nom:        nomAgent,
         grade:      u.grade,
-        prise:      now.toISOString(),
-        fin:        null,
-        duree_ms:   null,
-        salaire:    null
+        prise:      now.toISOString()
       })
     });
     const data = await res.json();
