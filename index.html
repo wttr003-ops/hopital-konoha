@@ -4186,13 +4186,23 @@ async function renderPresencesHop(g) {
         var h2 = Math.floor(diffMins2/60), m2 = diffMins2%60;
         var taux2 = SALAIRES_HOP[p.grade] || 50;
         var sal2 = Math.round((diffMins2/60)*taux2);
+        var canClose = gradeRankHop(g) <= 0;
+        if (!window._hopEnServiceData) window._hopEnServiceData = {};
+        window._hopEnServiceData[p.id] = {
+          id: p.id,
+          username: p.username||'',
+          nom: p.nom||p.username||'',
+          grade: p.grade||'',
+          priseHeure: priseAt2.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
+        };
         html += '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:rgba(30,122,69,0.06);border:1px solid rgba(30,122,69,0.2);border-radius:8px;margin-bottom:8px">'
           + '<div style="width:10px;height:10px;border-radius:50%;background:#1E7A45;flex-shrink:0"></div>'
           + '<div style="width:34px;height:34px;border-radius:50%;background:var(--hop-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'+(p.nom||p.username||'?').slice(0,2).toUpperCase()+'</div>'
           + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+(p.nom||p.username)+'</div>'
           + '<div style="font-size:11px;color:var(--hop-muted)">'+(p.grade||'--')+' &bull; En service depuis '+priseAt2.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' &bull; '+h2+'h'+String(m2).padStart(2,'0')+'</div></div>'
-          + '<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:#1E7A45">'+sal2+' Ryos</div>'
+          + '<div style="text-align:right;margin-right:8px"><div style="font-size:14px;font-weight:700;color:#1E7A45">'+sal2+' Ryos</div>'
           + '<div style="font-size:10px;color:var(--hop-muted)">en cours</div></div>'
+          + (canClose ? '<button onclick="hopCloture('+p.id+')" style="padding:5px 12px;background:rgba(192,57,43,0.12);color:#c0392b;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">&#9632; Clôturer</button>' : '')
           + '</div>';
       });
     }
@@ -4219,13 +4229,28 @@ async function renderPresencesHop(g) {
       staffList.forEach(function(entry) {
         var nom2 = entry[1].nom, d = entry[1];
         var fh = Math.floor(d.totalMs/3600000), fm = Math.floor((d.totalMs%3600000)/60000);
-        html += '<div style="background:var(--hop-light);border-radius:8px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px">'
+                var ficheId = 'fiche-hop-'+entry[0].replace(/[^a-z0-9]/gi,'_');
+        if (!window._hopFicheData) window._hopFicheData = {};
+        window._hopFicheData[ficheId] = {username:entry[0], nom:nom2, grade:d.grade, total:d.total};
+
+        html += '<div style="background:var(--hop-light);border-radius:8px;margin-bottom:8px;overflow:hidden">'
+          + '<div onclick="toggleFicheHop(&quot;'+ficheId+'&quot;)" style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer">'
           + '<div style="width:34px;height:34px;border-radius:50%;background:white;border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'+nom2.slice(0,2).toUpperCase()+'</div>'
           + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+nom2+'</div>'
           + '<div style="font-size:11px;color:var(--hop-muted)">'+d.grade+' &bull; '+d.services+' service(s) &bull; '+fh+'h'+String(fm).padStart(2,'0')+'</div></div>'
-          + '<div style="text-align:right"><div style="font-size:16px;font-weight:700;color:var(--hop-rose2)">'+d.total.toLocaleString('fr-FR')+'</div>'
+          + '<div style="text-align:right;margin-right:8px"><div style="font-size:16px;font-weight:700;color:var(--hop-rose2)">'+d.total.toLocaleString('fr-FR')+'</div>'
           + '<div style="font-size:10px;color:var(--hop-muted)">Ryos</div></div>'
-          + '</div>';
+          + '<span id="arr-'+ficheId+'" style="color:var(--hop-muted);font-size:11px">&#9660;</span>'
+          + '</div>'
+          + '<div id="'+ficheId+'" style="display:none;padding:10px 14px;border-top:1px solid var(--hop-border)">'
+          + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+          + (d.total > 0
+              ? '<button onclick="hopPayerFiche(&quot;'+ficheId+'&quot;)" style="padding:7px 14px;background:linear-gradient(135deg,#1E7A45,#145A32);color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">&#10003; Payer '+d.total.toLocaleString('fr-FR')+' Ryos</button>'
+              : d.total < 0
+              ? '<button onclick="hopRemettreZero(&quot;'+ficheId+'&quot;)" style="padding:7px 14px;background:rgba(192,57,43,0.12);color:#c0392b;border:1px solid rgba(192,57,43,0.3);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">&#128260; Remettre à zéro</button>'
+              : '<span style="font-size:12px;color:#1E7A45;font-weight:700">&#10003; Soldé</span>')
+          + '<button onclick="hopRetrait(&quot;'+ficheId+'&quot;)" style="padding:7px 14px;background:rgba(192,57,43,0.08);color:#c0392b;border:1px solid rgba(192,57,43,0.2);border-radius:7px;font-size:12px;font-weight:700;cursor:pointer">&#9986; Retirer Ryos</button>'
+          + '</div></div></div>';
       });
     }
     html += '</div>';
@@ -4539,4 +4564,160 @@ function sauvegarderSalairesHop() {
   if (ok) { ok.style.display='block'; setTimeout(function(){ok.style.display='none';},3000); }
 }
 
+
+// ============================================================
+// CLÔTURE FORCÉE — Chef Médecin
+// ============================================================
+function hopCloture(id) {
+  var d = window._hopEnServiceData && window._hopEnServiceData[id];
+  if (!d) { alert('Données introuvables.'); return; }
+  forceFinServiceHop(d.id, d.username, d.nom, d.grade, d.priseHeure);
+}
+
+async function forceFinServiceHop(presenceId, username, nomAgent, grade, priseHeure) {
+  const now = new Date();
+  const defaultHH = String(now.getHours()).padStart(2,'0');
+  const defaultMM = String(now.getMinutes()).padStart(2,'0');
+
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center';
+  popup.innerHTML = '<div style="background:white;border:1px solid var(--hop-border);border-radius:16px;padding:2rem;max-width:380px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="font-size:40px;margin-bottom:0.75rem">&#9632;&#65039;</div>'
+    + '<div style="font-size:17px;font-weight:700;color:#c0392b;margin-bottom:4px">Cl\u00f4turer le service</div>'
+    + '<div style="font-size:13px;color:var(--hop-muted);margin-bottom:1rem"><strong style="color:var(--hop-text)">'+nomAgent+'</strong> &mdash; '+grade+'</div>'
+    + '<div style="background:var(--hop-light);border-radius:8px;padding:10px;margin-bottom:1rem;font-size:13px;color:var(--hop-muted)">'
+    + '&#128336; Prise de service : <strong style="color:var(--hop-text)">'+priseHeure+'</strong></div>'
+    + '<div style="margin-bottom:1rem">'
+    + '<div style="font-size:11px;color:var(--hop-muted);margin-bottom:6px;font-weight:600">Heure r\u00e9elle de fin</div>'
+    + '<div style="display:flex;align-items:center;justify-content:center;gap:8px">'
+    + '<input type="number" id="hop-cl-hh" min="0" max="23" value="'+defaultHH+'" style="width:60px;padding:9px;text-align:center;font-size:20px;font-weight:700;border:2px solid var(--hop-border2);border-radius:8px;background:var(--hop-light);color:var(--hop-text)"/>'
+    + '<span style="font-size:22px;font-weight:700;color:var(--hop-text)">:</span>'
+    + '<input type="number" id="hop-cl-mm" min="0" max="59" value="'+defaultMM+'" style="width:60px;padding:9px;text-align:center;font-size:20px;font-weight:700;border:2px solid var(--hop-border2);border-radius:8px;background:var(--hop-light);color:var(--hop-text)"/>'
+    + '</div></div>'
+    + '<div id="hop-cl-recap" style="display:none;background:rgba(30,122,69,0.06);border:1px solid rgba(30,122,69,0.2);border-radius:8px;padding:10px;margin-bottom:1rem;font-size:13px"></div>'
+    + '<div style="display:flex;gap:8px;justify-content:center">'
+    + '<button id="hop-cl-cancel" style="padding:9px 18px;background:none;color:var(--hop-muted);border:1px solid var(--hop-border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">Annuler</button>'
+    + '<button id="hop-cl-calc" style="padding:9px 18px;background:rgba(196,154,26,0.12);color:var(--hop-mauve2);border:1px solid var(--hop-border2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">&#128269; Calculer</button>'
+    + '<button id="hop-cl-ok" style="display:none;padding:9px 18px;background:#c0392b;color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">&#10003; Cl\u00f4turer</button>'
+    + '</div></div>';
+
+  document.body.appendChild(popup);
+  document.getElementById('hop-cl-cancel').onclick = function(){popup.remove();};
+  popup.onclick = function(e){if(e.target===popup)popup.remove();};
+
+  var computedMs=0, computedSal=0, computedFin=null;
+
+  document.getElementById('hop-cl-calc').onclick = function() {
+    var hh = parseInt(document.getElementById('hop-cl-hh').value);
+    var mm = parseInt(document.getElementById('hop-cl-mm').value);
+    if (isNaN(hh)||hh<0||hh>23||isNaN(mm)||mm<0||mm>59) {
+      var r=document.getElementById('hop-cl-recap');
+      r.style.display='block'; r.innerHTML='&#9888;&#65039; Heure invalide.';
+      r.style.background='rgba(192,57,43,0.06)'; r.style.borderColor='rgba(192,57,43,0.2)';
+      return;
+    }
+    var parts = priseHeure.split(':');
+    var priseT = new Date(); priseT.setHours(parseInt(parts[0]),parseInt(parts[1]),0,0);
+    computedFin = new Date(); computedFin.setHours(hh,mm,0,0);
+    if (computedFin < priseT) computedFin.setDate(computedFin.getDate()+1);
+    computedMs = Math.max(60000, computedFin-priseT);
+    var taux = SALAIRES_HOP[grade]||50;
+    computedSal = Math.round((computedMs/3600000)*taux);
+    var dh=Math.floor(computedMs/3600000), dm=Math.floor((computedMs%3600000)/60000);
+    var recap=document.getElementById('hop-cl-recap');
+    recap.style.display='block'; recap.style.background='rgba(30,122,69,0.06)'; recap.style.borderColor='rgba(30,122,69,0.2)';
+    recap.innerHTML='&#8594; Dur\u00e9e : <strong>'+dh+'h'+String(dm).padStart(2,'0')+'</strong> &nbsp;|&nbsp; &#128176; <strong style="color:#1E7A45">'+computedSal.toLocaleString('fr-FR')+' Ryos</strong>';
+    document.getElementById('hop-cl-ok').style.display='inline-block';
+  };
+
+  document.getElementById('hop-cl-ok').onclick = async function() {
+    popup.remove();
+    try {
+      await fetch(SB_URL+'/rest/v1/presences_hop?id=eq.'+presenceId,{
+        method:'PATCH',
+        headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({fin:computedFin.toISOString(), duree_ms:computedMs, salaire:computedSal})
+      });
+      // Supprimer le localStorage du soignant si c'est lui-même
+      var sKey='hop_service_'+username;
+      var sData=JSON.parse(localStorage.getItem(sKey)||'null');
+      if (sData&&!sData.fin) localStorage.removeItem(sKey);
+    } catch(e){console.warn('force fin hop:',e);}
+    await renderPresencesHop(state.currentUser.grade);
+  };
+}
+
+function toggleFicheHop(id) {
+  var el=document.getElementById(id), arr=document.getElementById('arr-'+id);
+  if(!el)return;
+  var open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(arr) arr.textContent=open?'\u25bc':'\u25b2';
+}
+
+async function payerSalaireHop(username, nom, total) {
+  var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
+  if (!confirm('Confirmer le paiement de '+nom+' ?\n'+total.toLocaleString('fr-FR')+' Ryos')) return;
+  try {
+    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username),{
+      method:'PATCH',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({statut_paye:'paye', paye_par:dirName, paye_le:new Date().toISOString()})
+    });
+  } catch(e){console.warn('payer hop:',e);}
+  await renderPresencesHop(state.currentUser.grade);
+}
+
+async function remettreAZeroHop(username, nom) {
+  if (!confirm('Remettre \u00e0 z\u00e9ro le solde de '+nom+' ?')) return;
+  var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
+  try {
+    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username),{
+      method:'PATCH',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({statut_paye:'paye', paye_par:dirName, paye_le:new Date().toISOString()})
+    });
+  } catch(e){console.warn('reset hop:',e);}
+  await renderPresencesHop(state.currentUser.grade);
+}
+
+async function retraitHop(username, nom, total) {
+  var montantStr = prompt('Montant \u00e0 retirer \u00e0 '+nom+' (solde actuel : '+total.toLocaleString('fr-FR')+' Ryos) ?');
+  if (!montantStr) return;
+  var montant = parseInt(montantStr);
+  if (isNaN(montant)||montant<=0) { alert('Montant invalide.'); return; }
+  var motif = prompt('Motif du retrait ?');
+  if (!motif) return;
+  var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
+  try {
+    await sbPost('presences_hop',{
+      username: username,
+      nom: nom,
+      grade: state.users[username]?.grade||'--',
+      prise: new Date().toISOString(),
+      fin: new Date().toISOString(),
+      duree_ms: 0,
+      salaire: -montant,
+      statut_paye: null
+    });
+  } catch(e){console.warn('retrait hop:',e);}
+  await renderPresencesHop(state.currentUser.grade);
+}
+
+
+function hopPayerFiche(ficheId) {
+  var d = window._hopFicheData && window._hopFicheData[ficheId];
+  if (!d) return;
+  payerSalaireHop(d.username, d.nom, d.total);
+}
+function hopRemettreZero(ficheId) {
+  var d = window._hopFicheData && window._hopFicheData[ficheId];
+  if (!d) return;
+  remettreAZeroHop(d.username, d.nom, d.grade);
+}
+function hopRetrait(ficheId) {
+  var d = window._hopFicheData && window._hopFicheData[ficheId];
+  if (!d) return;
+  retraitHop(d.username, d.nom, d.total);
+}
 </script></body></html>
