@@ -4278,348 +4278,76 @@ async function renderRapportsHop(g) {
     if (Array.isArray(res)) rapports = res;
   } catch(e) { console.warn('rapports hop:', e); }
 
-  let html = '<h2 class="dash-section-title-hop">\uD83D\uDCDD Rapports de mission</h2>';
-
-  // Formulaire création
-  html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">'
-    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Rédiger un rapport</div>'
-    + '<div class="form-group-hop"><label>Titre du rapport *</label><input type="text" id="rap-titre-hop" placeholder="Ex: Prise en charge urgence combat du 23/04"/></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">'
-    + '<div class="form-group-hop"><label>Type</label><select id="rap-type-hop">'
-    + '<option>Rapport de soins</option><option>Rapport d\'urgence</option><option>Rapport de mission</option><option>Bilan de service</option><option>Rapport d\'incident</option><option>Autre</option>'
-    + '</select></div>'
-    + '<div class="form-group-hop"><label>Priorité</label><select id="rap-priorite-hop">'
-    + '<option value="normale">Normale</option><option value="haute">Haute</option><option value="critique">Critique</option>'
-    + '</select></div>'
-    + '</div>'
-    + '<div class="form-group-hop"><label>Contenu *</label><textarea id="rap-contenu-hop" rows="4" placeholder="Décrivez en détail la mission, les soins prodigués, les patients traités..."></textarea></div>'
-    + '<div class="form-group-hop"><label>Patients concernés</label><input type="text" id="rap-patients-hop" placeholder="Ex: Naruto Uzumaki, Sakura Haruno..."/></div>'
-    + '<button class="btn-primary" onclick="submitRapportHop()" style="width:auto;padding:9px 24px">Soumettre le rapport</button>'
-    + '<div id="rap-ok-hop" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Rapport soumis avec succès !</div>'
-    + '</div>';
-
-  // Filtres
-  html += '<div style="display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap">'
-    + '<input type="text" id="rap-search-hop" placeholder="\uD83D\uDD0D Rechercher..." oninput="filterRapportsHop()" style="flex:1;min-width:140px;padding:7px 12px;border:1px solid var(--hop-border);border-radius:8px;font-size:13px;background:white;color:var(--hop-text)"/>'
-    + ['Tous','Rapport de soins','Rapport d\'urgence','Rapport de mission','Bilan de service','Rapport d\'incident'].map(function(t,i){
-        return '<button onclick="filterRapportsHopType(\''+t+'\',this)" style="padding:5px 12px;border-radius:20px;border:1px solid var(--hop-border2);font-size:11px;cursor:pointer;font-family:\'Nunito\',sans-serif;background:'+(i===0?'var(--hop-mauve)':'white')+';color:'+(i===0?'white':'var(--hop-muted)')+'">'+t+'</button>';
-      }).join('')
-    + '</div>';
-
-  // Liste rapports
-  if (rapports.length === 0) {
-    html += '<div class="dash-block-hop" style="padding:2rem;text-align:center;color:var(--hop-muted)"><div style="font-size:32px;margin-bottom:8px">\uD83D\uDCDD</div><div>Aucun rapport pour le moment.</div></div>';
-  } else {
-    html += '<div id="rap-list-hop">';
-    rapports.forEach(function(r) {
-      var prioColor = r.priorite==='critique' ? '#c0392b' : r.priorite==='haute' ? '#e67e22' : '#27ae60';
-      var prioBg   = r.priorite==='critique' ? 'rgba(192,57,43,0.1)' : r.priorite==='haute' ? 'rgba(230,126,34,0.1)' : 'rgba(39,174,96,0.1)';
-      var date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '--';
-      var heure= r.created_at ? new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
-      html += '<div class="dash-block-hop rap-item-hop" data-type="'+r.type_rapport+'" style="padding:1rem;margin-bottom:0.75rem">'
-        + '<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">'
-        + '<div>'
-        + '<div style="font-size:14px;font-weight:700;color:var(--hop-mauve2)">'+r.titre+'</div>'
-        + '<div style="font-size:11px;color:var(--hop-muted);margin-top:2px">'+r.auteur+' &middot; '+date+' '+heure+' &middot; '+r.type_rapport+'</div>'
-        + '</div>'
-        + '<div style="display:flex;align-items:center;gap:6px">'
-        + '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+prioBg+';color:'+prioColor+'">'+r.priorite+'</span>'
-        + (isHigh || r.username===u.username ? '<button onclick="deleteRapportHop('+r.id+')" style="background:none;color:var(--hop-muted);border:none;cursor:pointer;font-size:14px">\u00d7</button>' : '')
-        + '</div></div>'
-        + '<div style="font-size:13px;color:var(--hop-text);line-height:1.6;white-space:pre-line">'+r.contenu+'</div>'
-        + (r.patients ? '<div style="font-size:11px;color:var(--hop-muted);margin-top:6px">\uD83D\uDC65 Patients : '+r.patients+'</div>' : '')
-        + '</div>';
-    });
-    html += '</div>';
-  }
-
-  el.innerHTML = html;
-}
-
-async function submitRapportHop() {
-  var titre   = document.getElementById('rap-titre-hop')?.value.trim();
-  var type    = document.getElementById('rap-type-hop')?.value;
-  var prio    = document.getElementById('rap-priorite-hop')?.value;
-  var contenu = document.getElementById('rap-contenu-hop')?.value.trim();
-  var patients= document.getElementById('rap-patients-hop')?.value.trim();
-  if (!titre || !contenu) { alert('Titre et contenu obligatoires.'); return; }
-  var u = state.currentUser;
-  try {
-    await sbPost('rapports_hop', {
-      titre, type_rapport:type, priorite:prio, contenu, patients:patients||null,
-      auteur: state.users[u.username]?.fullname||u.username,
-      username: u.username, grade: u.grade
-    });
-  } catch(e) { console.warn('submit rapport hop:', e); }
-  ['rap-titre-hop','rap-contenu-hop','rap-patients-hop'].forEach(function(id){
-    var el=document.getElementById(id); if(el) el.value='';
-  });
-  var ok=document.getElementById('rap-ok-hop');
-  if(ok){ok.style.display='block';setTimeout(function(){ok.style.display='none';},3000);}
-  await renderRapportsHop(state.currentUser.grade);
-}
-
-async function deleteRapportHop(id) {
-  if (!confirm('Supprimer ce rapport ?')) return;
-  try {
-    await fetch(SB_URL+'/rest/v1/rapports_hop?id=eq.'+id,{method:'DELETE',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-  } catch(e) {}
-  await renderRapportsHop(state.currentUser.grade);
-}
-
-function filterRapportsHop() {
-  var q = (document.getElementById('rap-search-hop')?.value||'').toLowerCase();
-  document.querySelectorAll('.rap-item-hop').forEach(function(r){
-    var txt = r.textContent.toLowerCase();
-    r.style.display = (!q||txt.includes(q)) ? 'block' : 'none';
-  });
-}
-
-function filterRapportsHopType(type, btn) {
-  document.querySelectorAll('#dash-rapports-hop button').forEach(function(b){
-    if(b.textContent===btn.textContent||b===btn){ b.style.background=b===btn?'var(--hop-mauve)':'white'; b.style.color=b===btn?'white':'var(--hop-muted)'; }
-  });
-  document.querySelectorAll('.rap-item-hop').forEach(function(r){
-    r.style.display=(type==='Tous'||r.getAttribute('data-type')===type)?'block':'none';
-  });
-}
-
-// ============================================================
-// PLANNING — Hôpital de Konoha
-// ============================================================
-async function renderPlanningHop(g) {
-  const el = document.getElementById('dash-planning');
-  if (!el) return;
-  const u = state.currentUser;
-  const isDir = gradeRankHop(g) <= 1;
-  const canAdd = gradeRankHop(g) <= 3;
-
-  if (!window._planWeekHop) window._planWeekHop = 0;
-  const offset = window._planWeekHop;
-  const today = new Date();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay()+6)%7) + offset*7);
-  monday.setHours(0,0,0,0);
-  const days = [];
-  for (var i=0;i<7;i++) { var d=new Date(monday); d.setDate(monday.getDate()+i); days.push(d); }
-  const dayNames = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-
-  let plannings = [];
-  try {
-    var start = monday.toISOString().split('T')[0];
-    var end = new Date(monday); end.setDate(monday.getDate()+6);
-    var endStr = end.toISOString().split('T')[0];
-    const res = await sbGet('planning_hop','?date=gte.'+start+'&date=lte.'+endStr+'&order=date.asc,heure_debut.asc');
-    if (Array.isArray(res)) plannings = res;
-  } catch(e) {}
-
-  let html = '<h2 class="dash-section-title-hop">\uD83D\uDCC5 Planning médical</h2>';
-
-  // Nav semaine
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">'
-    + '<button onclick="planWeekHop(-1)" style="padding:6px 14px;background:var(--hop-light);color:var(--hop-mauve2);border:1px solid var(--hop-border2);border-radius:8px;font-size:13px;cursor:pointer">&larr;</button>'
-    + '<span style="font-size:14px;font-weight:600;color:var(--hop-mauve2)">'+(offset===0?'Cette semaine':offset>0?'+'+offset+' semaine(s)':offset+' semaine(s)')+'</span>'
-    + '<button onclick="planWeekHop(1)" style="padding:6px 14px;background:var(--hop-light);color:var(--hop-mauve2);border:1px solid var(--hop-border2);border-radius:8px;font-size:13px;cursor:pointer">&rarr;</button>'
-    + '</div>';
-
-  // Grille semaine
-  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:1.25rem">';
-  days.forEach(function(day, i) {
-    var isToday = day.toDateString()===today.toDateString();
-    var dayPlan = plannings.filter(function(p){return p.date===day.toISOString().split('T')[0];});
-    html += '<div style="background:'+(isToday?'var(--hop-light)':'white')+';border:1.5px solid '+(isToday?'var(--hop-rose2)':'var(--hop-border)')+';border-radius:10px;padding:8px;min-height:80px">'
-      + '<div style="font-size:10px;font-weight:700;color:'+(isToday?'var(--hop-rose2)':'var(--hop-muted)')+';margin-bottom:4px">'+dayNames[i]+'<br>'+day.getDate()+'/'+String(day.getMonth()+1).padStart(2,'0')+'</div>';
-    dayPlan.forEach(function(p) {
-      var col = p.type==='garde' ? '#c0392b' : p.type==='consultation' ? '#2563eb' : p.type==='urgence' ? '#e67e22' : 'var(--hop-mauve)';
-      html += '<div style="background:rgba(0,0,0,0.06);border-left:3px solid '+col+';padding:3px 5px;margin-bottom:3px;border-radius:0 4px 4px 0;cursor:pointer" onclick="planDelHop('+p.id+')">'
-        + '<div style="font-size:10px;font-weight:600;color:'+col+'">'+p.heure_debut+' '+p.titre+'</div>'
-        + '<div style="font-size:10px;color:var(--hop-muted)">'+p.agent+'</div>'
-        + '</div>';
-    });
-    if (canAdd) {
-      html += '<button onclick="planOpenModalHop(\''+day.toISOString().split('T')[0]+'\')" style="width:100%;padding:3px;background:none;color:var(--hop-muted);border:1px dashed var(--hop-border);border-radius:5px;font-size:11px;cursor:pointer;margin-top:4px">+ Ajouter</button>';
-    }
-    html += '</div>';
-  });
-  html += '</div>';
-
-  // Modal ajout
-  html += '<div id="plan-modal-hop" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:none;align-items:center;justify-content:center">'
-    + '<div style="background:white;border-radius:14px;padding:1.5rem;max-width:420px;width:90%">'
-    + '<div style="font-size:15px;font-weight:700;color:var(--hop-mauve2);margin-bottom:1rem">\uD83D\uDCC5 Ajouter une entr\u00e9e</div>'
-    + '<div class="form-group-hop"><label>Titre *</label><input type="text" id="pm-titre-hop" placeholder="Ex: Garde de nuit, Consultation..."/></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">'
-    + '<div class="form-group-hop"><label>Heure d\u00e9but</label><input type="time" id="pm-heure-hop" value="08:00"/></div>'
-    + '<div class="form-group-hop"><label>Type</label><select id="pm-type-hop"><option value="garde">Garde</option><option value="consultation">Consultation</option><option value="urgence">Urgence</option><option value="formation">Formation</option><option value="autre">Autre</option></select></div>'
-    + '</div>'
-    + '<div class="form-group-hop"><label>Agent</label><input type="text" id="pm-agent-hop" placeholder="Nom du soignant"/></div>'
-    + '<div style="display:flex;gap:8px;margin-top:0.5rem">'
-    + '<button onclick="planConfirmHop()" style="flex:1;padding:9px;background:var(--hop-mauve);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">Ajouter</button>'
-    + '<button onclick="planCloseModalHop()" style="padding:9px 16px;background:none;color:var(--hop-muted);border:1px solid var(--hop-border);border-radius:8px;cursor:pointer">Annuler</button>'
-    + '</div></div></div>';
-
-  el.innerHTML = html;
-  el.querySelector('#plan-modal-hop').style.display = 'none';
-}
-
-var _planDateHop = '';
-function planWeekHop(d) { window._planWeekHop=(window._planWeekHop||0)+d; renderPlanningHop(state.currentUser.grade); }
-function planOpenModalHop(date) {
-  _planDateHop = date;
-  var modal = document.getElementById('plan-modal-hop');
-  var u = state.currentUser;
-  var nom = state.users[u.username]?.fullname||u.username;
-  if(document.getElementById('pm-agent-hop')) document.getElementById('pm-agent-hop').value=nom;
-  if(modal){ modal.style.cssText='display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center'; }
-}
-function planCloseModalHop() { var m=document.getElementById('plan-modal-hop'); if(m) m.style.display='none'; }
-async function planConfirmHop() {
-  var titre = document.getElementById('pm-titre-hop')?.value.trim();
-  var heure = document.getElementById('pm-heure-hop')?.value||'08:00';
-  var type  = document.getElementById('pm-type-hop')?.value||'autre';
-  var agent = document.getElementById('pm-agent-hop')?.value.trim()||state.currentUser.username;
-  if (!titre) { alert('Titre obligatoire.'); return; }
-  try { await sbPost('planning_hop',{titre,heure_debut:heure,type,agent,date:_planDateHop,username:state.currentUser.username}); } catch(e){}
-  planCloseModalHop();
-  await renderPlanningHop(state.currentUser.grade);
-}
-async function planDelHop(id) {
-  if (!confirm('Supprimer cette entr\u00e9e ?')) return;
-  try { await fetch(SB_URL+'/rest/v1/planning_hop?id=eq.'+id,{method:'DELETE',headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}); } catch(e){}
-  await renderPlanningHop(state.currentUser.grade);
-}
-
-// ============================================================
-// SALAIRES — Hôpital de Konoha
-// ============================================================
-function renderSalairesHop(g) {
-  const el = document.getElementById('dash-salaires');
-  if (!el) return;
-  const isDir = gradeRankHop(g) <= 1;
-
-  const grades = [
-    { grade:'Chef M\u00e9decin',      icon:'\uD83C\uDFE5', color:'#c49a1a', rank:0 },
-    { grade:'M\u00e9decin Senior',    icon:'\uD83D\uDC68\u200D\u2695\uFE0F', color:'#8b5e83', rank:1 },
-    { grade:'M\u00e9decin',           icon:'\uD83D\uDC89', color:'#6b3f6b', rank:2 },
-    { grade:'Infirmier Senior',       icon:'\uD83D\uDC9A', color:'#2563eb', rank:3 },
-    { grade:'Infirmier',              icon:'\u2695\uFE0F', color:'#27ae60', rank:4 },
-    { grade:'Stagiaire M\u00e9dical', icon:'\uD83D\uDCCB', color:'#8a7a5a', rank:5 },
-    { grade:'Recrue M\u00e9dicale',   icon:'\uD83C\uDF3F', color:'#8a7a5a', rank:6 },
+  const TYPES_RAP = [
+    'Rapport de soins',
+    'Rapport d\'urgence',
+    'Rapport de mission',
+    'Bilan de garde',
+    'Rapport d\'intervention chirurgicale',
+    'Rapport post-don du sang',
+    'Autre'
   ];
+  const NB_PATIENTS = [
+    'Aucun patient',
+    'Un patient',
+    'Plusieurs patients (2 à 5)',
+    'Afflux massif (6+)'
+  ];
+  const GRAVITES = ['Légère', 'Modérée', 'Grave', 'Critique'];
+  const STATUTS  = ['Soigné — renvoyé', 'Hospitalisé', 'En observation', 'Décédé', 'Sans objet'];
 
-  let html = '<h2 class="dash-section-title-hop">\uD83D\uDCB0 Salaires — Hôpital de Konoha</h2>';
-
-  if (!isDir) {
-    html += '<div style="background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--hop-muted);margin-bottom:1.25rem">Consultez vos salaires ci-dessous. Seule la Direction peut modifier les taux horaires.</div>';
-  } else {
-    html += '<div style="background:rgba(107,171,138,0.1);border:1px solid rgba(107,171,138,0.3);border-radius:10px;padding:10px 14px;font-size:12px;color:#1E7A45;margin-bottom:1.25rem">\u2699\uFE0F Mode Direction — Vous pouvez modifier les taux horaires. Cliquez sur un montant pour l\'\u00e9diter.</div>';
-  }
-
-  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">';
-  grades.forEach(function(gr) {
-    var taux = SALAIRES_HOP[gr.grade] || 50;
-    var salMensuel = taux * 160;
-    html += '<div class="dash-block-hop" style="padding:1rem">'
-      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
-      + '<div style="width:36px;height:36px;border-radius:50%;background:'+gr.color+'22;border:1.5px solid '+gr.color+';display:flex;align-items:center;justify-content:center;font-size:16px">'+gr.icon+'</div>'
-      + '<div><div style="font-size:13px;font-weight:700;color:var(--hop-mauve2)">'+gr.grade+'</div><div style="font-size:10px;color:var(--hop-muted)">Rang '+gr.rank+'</div></div>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
-      + '<div style="background:var(--hop-bg);border-radius:6px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Taux / heure</div>'
-      + (isDir
-          ? '<div style="font-size:14px;font-weight:700;color:'+gr.color+';cursor:pointer" onclick="editSalaireHop(\''+gr.grade+'\')" title="Cliquer pour modifier" id="sal-hop-'+gr.grade.replace(/\s/g,'_')+'">' + taux + ' R/h &nbsp;\u270F\uFE0F</div>'
-          : '<div style="font-size:14px;font-weight:700;color:'+gr.color+'">'+taux+' R/h</div>')
-      + '</div>'
-      + '<div style="background:var(--hop-bg);border-radius:6px;padding:7px;text-align:center"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Mensuel est.</div>'
-      + '<div style="font-size:14px;font-weight:700;color:#1E7A45">'+salMensuel.toLocaleString('fr-FR')+' R</div>'
-      + '</div></div></div>';
-  });
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-function editSalaireHop(grade) {
-  var current = SALAIRES_HOP[grade] || 50;
-  var newVal = prompt('Nouveau taux horaire pour ' + grade + ' (actuel : ' + current + ' Ryos/h) :', current);
-  if (!newVal || isNaN(parseInt(newVal))) return;
-  var val = Math.max(1, parseInt(newVal));
-  SALAIRES_HOP[grade] = val;
-  // Sauvegarder en localStorage
-  var overrides = JSON.parse(localStorage.getItem('hop_sal_overrides')||'{}');
-  overrides[grade] = val;
-  localStorage.setItem('hop_sal_overrides', JSON.stringify(overrides));
-  renderSalairesHop(state.currentUser.grade);
-}
-
-// Charger les overrides salaires au démarrage
-(function() {
-  var overrides = JSON.parse(localStorage.getItem('hop_sal_overrides')||'{}');
-  Object.keys(overrides).forEach(function(g) { SALAIRES_HOP[g] = overrides[g]; });
-})();
-
-
-// ============================================================
-// RAPPORTS DE MISSION — HÔPITAL
-// ============================================================
-async function renderRapportsHop(g) {
-  const el = document.getElementById('dash-rapports');
-  if (!el) return;
-  const u = state.currentUser;
-  const isHighRank = gradeRankHop(g) <= 2;
-
-  let rapports = [];
-  try {
-    const res = await sbGet('rapports_hop', '?order=created_at.desc');
-    if (Array.isArray(res)) rapports = res;
-  } catch(e) { console.warn('rapports hop:', e); }
-
-  const TYPES = ['Intervention d\'urgence','Soins post-mission','Don du sang','Opération chirurgicale','Rapport de garde','Consultation','Autre'];
-  const GRAVITES = ['Légère','Modérée','Grave','Critique'];
-  const STATUTS_PAT = ['Soigné — renvoyé','Hospitalisé','En observation','Décédé'];
-
-  let html = '<h2 class="dash-section-title-hop">📋 Rapports de mission</h2>';
+  let html = '<h2 class="dash-section-title-hop">📋 Rapports médicaux</h2>';
 
   // Formulaire
   html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">'
-    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Nouveau rapport</div>'
+    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Rédiger un rapport médical</div>'
+
+    // Ligne 1 : Type + Nb patients
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">'
-    + '<div class="form-group-hop" style="margin:0"><label>Type d\'intervention</label>'
-    + '<select id="rap-type">' + TYPES.map(function(t){return '<option>'+t+'</option>';}).join('') + '</select></div>'
-    + '<div class="form-group-hop" style="margin:0"><label>Patient(s)</label>'
-    + '<input id="rap-patients" type="text" placeholder="Nom(s) du/des patient(s)"/></div>'
+    + '<div class="form-group-hop" style="margin:0"><label>Type de rapport</label>'
+    + '<select id="rap-type-hop">' + TYPES_RAP.map(function(t){return '<option>'+t+'</option>';}).join('') + '</select></div>'
+    + '<div class="form-group-hop" style="margin:0"><label>Patient(s) concern\u00e9(s)</label>'
+    + '<select id="rap-nb-patients">' + NB_PATIENTS.map(function(n){return '<option>'+n+'</option>';}).join('') + '</select></div>'
     + '</div>'
-    + '<div class="form-group-hop" style="margin-bottom:0.75rem"><label>Rapport détaillé *</label>'
-    + '<textarea id="rap-desc" rows="3" placeholder="Décrivez l\'intervention, les soins, le résultat..."></textarea></div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">'
-    + '<div class="form-group-hop" style="margin:0"><label>Gravité</label>'
-    + '<select id="rap-gravite">' + GRAVITES.map(function(g2){return '<option>'+g2+'</option>';}).join('') + '</select></div>'
-    + '<div class="form-group-hop" style="margin:0"><label>Statut patient</label>'
-    + '<select id="rap-statut">' + STATUTS_PAT.map(function(s2){return '<option>'+s2+'</option>';}).join('') + '</select></div>'
+
+    // Ligne 2 : Gravité + Statut
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">'
+    + '<div class="form-group-hop" style="margin:0"><label>Gravit\u00e9 des cas</label>'
+    + '<select id="rap-gravite-hop">' + GRAVITES.map(function(g2){return '<option>'+g2+'</option>';}).join('') + '</select></div>'
+    + '<div class="form-group-hop" style="margin:0"><label>Statut final</label>'
+    + '<select id="rap-statut-hop">' + STATUTS.map(function(s){return '<option>'+s+'</option>';}).join('') + '</select></div>'
     + '</div>'
+
+    // Description obligatoire
+    + '<div class="form-group-hop" style="margin-bottom:1rem"><label>Rapport d\u00e9taill\u00e9 *</label>'
+    + '<textarea id="rap-desc-hop" rows="4" placeholder="D\u00e9crivez les soins prodigu\u00e9s, les techniques utilis\u00e9es, le r\u00e9sultat de l\'intervention..."></textarea></div>'
+
     + '<button class="btn-primary" onclick="soumettreRapportHop()" style="width:auto;padding:9px 24px">Soumettre le rapport</button>'
-    + '<div id="rap-ok" class="form-msg-hop success" style="display:none;margin-top:8px">✓ Rapport enregistré !</div>'
+    + '<div id="rap-hop-ok" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Rapport enregistr\u00e9 !</div>'
     + '</div>';
 
   // Liste des rapports
   html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
-    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Rapports récents ('+rapports.length+')</div>';
+    + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Rapports r\u00e9cents ('+rapports.length+')</div>';
 
   if (rapports.length === 0) {
-    html += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun rapport enregistré.</div>';
+    html += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun rapport enregistr\u00e9.</div>';
   } else {
     rapports.slice(0, 20).forEach(function(r) {
       var date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '--';
-      var sc = r.statut_patient === 'Décédé'
+      var heure = r.created_at ? new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+      var sc = r.statut_patient === 'D\u00e9c\u00e9d\u00e9'
         ? 'rgba(192,57,43,0.1);color:#7B241C;border:1px solid rgba(192,57,43,0.25)'
-        : r.statut_patient === 'Soigné — renvoyé'
+        : r.statut_patient === 'Soign\u00e9 \u2014 renvoy\u00e9'
           ? 'rgba(107,171,138,0.12);color:#1E7A45;border:1px solid rgba(107,171,138,0.3)'
           : 'rgba(196,154,26,0.1);color:#7A5A00;border:1px solid rgba(196,154,26,0.25)';
-      html += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
-        + '<div><div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+(r.type_intervention||'--')+' — '+(r.patients||'--')+'</div>'
-        + '<div style="font-size:11px;color:var(--hop-muted)">'+(r.auteur||'--')+' · '+date+' · Gravité : '+(r.gravite||'--')+'</div>'
-        + (r.description ? '<div style="font-size:11px;color:var(--hop-muted);font-style:italic;margin-top:2px">'+r.description.slice(0,80)+(r.description.length>80?'...':'')+'</div>' : '')
+      html += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border)">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+(r.type_intervention||'Rapport')+' &mdash; '+(r.nb_patients||'--')+'</div>'
+        + '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+sc+'">'+( r.statut_patient||'--')+'</span>'
         + '</div>'
-        + '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+sc+';white-space:nowrap">'+(r.statut_patient||'--')+'</span>'
+        + '<div style="font-size:11px;color:var(--hop-muted)">'+(r.auteur||'--')+' &middot; '+date+' '+heure+' &middot; Gravit\u00e9 : '+(r.gravite||'--')+'</div>'
+        + (r.description ? '<div style="font-size:11px;color:var(--hop-muted);font-style:italic;margin-top:3px;padding:6px 10px;background:var(--hop-light);border-radius:6px">'+r.description.slice(0,120)+(r.description.length>120?'...':'')+'</div>' : '')
         + '</div>';
     });
   }
@@ -4627,33 +4355,36 @@ async function renderRapportsHop(g) {
   el.innerHTML = html;
 }
 
+
 async function soumettreRapportHop() {
   const u = state.currentUser;
-  const type = document.getElementById('rap-type')?.value;
-  const patients = document.getElementById('rap-patients')?.value.trim();
-  const desc = document.getElementById('rap-desc')?.value.trim();
-  const gravite = document.getElementById('rap-gravite')?.value;
-  const statut = document.getElementById('rap-statut')?.value;
+  const type       = document.getElementById('rap-type-hop')?.value;
+  const nbPatients = document.getElementById('rap-nb-patients')?.value;
+  const gravite    = document.getElementById('rap-gravite-hop')?.value;
+  const statut     = document.getElementById('rap-statut-hop')?.value;
+  const desc       = document.getElementById('rap-desc-hop')?.value.trim();
 
-  if (!desc) { alert('Veuillez remplir le rapport détaillé.'); return; }
+  if (!desc) { alert('Veuillez rédiger le rapport détaillé.'); return; }
 
   try {
     await sbPost('rapports_hop', {
-      auteur: state.users[u.username]?.fullname || u.username,
-      grade_auteur: u.grade,
+      auteur:            state.users[u.username]?.fullname || u.username,
+      grade_auteur:      u.grade,
       type_intervention: type,
-      patients: patients || 'Non précisé',
-      description: desc,
-      gravite: gravite,
-      statut_patient: statut
+      nb_patients:       nbPatients,
+      gravite:           gravite,
+      statut_patient:    statut,
+      description:       desc
     });
   } catch(e) { console.warn('rapport hop:', e); }
 
-  ['rap-patients','rap-desc'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
-  var ok = document.getElementById('rap-ok');
+  var descEl = document.getElementById('rap-desc-hop');
+  if (descEl) descEl.value = '';
+  var ok = document.getElementById('rap-hop-ok');
   if (ok) { ok.style.display='block'; setTimeout(function(){ok.style.display='none';},3000); }
   await renderRapportsHop(state.currentUser.grade);
 }
+
 
 // ============================================================
 // PLANNING — HÔPITAL
