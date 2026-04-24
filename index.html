@@ -4246,12 +4246,46 @@ async function priseDeServiceHop() {
   const serviceKey = 'hop_service_' + u.username;
   const existing = JSON.parse(localStorage.getItem(serviceKey) || 'null');
   if (existing && existing.prise && !existing.fin) {
-    showPresenceNotifHop('⚠️ Vous êtes déjà en service. Terminez votre service en cours avant d\'en commencer un nouveau.');
+    showPresenceNotifHop('⚠️ Vous êtes déjà en service.');
     return;
   }
   const now = new Date();
-  localStorage.setItem(serviceKey, JSON.stringify({ prise: now.toISOString() }));
-  showPresenceNotifHop('✅ Prise de service enregistrée à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
+  const heureLocale = now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const dateLocale  = now.toLocaleDateString('fr-FR');
+  const nomAgent    = state.users[u.username]?.fullname || u.username;
+
+  let presenceId = null, serverPrise = null;
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/presences_hop', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify({
+        username:   u.username,
+        nom:        nomAgent,
+        grade:      u.grade,
+        prise:      now.toISOString(),
+        fin:        null,
+        duree_ms:   null,
+        salaire:    null
+      })
+    });
+    const data = await res.json();
+    if (Array.isArray(data) && data[0]) {
+      presenceId = data[0].id;
+      let sp = data[0].created_at || data[0].prise || now.toISOString();
+      if (sp && !sp.includes('Z') && !sp.includes('+')) sp += 'Z';
+      serverPrise = sp;
+    }
+  } catch(e) { console.warn('prise service hop:', e); }
+
+  localStorage.setItem(serviceKey, JSON.stringify({
+    prise: serverPrise || now.toISOString(),
+    heureLocale: heureLocale,
+    fin: null,
+    id: presenceId
+  }));
+
+  showPresenceNotifHop('✅ Prise de service à ' + heureLocale);
   await renderPresencesHop(state.currentUser.grade);
 }
 
@@ -4278,15 +4312,25 @@ async function finDeServiceHop() {
   const salaire = Math.round((dureeOk/3600000)*taux);
 
   try {
-    await sbPost('presences_hop', {
-      username: u.username,
-      nom: state.users[u.username]?.fullname || u.username,
-      grade: u.grade,
-      prise: serviceData.prise,
-      fin: fin.toISOString(),
-      duree_ms: dureeOk,
-      salaire: salaire
-    });
+    if (serviceData.id) {
+      // Mettre à jour la ligne existante (fin=null → fin=maintenant)
+      await fetch(SB_URL + '/rest/v1/presences_hop?id=eq.' + serviceData.id, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ fin: fin.toISOString(), duree_ms: dureeOk, salaire: salaire })
+      });
+    } else {
+      // Fallback : créer une nouvelle ligne
+      await sbPost('presences_hop', {
+        username: u.username,
+        nom: state.users[u.username]?.fullname || u.username,
+        grade: u.grade,
+        prise: serviceData.prise,
+        fin: fin.toISOString(),
+        duree_ms: dureeOk,
+        salaire: salaire
+      });
+    }
   } catch(e) { console.warn('fin service hop:', e); }
 
   localStorage.removeItem(serviceKey);
