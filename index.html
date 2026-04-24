@@ -1454,13 +1454,13 @@ body {
       <div class="dash-tab-hop" id="dash-monument"></div>
       <div class="dash-tab-hop" id="dash-dossiers"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
-      <div class="dash-tab-hop" id="dash-presences-hop"></div>
-      <div class="dash-tab-hop" id="dash-rapports-hop"></div>
-      <div class="dash-tab-hop" id="dash-planning-hop"></div>
-      <div class="dash-tab-hop" id="dash-salaires-hop"></div>
-      <div class="dash-tab-hop" id="dash-rapports-hop"></div>
-      <div class="dash-tab-hop" id="dash-planning-hop"></div>
-      <div class="dash-tab-hop" id="dash-salaires-hop"></div>
+      <div class="dash-tab-hop" id="dash-presences"></div>
+      <div class="dash-tab-hop" id="dash-rapports"></div>
+      <div class="dash-tab-hop" id="dash-planning"></div>
+      <div class="dash-tab-hop" id="dash-salaires"></div>
+      <div class="dash-tab-hop" id="dash-rapports"></div>
+      <div class="dash-tab-hop" id="dash-planning"></div>
+      <div class="dash-tab-hop" id="dash-salaires"></div>
       <div class="dash-tab-hop" id="dash-frigo"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
       <div class="dash-tab-hop" id="dash-citizen-rdvs"></div>
@@ -2076,9 +2076,6 @@ function switchDashTab(name, btn) {
   if (name === 'dossiers')      renderDossiersContent(g);
   if (name === 'cours')         renderCoursContent(g);
   if (name === 'presences')     renderPresencesHop(g);
-  if (name === 'rapports')      renderRapportsHop(g);
-  if (name === 'planning')      renderPlanningHop(g);
-  if (name === 'salaires')      renderSalairesHop(g);
   if (name === 'rapports')      renderRapportsHop(g);
   if (name === 'planning')      renderPlanningHop(g);
   if (name === 'salaires')      renderSalairesHop(g);
@@ -4090,7 +4087,7 @@ function showPresenceNotifHop(msg) {
 }
 
 async function renderPresencesHop(g) {
-  const el = document.getElementById('dash-presences-hop');
+  const el = document.getElementById('dash-presences');
   if (!el) return;
   const u = state.currentUser;
   const isDir = gradeRankHop(g) <= 1;
@@ -4270,7 +4267,7 @@ async function finDeServiceHop() {
 // RAPPORTS DE MISSION — Hôpital de Konoha
 // ============================================================
 async function renderRapportsHop(g) {
-  const el = document.getElementById('dash-rapports-hop');
+  const el = document.getElementById('dash-rapports');
   if (!el) return;
   const u = state.currentUser;
   const isHigh = gradeRankHop(g) <= 2;
@@ -4391,7 +4388,7 @@ function filterRapportsHopType(type, btn) {
 // PLANNING — Hôpital de Konoha
 // ============================================================
 async function renderPlanningHop(g) {
-  const el = document.getElementById('dash-planning-hop');
+  const el = document.getElementById('dash-planning');
   if (!el) return;
   const u = state.currentUser;
   const isDir = gradeRankHop(g) <= 1;
@@ -4496,7 +4493,7 @@ async function planDelHop(id) {
 // SALAIRES — Hôpital de Konoha
 // ============================================================
 function renderSalairesHop(g) {
-  const el = document.getElementById('dash-salaires-hop');
+  const el = document.getElementById('dash-salaires');
   if (!el) return;
   const isDir = gradeRankHop(g) <= 1;
 
@@ -4565,7 +4562,7 @@ function editSalaireHop(grade) {
 // RAPPORTS DE MISSION — HÔPITAL
 // ============================================================
 async function renderRapportsHop(g) {
-  const el = document.getElementById('dash-rapports-hop');
+  const el = document.getElementById('dash-rapports');
   if (!el) return;
   const u = state.currentUser;
   const isHighRank = gradeRankHop(g) <= 2;
@@ -4662,7 +4659,7 @@ async function soumettreRapportHop() {
 // PLANNING — HÔPITAL
 // ============================================================
 async function renderPlanningHop(g) {
-  const el = document.getElementById('dash-planning-hop');
+  const el = document.getElementById('dash-planning');
   if (!el) return;
   const u = state.currentUser;
   const isDir = gradeRankHop(g) <= 1;
@@ -4756,7 +4753,7 @@ async function ajouterCreneauHop() {
 // SALAIRES — HÔPITAL
 // ============================================================
 function renderSalairesHop(g) {
-  const el = document.getElementById('dash-salaires-hop');
+  const el = document.getElementById('dash-salaires');
   if (!el) return;
   const isDir = gradeRankHop(g) <= 1;
 
