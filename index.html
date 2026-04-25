@@ -5326,9 +5326,13 @@ async function supprimerRdvHop(id) {
 async function supprimerCandidHop(id) {
   if (!await hopConfirmAsync('Supprimer définitivement cette candidature ? Cette action est irréversible.', true)) return;
   try {
-    await sbDelete('candidatures', '?id=eq.' + id);
+    await sbDelete('candidatures_hop', '?id=eq.' + id);
     state.candidatures = state.candidatures.filter(function(c) { return c.id !== id; });
-  } catch(e) { console.warn('suppr candid:', e); }
+    hopSuccess('Candidature supprimée avec succès.');
+  } catch(e) {
+    console.warn('suppr candid:', e);
+    hopWarning('Erreur lors de la suppression. Réessayez.');
+  }
   renderCandidContent(state.currentUser.grade);
 }
 
