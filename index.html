@@ -1468,6 +1468,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
+          <button class="dash-nav-btn-hop" style="opacity:0.45;cursor:not-allowed;text-decoration:line-through;pointer-events:none" title="En développement — disponible à partir du 20h30">💬 Discussions <span style="font-size:9px;background:rgba(196,154,26,0.2);color:var(--hop-accent,#c49a1a);padding:1px 6px;border-radius:10px;margin-left:4px;font-style:normal;text-decoration:none;display:inline-block">Bientôt</span></button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
@@ -1496,8 +1497,10 @@ body {
       <div class="dash-tab-hop" id="dash-logs"></div>
       <div class="dash-tab-hop" id="dash-presences"></div>
       <div class="dash-tab-hop" id="dash-rapports"></div>
+      <div class="dash-tab-hop" id="dash-discussions"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
       <div class="dash-tab-hop" id="dash-rapports"></div>
+      <div class="dash-tab-hop" id="dash-discussions"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
       <div class="dash-tab-hop" id="dash-frigo"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
@@ -2122,6 +2125,7 @@ function switchDashTab(name, btn) {
   if (name === 'cours')         renderCoursContent(g);
   if (name === 'presences')     renderPresencesHop(g);
   if (name === 'rapports')      renderRapportsHop(g);
+  if (name === 'discussions')   renderDiscussionsHop(g);
   if (name === 'salaires')      renderSalairesHop(g);
   if (name === 'renseignement') renderRenseignementHop(g);
   if (name === 'frigo')         renderFrigoContent(g);
