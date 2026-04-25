@@ -722,6 +722,11 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+@keyframes pulse-hop {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(30,122,69,0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(30,122,69,0); }
+}
 </style></head><body>
 
 
@@ -1398,6 +1403,15 @@ body {
         <div class="dash-topbar-sub-hop">Hôpital de Konoha</div>
       </div>
     </div>
+    <!-- CHRONO SERVICE EN COURS - visible partout -->
+    <div id="global-service-timer-hop" style="display:none;background:rgba(30,122,69,0.12);border:1px solid rgba(30,122,69,0.35);border-radius:20px;padding:6px 16px;display:none;align-items:center;gap:8px">
+      <div style="width:8px;height:8px;border-radius:50%;background:#1E7A45;animation:pulse-hop 1.5s infinite"></div>
+      <div>
+        <div style="font-size:10px;color:#1E7A45;font-weight:700;text-transform:uppercase;letter-spacing:1px">En service</div>
+        <div id="global-timer-hop" style="font-size:18px;font-weight:700;color:#1E7A45;font-family:'Cormorant Garamond',serif;line-height:1">0h00:00</div>
+      </div>
+    </div>
+
     <div class="dash-topbar-right-hop">
       <div class="avatar-hop" id="dash-avatar">—</div>
       <div>
@@ -1763,6 +1777,7 @@ async function doLogin() {
   localStorage.setItem('hop_session', JSON.stringify(state.currentUser));
   startRealtime();
   showPage('dashboard');
+  startGlobalTimerHop();
 }
 
 async function doStaffLogin() {
@@ -2139,8 +2154,8 @@ function renderJournalPublic() {
 function renderJournalAgent(g) {
   const el = document.getElementById('dash-journal');
   if (!el) return;
-  const canPublish = canRdvsHop(g);
-  let html = `<h2 class="dash-section-title-hop">Journal médical</h2>`;
+  const canPublish = gradeRankHop(g) <= 0; // Chef Médecin uniquement
+  let html = `<h2 class="dash-section-title-hop">📰 Journal — Annonces</h2>`;
   if (canPublish) {
     html += `<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1rem">
       <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.75rem">Publier une annonce</div>
@@ -2172,7 +2187,10 @@ async function publishJournal() {
   const type = document.getElementById('j-type')?.value;
   if (!titre||!contenu) { alert('Titre et contenu requis.'); return; }
   const u = state.currentUser;
-  await sbPost('journal_hop', { titre, contenu, type, auteur: u.fullname||u.username, grade: u.grade, date: new Date().toLocaleDateString('fr-FR') });
+  const nomAffiche = (state.users && state.users[u.username] && state.users[u.username].fullname)
+    ? state.users[u.username].fullname
+    : u.username;
+  await sbPost('journal_hop', { titre, contenu, type, auteur: nomAffiche, grade: u.grade, date: new Date().toLocaleDateString('fr-FR') });
   await syncFromSupabase();
   renderJournalAgent(u.grade);
   renderJournalPublic();
@@ -4271,9 +4289,15 @@ async function renderPresencesHop(g) {
     window._hopServiceTimer = setInterval(function() {
       var timerEl = document.getElementById('hop-service-timer');
       if (!timerEl) { clearInterval(window._hopServiceTimer); return; }
-      var dm = Math.floor((new Date()-_priseAt)/60000);
-      timerEl.textContent = Math.floor(dm/60)+'h'+String(dm%60).padStart(2,'0');
-    }, 30000);
+      var elapsed = new Date() - _priseAt;
+      var totalSec = Math.floor(elapsed/1000);
+      var h = Math.floor(totalSec/3600);
+      var m = Math.floor((totalSec%3600)/60);
+      var s = totalSec%60;
+      timerEl.textContent = h+'h'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+      var salEl = document.getElementById('hop-sal-cours');
+      if (salEl) salEl.textContent = Math.round((elapsed/3600000)*_taux).toLocaleString('fr-FR')+' Ryos';
+    }, 1000);
   }
 }
 
@@ -4284,6 +4308,12 @@ async function priseDeServiceHop() {
   const existing = JSON.parse(localStorage.getItem(serviceKey) || 'null');
   if (existing && existing.prise && !existing.fin) {
     showPresenceNotifHop('⚠️ Vous êtes déjà en service.');
+    return;
+  }
+  const parisNow = new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/Paris'}));
+  const hParis = parisNow.getHours();
+  if (hParis >= 2 && hParis < 20) {
+    showPresenceNotifHop('⚠️ Les prises de service ne sont possibles qu\'entre 20h00 et 02h00 (heure de Paris).');
     return;
   }
   const now = new Date();
@@ -4321,6 +4351,7 @@ async function priseDeServiceHop() {
 
   showPresenceNotifHop('✅ Prise de service à ' + heureLocale);
   await renderPresencesHop(state.currentUser.grade);
+  startGlobalTimerHop();
 }
 
 async function finDeServiceHop() {
@@ -4370,6 +4401,7 @@ async function finDeServiceHop() {
   localStorage.removeItem(serviceKey);
   showPresenceNotifHop('✅ Service terminé — Durée : ' + formatDureeHop(dureeOk) + ' — Salaire : ' + salaire.toLocaleString('fr-FR') + ' Ryos');
   await renderPresencesHop(state.currentUser.grade);
+  startGlobalTimerHop();
 }
 
 
@@ -4728,4 +4760,101 @@ function hopRetrait(ficheId) {
   if (!d) return;
   retraitHop(d.username, d.nom, d.total);
 }
+
+// ============================================================
+// COUPURE AUTOMATIQUE 2H00 — HÔPITAL DE KONOHA
+// ============================================================
+(function() {
+  function checkCoupure2hHop() {
+    var paris = new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/Paris'}));
+    var h = paris.getHours(), m = paris.getMinutes();
+    if (h === 2 && m < 5) {
+      cloturerTousServicesHop();
+    }
+  }
+
+  async function cloturerTousServicesHop() {
+    var clotures = 0;
+    for (var key in localStorage) {
+      if (key.startsWith('hop_service_')) {
+        var data = JSON.parse(localStorage.getItem(key) || 'null');
+        if (data && data.prise && !data.fin) {
+          var username = key.replace('hop_service_', '');
+          var debut = new Date(data.prise);
+          var parisNow = new Date(new Date().toLocaleString('en-US', {timeZone:'Europe/Paris'}));
+          var fin2h = new Date(parisNow);
+          fin2h.setHours(2,0,0,0);
+          if (fin2h < debut) fin2h.setDate(fin2h.getDate()+1);
+          var dureeMs = Math.max(60000, Math.min(fin2h - debut, 12*3600000));
+          var grade = state.users[username]?.grade || '';
+          var taux = SALAIRES_HOP[grade] || 50;
+          var salaire = Math.round((dureeMs/3600000)*taux);
+          try {
+            if (data.id) {
+              await fetch(SB_URL+'/rest/v1/presences_hop?id=eq.'+data.id, {
+                method:'PATCH',
+                headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+                body:JSON.stringify({fin:fin2h.toISOString(), duree_ms:dureeMs, salaire:salaire})
+              });
+            }
+          } catch(e){}
+          localStorage.removeItem(key);
+          clotures++;
+        }
+      }
+    }
+    if (clotures > 0) {
+      console.log('[Konoha Hop] Coupure 2h00 : '+clotures+' service(s) clôturé(s)');
+      if (state.currentUser) {
+        var tabP = document.getElementById('dash-presences');
+        if (tabP && tabP.classList.contains('active')) {
+          renderPresencesHop(state.currentUser.grade);
+        }
+      }
+    }
+  }
+
+  setInterval(checkCoupure2hHop, 60000);
+  checkCoupure2hHop();
+})();
+
+
+// ============================================================
+// CHRONO GLOBAL EN TOPBAR — HÔPITAL
+// ============================================================
+function startGlobalTimerHop() {
+  if (window._globalTimerHop) clearInterval(window._globalTimerHop);
+
+  function tick() {
+    var u = state.currentUser;
+    if (!u) return;
+    var serviceKey = 'hop_service_' + u.username;
+    var data = JSON.parse(localStorage.getItem(serviceKey) || 'null');
+    var timerBox = document.getElementById('global-service-timer-hop');
+    var timerEl  = document.getElementById('global-timer-hop');
+    if (!timerBox || !timerEl) return;
+
+    if (data && data.prise && !data.fin) {
+      var elapsed = new Date() - new Date(data.prise);
+      var totalSec = Math.floor(elapsed / 1000);
+      var h = Math.floor(totalSec / 3600);
+      var m = Math.floor((totalSec % 3600) / 60);
+      var s = totalSec % 60;
+      timerEl.textContent = h + 'h' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+      timerBox.style.display = 'flex';
+      // Sync aussi le timer dans la section présences si visible
+      var innerTimer = document.getElementById('hop-service-timer');
+      if (innerTimer) innerTimer.textContent = timerEl.textContent;
+      var taux = SALAIRES_HOP[u.grade] || 50;
+      var salEl = document.getElementById('hop-sal-cours');
+      if (salEl) salEl.textContent = Math.round((elapsed/3600000)*taux).toLocaleString('fr-FR') + ' Ryos';
+    } else {
+      timerBox.style.display = 'none';
+    }
+  }
+
+  tick();
+  window._globalTimerHop = setInterval(tick, 1000);
+}
+
 </script></body></html>
