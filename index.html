@@ -1419,6 +1419,12 @@ body {
     </div>
   </div>
   </div>
+
+  <!-- Section statut candidature (citoyen connecté) -->
+  <div id="my-candid-section" style="display:none;max-width:680px;margin:0 auto;padding:0 1rem 3rem">
+    <h3 style="font-family:'Cormorant Garamond',Georgia,serif;color:var(--hop-dark);font-size:20px;margin-bottom:1rem">📋 Ma candidature</h3>
+    <div id="my-candid-content"></div>
+  </div>
 </div>
 
 
@@ -2135,13 +2141,51 @@ async function submitPostuler() {
     return;
   }
   const author = state.currentUser ? state.currentUser.username : nom;
-  await sbPost('candidatures_hop', { nom, niveau: niv, spécialité: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom });
+  // POST candidature et récupérer l'ID réel
+  let newId = null;
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/candidatures_hop', {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
+      body: JSON.stringify({ nom, niveau: niv, spécialité: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom })
+    });
+    const data = await res.json();
+    if (Array.isArray(data) && data[0]) newId = data[0].id;
+  } catch(e) { console.warn('submit candid:', e); }
+
+  if (!newId) { hopWarning("Erreur lors de l'envoi. Réessayez."); return; }
+
+  // Message de confirmation dans le thread de la candidature
+  const heure = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  await sbPost('messages_hop', {
+    thread_id: 'candid_'+newId,
+    from_user: 'system',
+    sender_name: 'Hôpital de Konoha',
+    grade: 'Système',
+    role: 'system',
+    text: "Bonjour "+nom+", votre candidature #"+newId+" a bien été enregistrée. Le Chef Médecin vous répondra dès que possible.",
+    time: heure
+  });
+
   await syncFromSupabase();
-  const newId = state.candidatures[state.candidatures.length-1]?.id || Date.now();
-  await sbPost('messages_hop', { thread_id:'candid_'+newId, from_user:'system', sender_name:'Système', role:'system', text:'Votre candidature a bien été enregistrée. Elle sera étudiée par le Chef Médecin.', time: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) });
-  await syncFromSupabase();
-  document.getElementById('post-nom').value=''; document.getElementById('post-niveau').value=''; document.getElementById('post-spécialité').value=''; document.getElementById('post-motiv').value='';
-  const ok = document.getElementById('post-ok'); ok.style.display='block'; setTimeout(()=>ok.style.display='none',4000);
+
+  // Réinitialiser le formulaire
+  ['post-nom','post-motiv'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  ['post-niveau','post-spécialité'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+
+  // Afficher confirmation visuelle côté citoyen
+  const ok = document.getElementById('post-ok');
+  if (ok) {
+    ok.innerHTML = '✓ Candidature #'+newId+' envoyée ! Le Chef Médecin vous répondra directement dans votre espace.';
+    ok.style.display='block';
+    setTimeout(function(){ ok.style.display='none'; }, 6000);
+  }
+
+  // Si connecté, rafraîchir la vue
+  if (state.currentUser) {
+    var candTab = document.getElementById('dash-candidatures');
+    if (candTab && candTab.classList.contains('active')) renderCandidContent(state.currentUser.grade);
+  }
 }
 
 // ============================================================
