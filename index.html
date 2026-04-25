@@ -727,6 +727,35 @@ body {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(30,122,69,0.4); }
   50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(30,122,69,0); }
 }
+
+/* ── Popup Hina Sakamoto ── */
+#hop-popup-overlay {
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.55);z-index:99999;
+  align-items:center;justify-content:center;
+}
+#hop-popup-overlay.show { display:flex; }
+#hop-popup-box {
+  background:var(--hop-bg,#FDF6FA);border:1px solid var(--hop-border,rgba(200,140,180,0.25));
+  border-radius:18px;padding:2rem 1.75rem;max-width:400px;width:92%;
+  text-align:center;box-shadow:0 24px 60px rgba(139,94,131,0.18);
+  animation:popIn .2s ease;
+}
+@keyframes popIn { from{transform:scale(.88);opacity:0} to{transform:scale(1);opacity:1} }
+#hop-popup-avatar {
+  width:52px;height:52px;border-radius:50%;margin:0 auto 10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:500;
+}
+#hop-popup-secretary { font-size:11px;color:var(--hop-muted);margin-bottom:4px; }
+#hop-popup-title { font-size:16px;font-weight:700;color:var(--hop-text);margin-bottom:6px; }
+#hop-popup-msg { font-size:13px;color:var(--hop-muted);margin-bottom:20px;line-height:1.5; }
+#hop-popup-btns { display:flex;gap:10px;justify-content:center; }
+#hop-popup-btns button {
+  flex:1;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;
+  cursor:pointer;font-family:inherit;transition:opacity .15s;
+}
+#hop-popup-btns button:hover { opacity:0.85; }
 </style></head><body>
 
 
@@ -1938,9 +1967,9 @@ async function submitDonSang() {
   const dispo  = document.getElementById('don-dispo')?.value.trim();
   const info   = document.getElementById('don-info')?.value.trim();
 
-  if (!nom || !groupe || !dispo) { alert('Veuillez remplir tous les champs obligatoires (nom, groupe sanguin, disponibilité).'); return; }
+  if (!nom || !groupe || !dispo) { hopWarning('Veuillez remplir tous les champs obligatoires (nom, groupe sanguin, disponibilité).'); return; }
   if (sante === 'non') { alert('Vous ne pouvez pas faire de don si vous n\'êtes pas en bonne santé. Revenez quand vous serez rétabli(e) !'); return; }
-  if (dernier === '1mois-') { alert('Le délai minimum entre deux dons est de 3 mois. Merci de votre générosité !'); return; }
+  if (dernier === '1mois-') { hopWarning('Le délai minimum entre deux dons est de 3 mois. Merci de votre générosité !'); return; }
 
   const author = state.currentUser ? state.currentUser.username : nom;
   const desc   = `DON DU SANG\nGroupe sanguin : ${groupe}\nDernier don : ${dernier === 'jamais' ? 'Jamais' : dernier}\nÉtat de santé : ${sante}\nDisponibilité : ${dispo}${info ? '\nInfos complémentaires : ' + info : ''}`;
@@ -1978,7 +2007,7 @@ async function submitRdv() {
   const desc = document.getElementById('rdv-desc').value.trim();
   const doul = document.getElementById('rdv-douleur').value;
   const date = document.getElementById('rdv-date').value.trim();
-  if (!nom||!grade||!motif||!desc) { alert('Veuillez remplir tous les champs obligatoires.'); return; }
+  if (!nom||!grade||!motif||!desc) { hopWarning('Veuillez remplir tous les champs obligatoires.'); return; }
   const author = state.currentUser ? state.currentUser.username : nom;
   await sbPost('rdvs', { nom, grade, motif, antecedents: ant, description: desc, douleur: doul, date_souhaitee: date||'Non précisée', status:'wait', author, author_display: nom });
   const newId = Date.now();
@@ -1995,8 +2024,8 @@ async function submitPostuler() {
   const motiv= document.getElementById('post-motiv').value.trim();
   const cas  = document.getElementById('post-casier').value;
   const dispo= document.getElementById('post-dispo').value;
-  if (!nom||!niv||!spec||!motiv||!cas||!dispo) { alert('Veuillez remplir tous les champs.'); return; }
-  if (cas==='oui') { alert('Un casier judiciaire disqualifie automatiquement la candidature.'); return; }
+  if (!nom||!niv||!spec||!motiv||!cas||!dispo) { hopWarning('Veuillez remplir tous les champs.'); return; }
+  if (cas==='oui') { hopWarning('Un casier judiciaire disqualifie automatiquement la candidature.'); return; }
 
   // Vérification casier judiciaire dans la base de la Police de Konoha
   const ficheCasier = await checkCasierPolice(nom);
@@ -2188,7 +2217,7 @@ async function publishJournal() {
   const titre = document.getElementById('j-titre')?.value.trim();
   const contenu = document.getElementById('j-contenu')?.value.trim();
   const type = document.getElementById('j-type')?.value;
-  if (!titre||!contenu) { alert('Titre et contenu requis.'); return; }
+  if (!titre||!contenu) { hopWarning('Titre et contenu requis.'); return; }
   const u = state.currentUser;
   const nomAffiche = (state.users && state.users[u.username] && state.users[u.username].fullname)
     ? state.users[u.username].fullname
@@ -2200,7 +2229,7 @@ async function publishJournal() {
 }
 
 async function deleteJournal(id) {
-  if (!confirm('Supprimer cette annonce ?')) return;
+  if (!await hopConfirmAsync('Supprimer cette annonce ?', true)) return;
   await sbDelete('journal_hop', `?id=eq.${id}`);
   await syncFromSupabase();
   renderJournalAgent(state.currentUser.grade);
@@ -2381,7 +2410,7 @@ async function changeGradeHop(username, newGrade) {
 // ============================================================
 async function deleteAccount(username, isStaff) {
   const u = state.currentUser;
-  if (gradeRankHop(u.grade) > 0) { alert('Accès refusé — Chef Médecin uniquement.'); return; }
+  if (gradeRankHop(u.grade) > 0) { hopWarning('Accès refusé — Chef Médecin uniquement.'); return; }
 
   const displayName = state.users[username]?.fullname || username;
   const motif = prompt(`Motif de suppression du compte de "${displayName}" :\n(Démission, décès RP, renvoi, autre...)\n\nCe motif sera enregistré.`);
@@ -2430,7 +2459,7 @@ async function deleteAccount(username, isStaff) {
     renderLogsContent(u.grade);
   } catch(e) {
     console.error(e);
-    alert('Erreur lors de la suppression. Réessayez.');
+    hopWarning('Erreur lors de la suppression. Réessayez.');
   }
 }
 
@@ -2498,9 +2527,9 @@ async function addMembre() {
   const mat   = document.getElementById('aj-mat')?.value.trim();
   const pass  = document.getElementById('aj-pass')?.value.trim();
 
-  if (!nom || !grade) { alert('Nom et grade obligatoires.'); return; }
-  if (!pass) { alert('Mot de passe obligatoire — clique sur "Générer" ou saisis minimum 5 chiffres.'); return; }
-  if (!/^\d{5,}$/.test(pass)) { alert('Le mot de passe doit contenir uniquement des chiffres (minimum 5).'); return; }
+  if (!nom || !grade) { hopWarning('Nom et grade obligatoires.'); return; }
+  if (!pass) { hopWarning('Mot de passe obligatoire — clique sur "Générer" ou saisis minimum 5 chiffres.'); return; }
+  if (!/^\d{5,}$/.test(pass)) { hopWarning('Le mot de passe doit contenir uniquement des chiffres (minimum 5).'); return; }
 
   const username = nom.replace(/\s+/g,'_');
   const inscription = new Date().toLocaleDateString('fr-FR');
@@ -2637,7 +2666,7 @@ async function saveCitizenProfile() {
   await sbPatch('users_hop', `?username=eq.${u.username}`, { grade });
   localStorage.setItem('hop_session', JSON.stringify(u));
   updateNav();
-  alert('Profil mis à jour !');
+  hopSuccess('Profil mis à jour !');
 }
 
 // ---- MESSAGERIE ----
@@ -3168,7 +3197,7 @@ function toggleDosDetail(id) {
 }
 
 async function deleteDossierEntry(id, safeComboId) {
-  if (!confirm('Supprimer cette entrée médicale définitivement ?')) return;
+  if (!await hopConfirmAsync('Supprimer cette entrée médicale définitivement ?', true)) return;
 
   // Delete from Supabase
   if (id && id !== 0) {
@@ -3225,7 +3254,7 @@ async function saveDossier() {
   const statut         = document.getElementById('dos-statut')?.value;
   const groupe_sanguin = document.getElementById('dos-sang')?.value || null;
 
-  if (!patient || !soignant || !desc) { alert('Patient, soignant et description sont obligatoires.'); return; }
+  if (!patient || !soignant || !desc) { hopWarning('Patient, soignant et description sont obligatoires.'); return; }
 
   // Save to Supabase
   let newId = null;
@@ -3279,7 +3308,7 @@ async function saveDossier() {
 
 
 async function deleteDossier(index) {
-  if (!confirm('Supprimer ce dossier médical définitivement ? Cette action est irréversible.')) return;
+  if (!await hopConfirmAsync('Supprimer ce dossier médical définitivement ? Cette action est irréversible.', true)) return;
   const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
   const dossier = dossiers[index];
 
@@ -3428,7 +3457,7 @@ async function saveCours() {
   const lien      = document.getElementById('cours-lien')?.value.trim();
   const desc      = document.getElementById('cours-desc')?.value.trim();
 
-  if (!titre || !desc) { alert('Titre et contenu sont obligatoires.'); return; }
+  if (!titre || !desc) { hopWarning('Titre et contenu sont obligatoires.'); return; }
 
   const u = state.currentUser;
   const entry = {
@@ -3453,7 +3482,7 @@ async function saveCours() {
 }
 
 async function deleteCours(id) {
-  if (!confirm('Supprimer ce cours définitivement ?')) return;
+  if (!await hopConfirmAsync('Supprimer ce cours définitivement ?', true)) return;
   try { await sbDelete('cours_hop', '?id=eq.'+id); } catch(e) {}
   const list = JSON.parse(localStorage.getItem('hop_cours') || '[]');
   const filtered = list.filter(c => c.id !== id);
@@ -3590,7 +3619,7 @@ async function sendCondoleance(mortId) {
       let messages = [];
       try { messages = JSON.parse(res[0].messages||'[]'); } catch(e) {}
       // Check not already sent
-      if (messages.some(m => m.visitor_id === visitorId)) { alert('Vous avez déjà laissé un message.'); return; }
+      if (messages.some(m => m.visitor_id === visitorId)) { hopWarning('Vous avez déjà laissé un message.'); return; }
       messages.push(msg);
       await fetch(SB_URL+'/rest/v1/monument_hop?id=eq.'+mortId, {
         method:'PATCH',
@@ -3600,7 +3629,7 @@ async function sendCondoleance(mortId) {
     }
   } catch(e) { console.warn(e); }
 
-  alert('✓ Votre message a été envoyé. Merci de ce geste.');
+  hopWarning('✓ Votre message a été envoyé. Merci de ce geste.');
   loadMonument();
 }
 
@@ -3609,7 +3638,7 @@ async function saveMort() {
   const grade = document.getElementById('mort-grade')?.value.trim();
   const date  = document.getElementById('mort-date')?.value.trim();
   const desc  = document.getElementById('mort-desc')?.value.trim();
-  if (!nom) { alert('Le nom est obligatoire.'); return; }
+  if (!nom) { hopWarning('Le nom est obligatoire.'); return; }
 
   const entry = { nom, grade: grade||null, date: date||new Date().toLocaleDateString('fr-FR'), description: desc||null, messages: '[]', added_by: state.currentUser?.fullname||state.currentUser?.username };
   try { await sbPost('monument_hop', entry); } catch(e) { console.warn(e); }
@@ -3772,7 +3801,7 @@ function toggleMortMsg(i) {
 
 async function sendMsgMort(mortId, idx) {
   const texte = document.getElementById('msg-text-hop-'+idx)?.value.trim();
-  if (!texte) { alert('Écrivez un message.'); return; }
+  if (!texte) { hopWarning('Écrivez un message.'); return; }
   const u = state.currentUser;
   const msg = { texte, auteur: u.fullname||u.username, username: u.username, date: new Date().toLocaleDateString('fr-FR') };
 
@@ -3781,7 +3810,7 @@ async function sendMsgMort(mortId, idx) {
     if (Array.isArray(res) && res[0]) {
       let messages = [];
       try { messages = JSON.parse(res[0].messages||'[]'); } catch(e) {}
-      if (messages.some(m => m.username === u.username)) { alert('Vous avez déjà laissé un message.'); return; }
+      if (messages.some(m => m.username === u.username)) { hopWarning('Vous avez déjà laissé un message.'); return; }
       messages.push(msg);
       await fetch(SB_URL+'/rest/v1/monument_hop?id=eq.'+mortId, {
         method:'PATCH',
@@ -3791,7 +3820,7 @@ async function sendMsgMort(mortId, idx) {
     }
   } catch(e) { console.warn(e); }
 
-  alert('✓ Message envoyé.');
+  hopWarning('✓ Message envoyé.');
   renderMonumentDash(state.currentUser.grade);
 }
 
@@ -3801,7 +3830,7 @@ async function saveMortDash() {
   const grade= document.getElementById('mort-grade')?.value;
   const date = document.getElementById('mort-date')?.value.trim();
   const desc = document.getElementById('mort-desc')?.value.trim();
-  if (!nom || !desc) { alert('Nom et description obligatoires.'); return; }
+  if (!nom || !desc) { hopWarning('Nom et description obligatoires.'); return; }
 
   const u = state.currentUser;
   const entry = { nom, grade: grade||null, date: date||new Date().toLocaleDateString('fr-FR'), description: desc, messages:'[]', added_by: u?.fullname||u?.username };
@@ -3822,7 +3851,7 @@ async function saveMortDash() {
 }
 
 async function deleteMortDash(id) {
-  if (!confirm('Supprimer cette entrée du monument ?')) return;
+  if (!await hopConfirmAsync('Supprimer cette entrée du monument ?', true)) return;
   if (id) { try { await sbDelete('monument_hop', '?id=eq.'+id); } catch(e) {} }
   const list = JSON.parse(localStorage.getItem('hop_monument') || '[]');
   localStorage.setItem('hop_monument', JSON.stringify(list.filter(m=>m.id!==id)));
@@ -4028,7 +4057,7 @@ async function savePocheSang() {
   const notes   = document.getElementById('frigo-notes')?.value.trim();
   let   ref     = document.getElementById('frigo-ref')?.value.trim();
 
-  if (!groupe) { alert('Le groupe sanguin est obligatoire.'); return; }
+  if (!groupe) { hopWarning('Le groupe sanguin est obligatoire.'); return; }
   if (!ref) { ref = 'POCH-' + groupe.replace('+','P').replace('-','M') + '-' + Date.now().toString().slice(-5); }
 
   const u = state.currentUser;
@@ -4055,13 +4084,13 @@ async function savePocheSang() {
 }
 
 async function utiliserPoche(id) {
-  if (!confirm('Marquer cette poche comme utilisée ?')) return;
+  if (!await hopConfirmAsync('Marquer cette poche comme utilisée ?', false)) return;
   try { await sbPatch('frigo_sang', '?id=eq.' + id, { statut: 'utilisee' }); } catch(e) {}
   renderFrigoContent(state.currentUser.grade);
 }
 
 async function supprimerPoche(id) {
-  if (!confirm('Supprimer définitivement cette poche ?')) return;
+  if (!await hopConfirmAsync('Supprimer définitivement cette poche ?', true)) return;
   try { await fetch(SB_URL + '/rest/v1/frigo_sang?id=eq.' + id, { method:'DELETE', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY} }); } catch(e) {}
   renderFrigoContent(state.currentUser.grade);
 }
@@ -4511,7 +4540,7 @@ async function soumettreRapportHop() {
   const statut     = document.getElementById('rap-statut-hop')?.value;
   const desc       = document.getElementById('rap-desc-hop')?.value.trim();
 
-  if (!desc) { alert('Veuillez rédiger le rapport détaillé.'); return; }
+  if (!desc) { hopWarning('Veuillez rédiger le rapport détaillé.'); return; }
 
   try {
     await sbPost('rapports_hop', {
@@ -4614,7 +4643,7 @@ function sauvegarderSalairesHop() {
 // ============================================================
 function hopCloture(id) {
   var d = window._hopEnServiceData && window._hopEnServiceData[id];
-  if (!d) { alert('Données introuvables.'); return; }
+  if (!d) { hopWarning('Données introuvables.'); return; }
   forceFinServiceHop(d.id, d.username, d.nom, d.grade, d.priseHeure);
 }
 
@@ -4701,7 +4730,7 @@ function toggleFicheHop(id) {
 
 async function payerSalaireHop(username, nom, total) {
   var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
-  if (!confirm('Confirmer le paiement de '+nom+' ? '+total.toLocaleString('fr-FR')+' Ryos')) return;
+  if (!await hopConfirmAsync('Confirmer le paiement', false)) return;
   try {
     // Marquer toutes les présences non payées de cet agent comme payées
     await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&statut_paye=is.null&fin=not.is.null', {
@@ -4730,7 +4759,7 @@ async function retraitHop(username, nom, total) {
   var montantStr = prompt('Montant \u00e0 retirer \u00e0 '+nom+' (solde actuel : '+total.toLocaleString('fr-FR')+' Ryos) ?');
   if (!montantStr) return;
   var montant = parseInt(montantStr);
-  if (isNaN(montant)||montant<=0) { alert('Montant invalide.'); return; }
+  if (isNaN(montant)||montant<=0) { hopWarning('Montant invalide.'); return; }
   var motif = prompt('Motif du retrait ?');
   if (!motif) return;
   var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
@@ -5147,11 +5176,11 @@ async function voirDossierHop(id) {
 
 function genererDocRenseignement() { alert('Fonctionnalité .docx : récupérez d\'abord les données via "Valider" puis cliquez sur "Voir" le dossier créé.'); }
 function genererDocRenseignementId(id) { alert('Génération .docx pour dossier #'+id+' — à connecter à votre service de génération de documents.'); }
-function envoyerDossierPatient() { alert('Envoi au patient — à connecter à votre système de messagerie.'); }
+function envoyerDossierPatient() { hopWarning('Envoi au patient — à connecter à votre système de messagerie.'); }
 
 
 async function supprimerRdvHop(id) {
-  if (!confirm('Supprimer définitivement ce rendez-vous #' + id + ' ?')) return;
+  if (!await hopConfirmAsync('Supprimer définitivement ce rendez-vous ? Cette action est irréversible.', true)) return;
   try {
     await sbDelete('rdvs', '?id=eq.' + id);
     state.rdvs = state.rdvs.filter(function(r) { return r.id !== id; });
@@ -5160,7 +5189,7 @@ async function supprimerRdvHop(id) {
 }
 
 async function supprimerCandidHop(id) {
-  if (!confirm('Supprimer définitivement cette candidature #' + id + ' ?')) return;
+  if (!await hopConfirmAsync('Supprimer définitivement cette candidature ? Cette action est irréversible.', true)) return;
   try {
     await sbDelete('candidatures', '?id=eq.' + id);
     state.candidatures = state.candidatures.filter(function(c) { return c.id !== id; });
@@ -5168,4 +5197,15 @@ async function supprimerCandidHop(id) {
   renderCandidContent(state.currentUser.grade);
 }
 
-</script></body></html>
+</script>
+<!-- ── Popup Hina Sakamoto ── -->
+<div id="hop-popup-overlay">
+  <div id="hop-popup-box">
+    <div id="hop-popup-avatar">HS</div>
+    <div id="hop-popup-secretary">Hina Sakamoto &mdash; Secrétaire médicale</div>
+    <div id="hop-popup-title">Confirmation</div>
+    <div id="hop-popup-msg"></div>
+    <div id="hop-popup-btns"></div>
+  </div>
+</div>
+</body></html>
