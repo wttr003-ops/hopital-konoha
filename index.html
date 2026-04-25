@@ -1512,7 +1512,94 @@ body {
 </div>
 
 <script src="app.js"></script>
-<script>// ============================================================
+<script>
+// ============================================================
+// POPUP PERSONNALISÉE — HINA SAKAMOTO
+// ============================================================
+function hopPopup(opts) {
+  var ov  = document.getElementById('hop-popup-overlay');
+  var av  = document.getElementById('hop-popup-avatar');
+  var ti  = document.getElementById('hop-popup-title');
+  var ms  = document.getElementById('hop-popup-msg');
+  var bt  = document.getElementById('hop-popup-btns');
+  if (!ov) return;
+
+  var colors = {
+    confirm: { bg:'rgba(139,94,131,0.12)', color:'var(--hop-mauve2)', icon:'HS' },
+    success: { bg:'rgba(39,174,96,0.12)',  color:'#1E7A45',           icon:'\u2713'  },
+    warning: { bg:'rgba(196,154,26,0.12)', color:'#7A5A00',           icon:'\u26a0\ufe0f' },
+    danger:  { bg:'rgba(192,57,43,0.1)',   color:'#c0392b',           icon:'\uD83D\uDDD1' }
+  };
+  var c = colors[opts.type] || colors.confirm;
+  av.style.background = c.bg;
+  av.style.color = c.color;
+  av.textContent = opts.icon || c.icon;
+  ti.textContent = opts.title || 'Confirmation';
+  ms.innerHTML   = opts.msg   || '';
+  bt.innerHTML   = '';
+
+  if (opts.onCancel !== undefined) {
+    var btnC = document.createElement('button');
+    btnC.textContent = opts.cancelLabel || 'Annuler';
+    btnC.style.cssText = 'background:none;border:1px solid var(--hop-border2);color:var(--hop-muted)';
+    btnC.onclick = function(){ ov.classList.remove('show'); if(opts.onCancel) opts.onCancel(); };
+    bt.appendChild(btnC);
+  }
+
+  var btnO = document.createElement('button');
+  btnO.textContent = opts.okLabel || 'Confirmer';
+  btnO.style.cssText = 'background:'+c.bg+';color:'+c.color+';border:1px solid '+c.color+';';
+  btnO.onclick = function(){ ov.classList.remove('show'); if(opts.onOk) opts.onOk(); };
+  bt.appendChild(btnO);
+
+  ov.classList.add('show');
+  ov.onclick = function(e){ if(e.target===ov) ov.classList.remove('show'); };
+}
+
+function hopConfirmAsync(msg, isDanger) {
+  return new Promise(function(resolve) {
+    hopPopup({
+      type: isDanger ? 'danger' : 'confirm',
+      title: isDanger ? 'Supprimer d\u00e9finitivement ?' : 'Confirmation',
+      msg: msg,
+      okLabel: isDanger ? 'Supprimer' : 'Confirmer',
+      cancelLabel: 'Annuler',
+      onOk:     function(){ resolve(true);  },
+      onCancel: function(){ resolve(false); }
+    });
+  });
+}
+
+function hopConfirm(msg, onOk, opts) {
+  hopPopup(Object.assign({
+    type: 'confirm',
+    title: (opts && opts.title) ? opts.title : 'Confirmation',
+    msg: msg,
+    okLabel: (opts && opts.okLabel) ? opts.okLabel : 'Confirmer',
+    cancelLabel: 'Annuler',
+    onOk: onOk,
+    onCancel: null
+  }, opts || {}));
+}
+
+function hopSuccess(msg, title) {
+  hopPopup({ type:'success', title:title||'Enregistr\u00e9', msg:msg, okLabel:'Parfait !', onOk:null });
+}
+
+function hopWarning(msg, title) {
+  hopPopup({ type:'warning', title:title||'Attention', msg:msg, okLabel:"J'ai compris", onOk:null });
+}
+
+function hopDanger(msg, onOk, title) {
+  hopPopup({
+    type:'danger',
+    title:title||'Supprimer d\u00e9finitivement ?',
+    msg:msg, okLabel:'Supprimer', cancelLabel:'Annuler',
+    onOk:onOk, onCancel:null
+  });
+}
+
+// ============================================================
 // HÔPITAL DE KONOHA — app.js
 // ============================================================
 
