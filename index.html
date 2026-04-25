@@ -1435,6 +1435,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('renseignement',this)">🔬 Renseignement</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
@@ -1462,6 +1463,7 @@ body {
       <div class="dash-tab-hop" id="dash-cours"></div>
       <div class="dash-tab-hop" id="dash-monument"></div>
       <div class="dash-tab-hop" id="dash-dossiers"></div>
+      <div class="dash-tab-hop" id="dash-renseignement"></div>
       <div class="dash-tab-hop" id="dash-logs"></div>
       <div class="dash-tab-hop" id="dash-presences"></div>
       <div class="dash-tab-hop" id="dash-rapports"></div>
@@ -2092,6 +2094,7 @@ function switchDashTab(name, btn) {
   if (name === 'presences')     renderPresencesHop(g);
   if (name === 'rapports')      renderRapportsHop(g);
   if (name === 'salaires')      renderSalairesHop(g);
+  if (name === 'renseignement') renderRenseignementHop(g);
   if (name === 'frigo')         renderFrigoContent(g);
 }
 
@@ -4856,5 +4859,292 @@ function startGlobalTimerHop() {
   tick();
   window._globalTimerHop = setInterval(tick, 1000);
 }
+
+
+// ============================================================
+// RENSEIGNEMENT MÉDICAL — HÔPITAL DE KONOHA
+// ============================================================
+async function renderRenseignementHop(g) {
+  const el = document.getElementById('dash-renseignement');
+  if (!el) return;
+  const u = state.currentUser;
+  const canCreate = gradeRankHop(g) <= 3; // Médecin et plus
+
+  // Charger les dossiers existants
+  let dossiers = [];
+  try {
+    const res = await sbGet('renseignements_hop', '?order=created_at.desc');
+    if (Array.isArray(res)) dossiers = res;
+  } catch(e) { console.warn('renseignements:', e); }
+
+  const nomMedecin = (state.users && state.users[u.username] && state.users[u.username].fullname)
+    ? state.users[u.username].fullname : u.username;
+
+  let h = '<h2 class="dash-section-title-hop">\uD83D\uDD2C Renseignement m\u00e9dical</h2>';
+
+  if (!canCreate) {
+    h += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Acc\u00e8s r\u00e9serv\u00e9 aux m\u00e9decins.</div>';
+    el.innerHTML = h;
+    return;
+  }
+
+  // FORMULAIRE
+  h += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">';
+  h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">Nouveau renseignement</div>';
+
+  // Section 1 : Identité
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">1. Identit\u00e9 du ninja</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
+  h += '<div class="form-group-hop" style="margin:0"><label>Nom et pr\u00e9nom *</label><input id="rs-nom" type="text" placeholder="Ex: Naruto Uzumaki"/></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Grade ninja</label><select id="rs-grade"><option value="">S\u00e9lectionner</option>'
+    + ['G\u00e9nin','Chunin','Jonin','Jonin \u00e9lite','Kage','Civil','Inconnu'].map(function(g2){return '<option>'+g2+'</option>';}).join('')
+    + '</select></div></div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">';
+  h += '<div class="form-group-hop" style="margin:0"><label>\u00c2ge</label><input id="rs-age" type="number" min="0" max="200" placeholder="Ex: 22"/></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Village d\'origine</label><input id="rs-village" type="text" placeholder="Ex: Konoha"/></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Date du bilan</label><input id="rs-date" type="date" value="'+ new Date().toISOString().split('T')[0]+'"/></div></div>';
+
+  // Section 2 : Médecin
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">2. M\u00e9decin r\u00e9f\u00e9rent</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+  h += '<div class="form-group-hop" style="margin:0"><label>Nom du m\u00e9decin</label><input id="rs-medecin" type="text" value="'+nomMedecin+'" readonly style="opacity:0.7"/></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Grade m\u00e9decin</label><input id="rs-grade-med" type="text" value="'+(u.grade||'--')+'" readonly style="opacity:0.7"/></div></div>';
+
+  // Section 3 : Bilan sanguin
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">3. Bilan sanguin</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:8px">';
+  h += '<div class="form-group-hop" style="margin:0"><label>Groupe sanguin</label><select id="rs-gs">'
+    + ['A+','A-','B+','B-','AB+','AB-','O+','O-','Non test\u00e9'].map(function(gs){return '<option>'+gs+'</option>';}).join('')
+    + '</select></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Rh\u00e9sus</label><select id="rs-rh"><option>Positif (+)</option><option>N\u00e9gatif (-)</option><option>Non test\u00e9</option></select></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Statut don</label><select id="rs-don"><option>Donneur \u00e9ligible</option><option>Non \u00e9ligible</option><option>Sous r\u00e9serve</option><option>Non test\u00e9</option></select></div></div>';
+  h += '<div class="form-group-hop" style="margin-bottom:16px"><label>Observations sanguines</label><textarea id="rs-obs-sang" rows="2" placeholder="Anomalies, taux particuliers..."></textarea></div>';
+
+  // Section 4 : Antécédents
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">4. Ant\u00e9c\u00e9dents m\u00e9dicaux</div>';
+  h += '<div style="margin-bottom:8px"><label style="font-size:12px;color:var(--hop-muted);margin-bottom:6px;display:block">Le patient a-t-il des ant\u00e9c\u00e9dents ?</label>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button class="rs-btn-toggle rs-antec-btn" data-val="oui" onclick="rsToggle(\'antec\',\'oui\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer;background:var(--hop-mauve);color:white">Oui</button>'
+    + '<button class="rs-btn-toggle rs-antec-btn" data-val="non" onclick="rsToggle(\'antec\',\'non\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer">Non</button>'
+    + '<button class="rs-btn-toggle rs-antec-btn" data-val="inconnu" onclick="rsToggle(\'antec\',\'inconnu\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer">Inconnu</button>'
+    + '</div></div>';
+
+  const ANTECEDENTS = ['Blessure de guerre','Fracture osseuse','Empoisonnement','Chakra perturb\u00e9','Br\u00fblures graves','Trauma cr\u00e2nien','Morsure de b\u00eate','Chirurgie pass\u00e9e','Allergie connue','Intoxication','Noyade','Piq\u00fbre/venin','Autre'];
+  h += '<div id="rs-antec-detail" style="margin-bottom:16px">';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'
+    + ANTECEDENTS.map(function(a){
+      return '<span class="rs-tag" data-group="antec" onclick="rsTagToggle(this)" style="padding:3px 10px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:11px;cursor:pointer;color:var(--hop-muted)">'+a+'</span>';
+    }).join('') + '</div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>D\u00e9tails des ant\u00e9c\u00e9dents</label><textarea id="rs-antec-txt" rows="2" placeholder="Pr\u00e9cisez..."></textarea></div></div>';
+
+  // Section 5 : Maladies actives
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">5. Maladies et pathologies actives</div>';
+  h += '<div style="margin-bottom:8px"><label style="font-size:12px;color:var(--hop-muted);margin-bottom:6px;display:block">Le patient souffre-t-il d\'une maladie ?</label>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button class="rs-mal-btn" data-val="oui" onclick="rsToggle(\'mal\',\'oui\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer;background:var(--hop-mauve);color:white">Oui</button>'
+    + '<button class="rs-mal-btn" data-val="non" onclick="rsToggle(\'mal\',\'non\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer">Non</button>'
+    + '</div></div>';
+
+  const MALADIES = ['Maladie du chakra','Infection grave','Trouble neurologique','Maladie chronique','Parasitose','Mal\u00e9diction de sceau','Empoisonnement chronique','Trouble immunitaire','Maladie respiratoire','Maladie cardiaque','Trouble osseux','Maladie de peau','Cecit\u00e9/Surdite','Autre maladie'];
+  h += '<div id="rs-mal-detail" style="margin-bottom:16px">';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'
+    + MALADIES.map(function(m){
+      return '<span class="rs-tag" data-group="mal" onclick="rsTagToggle(this)" style="padding:3px 10px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:11px;cursor:pointer;color:var(--hop-muted)">'+m+'</span>';
+    }).join('') + '</div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>Description de la pathologie</label><textarea id="rs-mal-txt" rows="2" placeholder="Sympt\u00f4mes, dur\u00e9e, traitement en cours..."></textarea></div></div>';
+
+  // Section 6 : Antécédents familiaux
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">6. Ant\u00e9c\u00e9dents familiaux</div>';
+  h += '<div style="margin-bottom:8px"><label style="font-size:12px;color:var(--hop-muted);margin-bottom:6px;display:block">Les parents ont-ils des maladies h\u00e9r\u00e9ditaires ?</label>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button class="rs-fam-btn" data-val="oui" onclick="rsToggle(\'fam\',\'oui\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer">Oui</button>'
+    + '<button class="rs-fam-btn" data-val="non" onclick="rsToggle(\'fam\',\'non\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer;background:var(--hop-mauve);color:white">Non</button>'
+    + '<button class="rs-fam-btn" data-val="inconnu" onclick="rsToggle(\'fam\',\'inconnu\')" style="padding:5px 16px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:12px;cursor:pointer">Inconnu</button>'
+    + '</div></div>';
+
+  const MAL_FAM = ['Kekka\u00ef Genka\u00ef h\u00e9r\u00e9ditaire','Anomalie chakra g\u00e9n\u00e9tique','Maladie d\u00e9g\u00e9n\u00e9rative','Trouble sanguin h\u00e9r\u00e9ditaire','Longevit\u00e9 r\u00e9duite','Trouble mental','Autre h\u00e9r\u00e9ditaire'];
+  h += '<div id="rs-fam-detail" style="display:none;margin-bottom:16px">';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">';
+  h += '<div class="form-group-hop" style="margin:0"><label>C\u00f4t\u00e9 paternel</label><textarea id="rs-fam-pere" rows="2" placeholder="Maladies du p\u00e8re..."></textarea></div>';
+  h += '<div class="form-group-hop" style="margin:0"><label>C\u00f4t\u00e9 maternel</label><textarea id="rs-fam-mere" rows="2" placeholder="Maladies de la m\u00e8re..."></textarea></div></div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">'
+    + MAL_FAM.map(function(m){
+      return '<span class="rs-tag" data-group="fam" onclick="rsTagToggle(this)" style="padding:3px 10px;border-radius:20px;border:0.5px solid var(--hop-border2);font-size:11px;cursor:pointer;color:var(--hop-muted)">'+m+'</span>';
+    }).join('') + '</div></div>';
+
+  // Section 7 : Rapport médecin
+  h += '<div style="font-size:12px;font-weight:700;color:var(--hop-mauve2);margin:0 0 8px;padding-bottom:4px;border-bottom:1px solid var(--hop-border)">7. Rapport m\u00e9dical</div>';
+  h += '<div class="form-group-hop" style="margin-bottom:16px"><label>Rapport d\u00e9taill\u00e9 *</label><textarea id="rs-rapport" rows="5" placeholder="Observations cliniques, r\u00e9sultats des examens, recommandations, prescriptions, suivi propos\u00e9..."></textarea></div>';
+
+  // Boutons
+  h += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
+  h += '<button onclick="validerRenseignement()" style="flex:1;padding:11px;background:var(--hop-mauve);color:white;border:none;border-radius:var(--border-radius-md);font-size:13px;font-weight:600;cursor:pointer;min-width:180px">&#10003; Valider et cr\u00e9er le dossier</button>';
+  h += '<button onclick="genererDocRenseignement()" style="padding:11px 18px;background:rgba(196,154,26,0.12);color:#7A5A00;border:1px solid rgba(196,154,26,0.3);border-radius:var(--border-radius-md);font-size:13px;font-weight:600;cursor:pointer">&#128196; G\u00e9n\u00e9rer .docx</button>';
+  h += '<button onclick="envoyerDossierPatient()" style="padding:11px 18px;background:rgba(37,99,235,0.1);color:#1d4ed8;border:1px solid rgba(37,99,235,0.25);border-radius:var(--border-radius-md);font-size:13px;font-weight:600;cursor:pointer">&#128231; Envoyer au patient</button>';
+  h += '</div>';
+  h += '<div id="rs-msg" style="display:none;margin-top:10px;padding:10px 14px;border-radius:8px;font-size:13px"></div>';
+  h += '</div>';
+
+  // LISTE DES DOSSIERS
+  h += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">';
+  h += '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Dossiers cr\u00e9\u00e9s ('+dossiers.length+')</div>';
+
+  if (dossiers.length === 0) {
+    h += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun dossier de renseignement cr\u00e9\u00e9.</div>';
+  } else {
+    dossiers.slice(0,20).forEach(function(d) {
+      var date = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '--';
+      h += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
+        + '<div>'
+        + '<div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+(d.nom_ninja||'--')+'</div>'
+        + '<div style="font-size:11px;color:var(--hop-muted)">'+(d.grade_ninja||'--')+' &bull; GS : '+(d.groupe_sanguin||'--')+' &bull; Dr '+(d.medecin||'--')+' &bull; '+date+'</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px">'
+        + '<button onclick="voirDossierHop('+d.id+')" style="padding:4px 12px;background:rgba(139,94,131,0.1);color:var(--hop-mauve);border:1px solid rgba(139,94,131,0.25);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Voir</button>'
+        + '</div>'
+        + '</div>';
+    });
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+// Fonctions utilitaires formulaire
+function rsToggle(group, val) {
+  document.querySelectorAll('.rs-'+group+'-btn').forEach(function(b) {
+    var isActive = b.getAttribute('data-val') === val;
+    b.style.background = isActive ? 'var(--hop-mauve)' : '';
+    b.style.color = isActive ? 'white' : '';
+  });
+  var detail = document.getElementById('rs-'+group+'-detail');
+  if (detail) detail.style.display = val === 'oui' ? 'block' : 'none';
+}
+
+function rsTagToggle(el) {
+  var active = el.style.background === 'var(--hop-mauve)' || el.style.background.includes('rgb(139');
+  el.style.background = active ? '' : 'var(--hop-mauve)';
+  el.style.color = active ? 'var(--hop-muted)' : 'white';
+  el.style.borderColor = active ? 'var(--hop-border2)' : 'var(--hop-mauve)';
+}
+
+function rsGetTags(group) {
+  var tags = [];
+  document.querySelectorAll('.rs-tag[data-group="'+group+'"]').forEach(function(el) {
+    if (el.style.background && el.style.background !== '') tags.push(el.textContent);
+  });
+  return tags.join(', ');
+}
+
+function rsGetToggleVal(group) {
+  var active = null;
+  document.querySelectorAll('.rs-'+group+'-btn').forEach(function(b) {
+    if (b.style.background) active = b.getAttribute('data-val');
+  });
+  return active;
+}
+
+async function validerRenseignement() {
+  var nom = document.getElementById('rs-nom')?.value.trim();
+  var rapport = document.getElementById('rs-rapport')?.value.trim();
+  if (!nom) { rsMsg('Veuillez entrer le nom du ninja.', false); return; }
+  if (!rapport) { rsMsg('Veuillez rédiger le rapport médical.', false); return; }
+
+  var data = {
+    nom_ninja:       nom,
+    grade_ninja:     document.getElementById('rs-grade')?.value||'',
+    age:             document.getElementById('rs-age')?.value||'',
+    village:         document.getElementById('rs-village')?.value.trim()||'',
+    date_bilan:      document.getElementById('rs-date')?.value||'',
+    medecin:         document.getElementById('rs-medecin')?.value||'',
+    grade_medecin:   document.getElementById('rs-grade-med')?.value||'',
+    groupe_sanguin:  document.getElementById('rs-gs')?.value||'',
+    rhesus:          document.getElementById('rs-rh')?.value||'',
+    statut_don:      document.getElementById('rs-don')?.value||'',
+    obs_sanguines:   document.getElementById('rs-obs-sang')?.value.trim()||'',
+    antecedents:     rsGetToggleVal('antec')||'non',
+    antecedents_types: rsGetTags('antec'),
+    antecedents_detail: document.getElementById('rs-antec-txt')?.value.trim()||'',
+    maladies:        rsGetToggleVal('mal')||'non',
+    maladies_types:  rsGetTags('mal'),
+    maladies_detail: document.getElementById('rs-mal-txt')?.value.trim()||'',
+    fam_heredite:    rsGetToggleVal('fam')||'non',
+    fam_types:       rsGetTags('fam'),
+    fam_pere:        document.getElementById('rs-fam-pere')?.value.trim()||'',
+    fam_mere:        document.getElementById('rs-fam-mere')?.value.trim()||'',
+    rapport:         rapport
+  };
+
+  try {
+    await sbPost('renseignements_hop', data);
+    rsMsg('✓ Dossier créé avec succès !', true);
+    // Vider le formulaire
+    ['rs-nom','rs-age','rs-village','rs-antec-txt','rs-mal-txt','rs-fam-pere','rs-fam-mere','rs-rapport','rs-obs-sang'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.value='';
+    });
+    setTimeout(function(){ renderRenseignementHop(state.currentUser.grade); }, 1500);
+  } catch(e) {
+    rsMsg('Erreur lors de la création du dossier.', false);
+    console.warn('renseignement:', e);
+  }
+}
+
+function rsMsg(msg, ok) {
+  var el = document.getElementById('rs-msg');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = ok ? 'rgba(39,174,96,0.08)' : 'rgba(192,57,43,0.08)';
+  el.style.color = ok ? '#1E7A45' : '#c0392b';
+  el.style.border = ok ? '1px solid rgba(39,174,96,0.2)' : '1px solid rgba(192,57,43,0.2)';
+}
+
+async function voirDossierHop(id) {
+  let d = null;
+  try {
+    var res = await sbGet('renseignements_hop', '?id=eq.'+id);
+    if (Array.isArray(res) && res[0]) d = res[0];
+  } catch(e) {}
+  if (!d) return;
+
+  var popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;overflow-y:auto';
+
+  var rows = [
+    ['Nom', d.nom_ninja], ['Grade ninja', d.grade_ninja], ['Âge', d.age], ['Village', d.village],
+    ['Date bilan', d.date_bilan], ['Médecin', d.medecin+' ('+d.grade_medecin+')'],
+    ['Groupe sanguin', d.groupe_sanguin+' — Rhésus : '+d.rhesus], ['Statut don', d.statut_don],
+    ['Observations sang', d.obs_sanguines||'—'],
+    ['Antécédents', d.antecedents+(d.antecedents_types?' : '+d.antecedents_types:'')],
+    ['Détails antécédents', d.antecedents_detail||'—'],
+    ['Maladies', d.maladies+(d.maladies_types?' : '+d.maladies_types:'')],
+    ['Détails maladies', d.maladies_detail||'—'],
+    ['Hérédité familiale', d.fam_heredite+(d.fam_types?' : '+d.fam_types:'')],
+    ['Père', d.fam_pere||'—'], ['Mère', d.fam_mere||'—'],
+  ];
+
+  popup.innerHTML = '<div style="background:white;border-radius:16px;padding:1.75rem;max-width:560px;width:94%;max-height:90vh;overflow-y:auto;margin:auto">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">'
+    + '<div style="font-size:17px;font-weight:700;color:var(--hop-mauve2)">Dossier — '+d.nom_ninja+'</div>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--hop-muted)">&times;</button>'
+    + '</div>'
+    + '<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    + rows.map(function(r){ return '<tr style="border-bottom:0.5px solid var(--hop-border)"><td style="padding:6px 8px;color:var(--hop-muted);white-space:nowrap;font-weight:600">'+r[0]+'</td><td style="padding:6px 8px;color:var(--hop-text)">'+r[1]+'</td></tr>'; }).join('')
+    + '</table>'
+    + '<div style="margin-top:12px;padding:12px;background:var(--hop-light);border-radius:8px">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);margin-bottom:6px">RAPPORT MÉDICAL</div>'
+    + '<div style="font-size:13px;color:var(--hop-text);white-space:pre-wrap">'+d.rapport+'</div>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;margin-top:14px">'
+    + '<button onclick="genererDocRenseignementId('+d.id+')" style="flex:1;padding:9px;background:rgba(196,154,26,0.12);color:#7A5A00;border:1px solid rgba(196,154,26,0.3);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">&#128196; G\u00e9n\u00e9rer .docx</button>'
+    + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="padding:9px 18px;background:none;border:1px solid var(--hop-border);border-radius:8px;font-size:12px;cursor:pointer;color:var(--hop-muted)">Fermer</button>'
+    + '</div></div>';
+
+  document.body.appendChild(popup);
+  popup.onclick = function(e){ if(e.target===popup) popup.remove(); };
+}
+
+function genererDocRenseignement() { alert('Fonctionnalité .docx : récupérez d\'abord les données via "Valider" puis cliquez sur "Voir" le dossier créé.'); }
+function genererDocRenseignementId(id) { alert('Génération .docx pour dossier #'+id+' — à connecter à votre service de génération de documents.'); }
+function envoyerDossierPatient() { alert('Envoi au patient — à connecter à votre système de messagerie.'); }
 
 </script></body></html>
