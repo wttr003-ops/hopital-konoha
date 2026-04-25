@@ -1737,7 +1737,7 @@ async function syncFromSupabase() {
     const candids = await sbGet('candidatures_hop', '?order=id.asc');
     if (Array.isArray(candids)) {
       state.candidatures = candids.map(c => ({
-        id: c.id, nom: c.nom, niveau: c.niveau, spécialité: c.spécialité,
+        id: c.id, nom: c.nom, niveau: c.niveau, spécialité: c.specialite||c.spécialité||'',
         motiv: c.motiv || '', casier: c.casier, dispo: c.dispo,
         status: c.status || 'wait', author: c.author, authorDisplay: c.author_display
       }));
@@ -2147,7 +2147,7 @@ async function submitPostuler() {
     const res = await fetch(SB_URL+'/rest/v1/candidatures_hop', {
       method:'POST',
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body: JSON.stringify({ nom, niveau: niv, spécialité: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom })
+      body: JSON.stringify({ nom, niveau: niv, specialite: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom })
     });
     const data = await res.json();
     if (Array.isArray(data) && data[0]) newId = data[0].id;
