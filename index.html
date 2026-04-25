@@ -2233,7 +2233,8 @@ function renderRdvsContent(g) {
           <div class="detail-field-hop"><span class="detail-field-label-hop">Antécédents</span><span class="detail-field-val-hop">${r.antecedents==='oui'?'Oui':'Non'}</span></div>
           <div class="detail-field-hop"><span class="detail-field-label-hop">Date souhaitée</span><span class="detail-field-val-hop">${r.date||'NC'}</span></div>
         </div>
-        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actRdv(${r.id},'ok')">✓ Marquer traité</button><button class="btn-sm-hop btn-no-hop" onclick="actRdv(${r.id},'no')">✗ Annulér</button></div>`:''}
+        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actRdv(${r.id},'ok')">✓ Marquer traité</button><button class="btn-sm-hop btn-no-hop" onclick="actRdv(${r.id},'no')">✗ Annuler</button></div>`:''}
+        ${gradeRankHop(g)<=4?`<div style="margin-top:8px"><button onclick="supprimerRdvHop(${r.id})" style="padding:5px 12px;background:rgba(192,57,43,0.08);color:#c0392b;border:1px solid rgba(192,57,43,0.2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">🗑 Supprimer ce RDV</button></div>`:''}
         ${buildThreadHop('rdv_'+r.id, state.currentUser.username, state.currentUser.fullname||state.currentUser.username, 'RDV #'+r.id+' — '+r.motif)}
       </div>
     </div>`;
@@ -2289,7 +2290,8 @@ function renderCandidContent(g) {
           <div class="detail-field-hop"><span class="detail-field-label-hop">Casier</span><span class="detail-field-val-hop">${c.casier==='non'?'Vierge ✓':'Chargé ✗'}</span></div>
           <div class="detail-field-hop"><span class="detail-field-label-hop">Disponibilité</span><span class="detail-field-val-hop">${c.dispo||'—'}</span></div>
         </div>
-        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actCandid(${c.id},'ok')">✓ Acceptér</button><button class="btn-sm-hop btn-no-hop" onclick="actCandid(${c.id},'no')">✗ Refusér</button></div>`:''}
+        ${canAct?`<div class="detail-actions-hop"><button class="btn-sm-hop btn-ok-hop" onclick="actCandid(${c.id},'ok')">✓ Accepter</button><button class="btn-sm-hop btn-no-hop" onclick="actCandid(${c.id},'no')">✗ Refuser</button></div>`:''}
+        ${canAllHop(g)?`<div style="margin-top:8px"><button onclick="supprimerCandidHop(${c.id})" style="padding:5px 12px;background:rgba(192,57,43,0.08);color:#c0392b;border:1px solid rgba(192,57,43,0.2);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">🗑 Supprimer cette candidature</button></div>`:''}
         ${buildThreadHop('candid_'+c.id, state.currentUser.username, state.currentUser.fullname||state.currentUser.username, 'Candidature #'+c.id+' — '+c.nom)}
       </div>
     </div>`;
@@ -5146,5 +5148,24 @@ async function voirDossierHop(id) {
 function genererDocRenseignement() { alert('Fonctionnalité .docx : récupérez d\'abord les données via "Valider" puis cliquez sur "Voir" le dossier créé.'); }
 function genererDocRenseignementId(id) { alert('Génération .docx pour dossier #'+id+' — à connecter à votre service de génération de documents.'); }
 function envoyerDossierPatient() { alert('Envoi au patient — à connecter à votre système de messagerie.'); }
+
+
+async function supprimerRdvHop(id) {
+  if (!confirm('Supprimer définitivement ce rendez-vous #' + id + ' ?')) return;
+  try {
+    await sbDelete('rdvs', '?id=eq.' + id);
+    state.rdvs = state.rdvs.filter(function(r) { return r.id !== id; });
+  } catch(e) { console.warn('suppr rdv:', e); }
+  renderRdvsContent(state.currentUser.grade);
+}
+
+async function supprimerCandidHop(id) {
+  if (!confirm('Supprimer définitivement cette candidature #' + id + ' ?')) return;
+  try {
+    await sbDelete('candidatures', '?id=eq.' + id);
+    state.candidatures = state.candidatures.filter(function(c) { return c.id !== id; });
+  } catch(e) { console.warn('suppr candid:', e); }
+  renderCandidContent(state.currentUser.grade);
+}
 
 </script></body></html>
