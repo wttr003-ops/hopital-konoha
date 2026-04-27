@@ -2198,7 +2198,7 @@ function gradeRankHop(g) {
   return 99;
 }
 function canAllHop(g)    { return gradeRankHop(g) <= 1; }
-function canRdvsHop(g)   { return gradeRankHop(g) <= 4; }
+function canRdvsHop(g)   { return gradeRankHop(g) <= 3; }
 
 function renderDashboard(tab) {
   const u = state.currentUser;
@@ -5036,28 +5036,27 @@ function toggleFicheHop(id) {
 
 async function payerSalaireHop(username, nom, total) {
   var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
-  if (!await hopConfirmAsync('Confirmer le paiement', false)) return;
+  if (!await hopConfirmAsync('Confirmer le paiement de ' + (total||0).toLocaleString('fr-FR') + ' Ryos a ' + (nom||username) + ' ? Les services payes seront supprimes de l\'historique.', false)) return;
   try {
-    // Marquer toutes les présences non payées de cet agent comme payées
-    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&statut_paye=is.null&fin=not.is.null', {
-      method:'PATCH',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({statut_paye:'paye', paye_par:dirName, paye_le:new Date().toISOString()})
+    // SUPPRIMER toutes les presences terminees (payees) de cet agent
+    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&fin=not.is.null', {
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'}
     });
-  } catch(e){ console.warn('payer hop:', e); }
+    hopSuccess('Paiement de ' + (total||0).toLocaleString('fr-FR') + ' Ryos effectue. Historique des services payes efface.');
+  } catch(e){ console.warn('payer hop:', e); hopWarning('Erreur lors du paiement.'); }
   await renderPresencesHop(state.currentUser.grade);
 }
 
 async function remettreAZeroHop(username, nom) {
-  if (!confirm('Remettre à zéro le solde de '+nom+' ?')) return;
-  var dirName = state.users[state.currentUser?.username]?.fullname || state.currentUser?.username || 'Direction';
+  if (!await hopConfirmAsync('Remettre a zero le solde de '+(nom||username)+' ? Toutes ses presences terminees seront supprimees.', true)) return;
   try {
-    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&statut_paye=is.null', {
-      method:'PATCH',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({statut_paye:'paye', paye_par:dirName, paye_le:new Date().toISOString()})
+    await fetch(SB_URL+'/rest/v1/presences_hop?username=eq.'+encodeURIComponent(username)+'&fin=not.is.null', {
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'}
     });
-  } catch(e){ console.warn('reset hop:', e); }
+    hopSuccess('Solde de ' + (nom||username) + ' remis a zero.');
+  } catch(e){ console.warn('reset hop:', e); hopWarning('Erreur lors de la remise a zero.'); }
   await renderPresencesHop(state.currentUser.grade);
 }
 
