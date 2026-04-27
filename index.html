@@ -1018,7 +1018,6 @@ body {
       <h2 class="section-title-hop">Les <span>Grades Médicaux</span></h2>
       <div class="grades-hop-grid">
         <div class="grade-hop-card"><span class="grade-hop-badge badge-chef">Chef Médecin</span><h3>Direction médicale</h3><p>Responsable de l'hôpital. Toutes les permissions.</p></div>
-        <div class="grade-hop-card"><span class="grade-hop-badge badge-senior">Médecin Senior</span><h3>Spécialiste confirmé</h3><p>Gestion des cas complexes et supervision.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-médecin">Médecin</span><h3>Praticien</h3><p>Consultations et soins généraux.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-infirmier">Infirmier·ère</span><h3>Soins courants</h3><p>Suivi des patients et assistance médicale.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-stagiaire">Stagiaire médical</span><h3>En formation</h3><p>Apprenti soignant sous supervision.</p></div>
@@ -1703,10 +1702,10 @@ async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
 // ============================================================
 // ÉTAT GLOBAL
 // ============================================================
-const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier Senior', 'Infirmier', 'Stagiaire Médical', 'Recrue Médicale'];
-const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier Senior':3, 'Infirmier':4, 'Stagiaire Médical':5, 'Recrue Médicale':6, 'Citoyen':9 };
+const GRADES_MED = ['Chef Médecin', 'Médecin', 'Infirmier', 'Stagiaire Médical'];
+const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin':1, 'Infirmier':2, 'Stagiaire Médical':3, 'Citoyen':9 };
 
-const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier Senior':'badge-infirmier','Infirmier':'badge-infirmier','Stagiaire Médical':'badge-stagiaire','Recrue Médicale':'badge-stagiaire','Citoyen':'badge-stagiaire' };
+const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin':'badge-medecin','Infirmier':'badge-infirmier','Stagiaire Médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
 
 const state = {
   currentUser: null,
