@@ -1018,6 +1018,7 @@ body {
       <h2 class="section-title-hop">Les <span>Grades Médicaux</span></h2>
       <div class="grades-hop-grid">
         <div class="grade-hop-card"><span class="grade-hop-badge badge-chef">Chef Médecin</span><h3>Direction médicale</h3><p>Responsable de l'hôpital. Toutes les permissions.</p></div>
+        <div class="grade-hop-card"><span class="grade-hop-badge badge-senior">Médecin Senior</span><h3>Spécialiste confirmé</h3><p>Gestion des cas complexes et supervision.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-médecin">Médecin</span><h3>Praticien</h3><p>Consultations et soins généraux.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-infirmier">Infirmier·ère</span><h3>Soins courants</h3><p>Suivi des patients et assistance médicale.</p></div>
         <div class="grade-hop-card"><span class="grade-hop-badge badge-stagiaire">Stagiaire médical</span><h3>En formation</h3><p>Apprenti soignant sous supervision.</p></div>
@@ -1469,11 +1470,11 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('ajout',this)">➕ Ajouter membre</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('cours',this)">📚 Cours médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
-          <button class="dash-nav-btn-hop" style="opacity:0.45;cursor:not-allowed;text-decoration:line-through;pointer-events:none" title="En développement — disponible à partir du 20h30">🔬 Recensement <span style="font-size:9px;background:rgba(196,154,26,0.2);color:var(--hop-accent,#c49a1a);padding:1px 6px;border-radius:10px;margin-left:4px;font-style:normal;text-decoration:none;display:inline-block">Bientôt</span></button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('recensement',this)">🔬 Recensement</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
-          <button class="dash-nav-btn-hop" style="opacity:0.45;cursor:not-allowed;text-decoration:line-through;pointer-events:none" title="En développement — disponible à partir du 20h30">💬 Discussions <span style="font-size:9px;background:rgba(196,154,26,0.2);color:var(--hop-accent,#c49a1a);padding:1px 6px;border-radius:10px;margin-left:4px;font-style:normal;text-decoration:none;display:inline-block">Bientôt</span></button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('discussions',this)">💬 Discussions</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('salaires',this)">💰 Salaires</button>
           <button class="dash-nav-btn-hop" id="nav-logs-hop" onclick="switchDashTab('logs',this)">🔒 Logs comptes</button>
         </nav>
@@ -1702,10 +1703,10 @@ async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
 // ============================================================
 // ÉTAT GLOBAL
 // ============================================================
-const GRADES_MED = ['Chef Médecin', 'Médecin', 'Infirmier', 'Stagiaire Médical'];
-const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin':1, 'Infirmier':2, 'Stagiaire Médical':3, 'Citoyen':9 };
+const GRADES_MED = ['Chef Médecin', 'Médecin Senior', 'Médecin', 'Infirmier Senior', 'Infirmier', 'Stagiaire Médical', 'Recrue Médicale'];
+const GRADE_RANK_HOP = { 'Chef Médecin':0, 'Médecin Senior':1, 'Médecin':2, 'Infirmier Senior':3, 'Infirmier':4, 'Stagiaire Médical':5, 'Recrue Médicale':6, 'Citoyen':9 };
 
-const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin':'badge-medecin','Infirmier':'badge-infirmier','Stagiaire Médical':'badge-stagiaire','Citoyen':'badge-stagiaire' };
+const GRADE_CLASS_HOP = { 'Chef Médecin':'badge-chef','Médecin Senior':'badge-senior','Médecin':'badge-medecin','Infirmier Senior':'badge-infirmier','Infirmier':'badge-infirmier','Stagiaire Médical':'badge-stagiaire','Recrue Médicale':'badge-stagiaire','Citoyen':'badge-stagiaire' };
 
 const state = {
   currentUser: null,
@@ -4695,6 +4696,148 @@ async function soumettreRapportHop() {
   await renderRapportsHop(state.currentUser.grade);
 }
 
+
+// ============================================================
+// DISCUSSIONS — TCHAT GLOBAL ÉQUIPE
+// ============================================================
+let discussionsRefreshInterval = null;
+
+async function renderDiscussionsHop(g) {
+  const el = document.getElementById('dash-discussions');
+  if (!el) return;
+  if (gradeRankHop(g) > 9) { el.innerHTML = noAccessHop('Personnel médical uniquement'); return; }
+
+  const u = state.currentUser;
+  const nomAffiche = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
+
+  let html = '<h2 class="dash-section-title-hop">💬 Discussions — Tchat équipe</h2>';
+  html += '<div style="background:rgba(139,94,131,0.05);border:1px solid var(--hop-border2);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:12px;color:var(--hop-mauve2)">';
+  html += '🌸 Espace de discussion réservé à l\'équipe médicale. Tous les soignants peuvent participer.';
+  html += '</div>';
+
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">';
+  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">';
+  html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Tchat équipe en direct</div>';
+  html += '<button onclick="renderDiscussionsHop(state.currentUser.grade)" style="font-size:11px;padding:3px 10px;background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:6px;cursor:pointer;color:var(--hop-muted)">↻ Actualiser</button>';
+  html += '</div>';
+
+  html += '<div id="discu-messages-hop" style="max-height:480px;overflow-y:auto;padding:1rem;background:var(--hop-bg)">';
+  html += '<div style="text-align:center;color:var(--hop-muted);font-size:13px;padding:1rem">Chargement des messages...</div>';
+  html += '</div>';
+
+  html += '<div style="border-top:1px solid var(--hop-border);background:white;padding:0.75rem 1rem">';
+  html += '<div style="font-size:11px;color:var(--hop-muted);margin-bottom:6px">' + nomAffiche + ' <span class="grade-pill-hop ' + (GRADE_CLASS_HOP[u.grade]||'badge-stagiaire') + '" style="font-size:9px">' + u.grade + '</span></div>';
+  html += '<div style="display:flex;gap:0.5rem;align-items:flex-end">';
+  html += '<textarea id="discu-input-hop" rows="2" placeholder="Écris ton message à l\'équipe..." style="flex:1;background:var(--hop-bg);border:1.5px solid var(--hop-border);border-radius:12px;padding:8px 12px;color:var(--hop-text);font-size:13px;font-family:\'Nunito\',sans-serif;outline:none;resize:none;line-height:1.4" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();envoyerDiscuMessage();}"></textarea>';
+  html += '<button onclick="envoyerDiscuMessage()" style="background:linear-gradient(135deg,var(--hop-mauve),var(--hop-rose2));color:white;border:none;border-radius:12px;padding:10px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:\'Nunito\',sans-serif;white-space:nowrap">✈ Envoyer</button>';
+  html += '</div>';
+  html += '</div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+
+  await chargerDiscuMessages();
+
+  if (discussionsRefreshInterval) clearInterval(discussionsRefreshInterval);
+  discussionsRefreshInterval = setInterval(async function() {
+    var tab = document.getElementById('dash-discussions');
+    if (tab && tab.classList.contains('active')) {
+      await chargerDiscuMessages(true);
+    } else {
+      clearInterval(discussionsRefreshInterval);
+      discussionsRefreshInterval = null;
+    }
+  }, 5000);
+}
+
+async function chargerDiscuMessages(silencieux) {
+  const container = document.getElementById('discu-messages-hop');
+  if (!container) return;
+  const u = state.currentUser;
+  if (!u) return;
+
+  let messages = [];
+  try {
+    const res = await sbGet('discussions_hop', '?order=created_at.asc');
+    if (Array.isArray(res)) messages = res;
+  } catch(e) { console.warn('discussions load:', e); }
+
+  if (messages.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--hop-muted);font-size:13px;padding:2rem;font-style:italic">🌸 Aucun message pour le moment. Soyez le premier à écrire !</div>';
+    return;
+  }
+
+  // Sauvegarder la position de scroll
+  const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+
+  let html = '';
+  let lastDate = '';
+  messages.forEach(function(m) {
+    const isMe = m.from_user === u.username;
+    const dateMsg = m.created_at ? new Date(m.created_at).toLocaleDateString('fr-FR') : '';
+    if (dateMsg && dateMsg !== lastDate) {
+      html += '<div style="text-align:center;font-size:10px;color:var(--hop-muted);margin:12px 0;text-transform:uppercase;letter-spacing:1px">— ' + dateMsg + ' —</div>';
+      lastDate = dateMsg;
+    }
+    const initials = (m.sender_name || m.from_user || '?').slice(0,2).toUpperCase();
+    const gradeBadge = m.grade ? '<span class="grade-pill-hop ' + (GRADE_CLASS_HOP[m.grade]||'badge-stagiaire') + '" style="font-size:9px;padding:1px 8px">' + m.grade + '</span>' : '';
+
+    html += '<div style="display:flex;align-items:flex-start;gap:0.6rem;margin-bottom:0.75rem;' + (isMe?'flex-direction:row-reverse':'') + '">';
+    html += '<div style="width:32px;height:32px;border-radius:50%;background:var(--hop-light);border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2);flex-shrink:0">' + initials + '</div>';
+    html += '<div style="max-width:75%;' + (isMe?'align-items:flex-end;':'') + 'display:flex;flex-direction:column">';
+    html += '<div style="font-size:10px;color:var(--hop-muted);margin-bottom:3px;' + (isMe?'text-align:right':'') + '">';
+    html += '<strong style="color:var(--hop-mauve2)">' + (m.sender_name||m.from_user) + '</strong> ' + gradeBadge + ' · ' + (m.time||'');
+    html += '</div>';
+    html += '<div style="font-size:13px;line-height:1.55;padding:0.55rem 0.85rem;border-radius:14px;word-break:break-word;color:var(--hop-text);';
+    if (isMe) {
+      html += 'background:linear-gradient(135deg,var(--hop-light),#F5D5E8);border:1px solid var(--hop-border2);border-top-right-radius:4px';
+    } else {
+      html += 'background:white;border:1px solid var(--hop-border);border-top-left-radius:4px';
+    }
+    html += '">' + escapeHtmlDiscu(m.text||'') + '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+
+  // Scroll vers le bas si on y était déjà
+  if (wasAtBottom || !silencieux) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+function escapeHtmlDiscu(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function envoyerDiscuMessage() {
+  const input = document.getElementById('discu-input-hop');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+
+  const u = state.currentUser;
+  const nomAffiche = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
+  const heure = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+  input.value = '';
+
+  try {
+    await sbPost('discussions_hop', {
+      from_user: u.username,
+      sender_name: nomAffiche,
+      grade: u.grade || '',
+      text: text,
+      time: heure
+    });
+    await chargerDiscuMessages();
+  } catch(e) {
+    console.warn('envoi discu:', e);
+    hopWarning('Erreur lors de l\'envoi. Vérifiez que la table "discussions_hop" existe sur Supabase.');
+    input.value = text; // Restaurer le texte
+  }
+}
 
 // ============================================================
 // SALAIRES — HÔPITAL
