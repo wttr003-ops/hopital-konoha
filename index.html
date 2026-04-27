@@ -2407,23 +2407,66 @@ function renderRdvsContent(g) {
 }
 
 async function actRdv(id, status) {
-  const r = state.rdvs.find(r => r.id === id);
-  if (!r) return;
+  var r = state.rdvs.find(function(x){return x.id === id;});
+  if (!r) { hopWarning('Rendez-vous introuvable.'); return; }
+  var u = state.currentUser;
+  var msgTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  var nomAffiche = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
+
+  // PATCH du RDV via fetch direct pour avoir un controle d'erreur
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/rdvs?id=eq.' + id, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ status: status })
+    });
+    if (!res.ok) {
+      var errText = await res.text();
+      console.error('Erreur PATCH rdv:', res.status, errText);
+      hopWarning('Erreur lors de la mise a jour du RDV. Code: ' + res.status);
+      return;
+    }
+  } catch(e) {
+    console.error('actRdv:', e);
+    hopWarning('Erreur de connexion. Reessayez.');
+    return;
+  }
+
+  // Mise a jour locale
   r.status = status;
-  await sbPatch('rdvs', `?id=eq.${id}`, { status });
-  const u = state.currentUser;
-  const threadId = 'rdv_' + id;
+  var threadId = 'rdv_' + id;
   if (!state.messages[threadId]) state.messages[threadId] = [];
-  const msgText = status === 'ok' ? `Votre rendez-vous #${id} a été pris en charge par ${u.fullname||u.username} (${u.grade}). Nous vous contacterons bientôt.` : `Votre rendez-vous #${id} a été annulé par ${u.fullname||u.username} (${u.grade}).`;
-  const msgTime = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  state.messages[threadId].push({ from: u.username, senderName: u.fullname||u.username, grade: u.grade, role:'staff', text: msgText, time: msgTime });
-  await sbPost('messages_hop', { thread_id: threadId, from_user: u.username, sender_name: u.fullname||u.username, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+  var msgText = status === 'ok'
+    ? 'Votre rendez-vous #' + id + ' a ete pris en charge par ' + nomAffiche + ' (' + u.grade + '). Nous vous contacterons bientot.'
+    : 'Votre rendez-vous #' + id + ' a ete annule par ' + nomAffiche + ' (' + u.grade + ').';
+  state.messages[threadId].push({ from: u.username, senderName: nomAffiche, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+
+  // Envoi du message dans le thread (non bloquant)
+  try {
+    await sbPost('messages_hop', { thread_id: threadId, from_user: u.username, sender_name: nomAffiche, grade: u.grade, role:'staff', text: msgText, time: msgTime });
+  } catch(e) { console.warn('msg thread:', e); }
+
+  // Confirmation visuelle
+  hopSuccess(status === 'ok' ? 'Rendez-vous #' + id + ' valide.' : 'Rendez-vous #' + id + ' annule.');
+
+  // Rafraichir la liste
   await syncFromSupabase();
   renderRdvsContent(u.grade);
-  setTimeout(() => {
-    const body = document.getElementById(`rdv-body-${id}`);
-    if (body) { body.style.display='block'; const msgs = body.querySelector('[id^="msglist-"]'); if(msgs) msgs.scrollTop=msgs.scrollHeight; }
-  }, 30);
+
+  // Reouvrir le panneau du RDV pour montrer le message
+  setTimeout(function() {
+    var body = document.getElementById('rdv-body-' + id);
+    if (body) {
+      body.style.display = 'block';
+      var msgs = body.querySelector('[id^="msglist-"]');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    }
+  }, 50);
 }
 
 // ---- CANDIDATURES (AGENT) ----
