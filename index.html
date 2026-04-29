@@ -1471,6 +1471,7 @@ body {
           <button class="dash-nav-btn-hop" onclick="switchDashTab('dossiers',this)">📁 Dossiers médicaux</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('recensement',this)">🔬 Recensement</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('frigo',this)">🧊 Frigo à sang</button>
+          <button class="dash-nav-btn-hop" onclick="switchDashTab('pharmacie',this)">💊 Pharmacie</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('presences',this)">⏱️ Présences</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('rapports',this)">📋 Rapports</button>
           <button class="dash-nav-btn-hop" onclick="switchDashTab('discussions',this)">💬 Discussions</button>
@@ -1508,6 +1509,7 @@ body {
       <div class="dash-tab-hop" id="dash-discussions"></div>
       <div class="dash-tab-hop" id="dash-salaires"></div>
       <div class="dash-tab-hop" id="dash-frigo"></div>
+      <div class="dash-tab-hop" id="dash-pharmacie"></div>
       <div class="dash-tab-hop" id="dash-citizen-journal"></div>
       <div class="dash-tab-hop" id="dash-citizen-rdvs"></div>
       <div class="dash-tab-hop" id="dash-citizen-candid"></div>
@@ -2259,6 +2261,7 @@ function switchDashTab(name, btn) {
   if (name === 'salaires')      renderSalairesHop(g);
   if (name === 'recensement') renderRecensementHop(g);
   if (name === 'frigo')         renderFrigoContent(g);
+  if (name === 'pharmacie')     renderPharmacieHop(g);
 }
 
 function switchCitizenTab(name, btn) {
@@ -4042,6 +4045,232 @@ function toggleMortDetail(i) {
   const open = body.style.display !== 'none';
   body.style.display = open ? 'none' : 'block';
   if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+// ============================================================
+// PHARMACIE NINJA — Gestion des remedes
+// ============================================================
+const CATEGORIES_PHARMA = ['Stimulant', 'Antidote', 'Medecine naturelle', 'Anesthesie', 'Soin general', 'Autre'];
+const PHARMA_ICONS = {
+  'Stimulant': '\ud83d\udc8a',
+  'Antidote': '\ud83e\uddea',
+  'Medecine naturelle': '\ud83c\udf3f',
+  'Anesthesie': '\ud83d\udc89',
+  'Soin general': '\ud83e\ude79',
+  'Autre': '\u2697\ufe0f'
+};
+const PHARMA_COLORS = {
+  'Stimulant': '#6BAB8A',
+  'Antidote': '#D4779A',
+  'Medecine naturelle': '#8B5E83',
+  'Anesthesie': '#9B7A9B',
+  'Soin general': '#2980b9',
+  'Autre': '#7f8c8d'
+};
+
+async function renderPharmacieHop(g) {
+  const el = document.getElementById('dash-pharmacie');
+  if (!el) return;
+  if (!canRdvsHop(g)) { el.innerHTML = noAccessHop('Personnel medical uniquement'); return; }
+
+  const u = state.currentUser;
+  const isChef = gradeRankHop(g) <= 0;
+
+  let remedes = [];
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/pharmacie_hop?order=created_at.desc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (res.ok) remedes = await res.json();
+  } catch(e) { console.warn('pharmacie load:', e); }
+
+  let html = '<h2 class="dash-section-title-hop">\ud83d\udc8a Pharmacie ninja</h2>';
+
+  // Info banner
+  html += '<div style="background:rgba(212,119,154,0.08);border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;color:var(--hop-mauve2);margin-bottom:1rem">';
+  if (isChef) {
+    html += '\ud83d\udd12 <strong>Chef Medecin :</strong> Vous pouvez ajouter et supprimer des remedes. Tous les soignants peuvent les utiliser.';
+  } else {
+    html += '\ud83d\udc8a <strong>Soignant :</strong> Cliquez sur "Utiliser" pour decrementer le stock d\'un remede.';
+  }
+  html += '</div>';
+
+  // KPIs
+  const totalRemedes = remedes.length;
+  const totalQuantite = remedes.reduce(function(s,r){ return s + (r.quantite||0); }, 0);
+  const epuises = remedes.filter(function(r){ return (r.quantite||0) === 0; }).length;
+  const faibles = remedes.filter(function(r){ return (r.quantite||0) > 0 && (r.quantite||0) < 5; }).length;
+
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">';
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Remedes</div><div style="font-size:24px;font-weight:700;color:var(--hop-mauve2);font-family:Cormorant Garamond,serif">' + totalRemedes + '</div></div>';
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Stock total</div><div style="font-size:24px;font-weight:700;color:#1E7A45;font-family:Cormorant Garamond,serif">' + totalQuantite + '</div></div>';
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Stock faible</div><div style="font-size:24px;font-weight:700;color:#7A5A00;font-family:Cormorant Garamond,serif">' + faibles + '</div></div>';
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Epuises</div><div style="font-size:24px;font-weight:700;color:#7B241C;font-family:Cormorant Garamond,serif">' + epuises + '</div></div>';
+  html += '</div>';
+
+  // Formulaire ajout (Chef Medecin uniquement)
+  if (isChef) {
+    html += '<div class="dash-block-hop" style="padding:1.25rem;margin-bottom:1.25rem">';
+    html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem">\u2795 Ajouter un remede au stock</div>';
+    html += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">';
+    html += '<div class="form-group-hop" style="margin:0"><label>Nom du remede *</label><input type="text" id="pharma-nom" placeholder="Ex: Pilule du Soldat"/></div>';
+    html += '<div class="form-group-hop" style="margin:0"><label>Quantite *</label><input type="number" id="pharma-qte" min="1" value="1"/></div>';
+    html += '<div class="form-group-hop" style="margin:0"><label>Categorie</label>';
+    html += '<select id="pharma-cat">' + CATEGORIES_PHARMA.map(function(c){return '<option>'+c+'</option>';}).join('') + '</select>';
+    html += '</div></div>';
+    html += '<button class="btn-primary" onclick="ajouterRemedeHop()" style="width:auto;padding:9px 24px">\u2795 Ajouter au stock</button>';
+    html += '<div id="pharma-ok" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Remede ajoute !</div>';
+    html += '</div>';
+  }
+
+  // Filtres par categorie
+  html += '<div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap">';
+  html += '<button onclick="filtrerPharma(\'tous\',this)" data-pharma-filter="tous" style="padding:5px 14px;border-radius:20px;border:1px solid var(--hop-border2);font-size:12px;cursor:pointer;font-family:Nunito,sans-serif;background:var(--hop-mauve);color:white">Tous</button>';
+  CATEGORIES_PHARMA.forEach(function(cat) {
+    html += '<button onclick="filtrerPharma(\'' + cat + '\',this)" data-pharma-filter="' + cat + '" style="padding:5px 14px;border-radius:20px;border:1px solid var(--hop-border2);font-size:12px;cursor:pointer;font-family:Nunito,sans-serif;background:white;color:var(--hop-muted)">' + (PHARMA_ICONS[cat]||'') + ' ' + cat + '</button>';
+  });
+  html += '</div>';
+
+  // Liste des remedes
+  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">';
+  html += '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Stock pharmacie (' + totalRemedes + ' remedes)</div>';
+
+  if (remedes.length === 0) {
+    html += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">';
+    html += '<div style="font-size:32px;margin-bottom:8px">\ud83d\udc8a</div>';
+    html += '<div style="font-size:14px">Aucun remede en stock pour le moment.</div>';
+    if (isChef) html += '<div style="font-size:12px;margin-top:6px;color:var(--hop-mauve)">Ajoute le premier remede ci-dessus !</div>';
+    html += '</div>';
+  } else {
+    remedes.forEach(function(r) {
+      const cat = r.categorie || 'Autre';
+      const icon = PHARMA_ICONS[cat] || '\u2697\ufe0f';
+      const col = PHARMA_COLORS[cat] || '#9B7A9B';
+      const qte = r.quantite || 0;
+      let stockStyle, stockLabel;
+      if (qte === 0) {
+        stockStyle = 'background:rgba(192,57,43,0.1);color:#7B241C;border:1px solid rgba(192,57,43,0.3)';
+        stockLabel = 'epuise';
+      } else if (qte < 5) {
+        stockStyle = 'background:rgba(196,154,26,0.15);color:#7A5A00;border:1px solid rgba(196,154,26,0.3)';
+        stockLabel = 'faible';
+      } else {
+        stockStyle = 'background:rgba(107,171,138,0.15);color:#1E7A45;border:1px solid rgba(107,171,138,0.3)';
+        stockLabel = 'en stock';
+      }
+
+      html += '<div class="pharma-row-hop" data-pharma-cat="' + cat + '" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:0.5px solid var(--hop-border);transition:background 0.15s" onmouseover="this.style.background=\'var(--hop-light)\'" onmouseout="this.style.background=\'\'">';
+      html += '<div style="width:42px;height:42px;border-radius:50%;background:' + col + '20;border:2px solid ' + col + ';display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">' + icon + '</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">' + (r.nom||'\u2014') + '</div>';
+      html += '<div style="font-size:11px;color:var(--hop-muted);margin-top:1px">' + cat + ' \u00b7 Ajoute par ' + (r.ajoute_par||'\u2014') + ' \u00b7 ' + (r.date_ajout||'\u2014') + '</div>';
+      html += '</div>';
+      html += '<div style="text-align:center;padding:4px 14px;border-radius:20px;' + stockStyle + '">';
+      html += '<div style="font-size:18px;font-weight:700">' + qte + '</div>';
+      html += '<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px">' + stockLabel + '</div>';
+      html += '</div>';
+      if (qte > 0) {
+        html += '<button onclick="utiliserRemedeHop(' + r.id + ',\'' + (r.nom||'').replace(/[\'"]/g,'') + '\',' + qte + ')" style="background:linear-gradient(135deg,var(--hop-mauve),var(--hop-rose2));color:white;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif;white-space:nowrap">\u22121 Utiliser</button>';
+      } else {
+        html += '<button disabled style="background:rgba(155,122,155,0.15);color:#9B7A9B;border:none;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;font-family:Nunito,sans-serif;white-space:nowrap;opacity:0.5;cursor:not-allowed">Indisponible</button>';
+      }
+      if (isChef) {
+        html += '<button onclick="supprimerRemedeHop(' + r.id + ')" style="background:none;color:var(--hop-muted);border:none;cursor:pointer;font-size:16px;padding:4px 8px">\u00d7</button>';
+      }
+      html += '</div>';
+    });
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+
+async function ajouterRemedeHop() {
+  const u = state.currentUser;
+  const nom = document.getElementById('pharma-nom')?.value.trim();
+  const qte = parseInt(document.getElementById('pharma-qte')?.value) || 0;
+  const cat = document.getElementById('pharma-cat')?.value;
+
+  if (!nom) { hopWarning('Le nom du remede est obligatoire.'); return; }
+  if (qte < 1) { hopWarning('La quantite doit etre au moins 1.'); return; }
+
+  const nomMedecin = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
+
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/pharmacie_hop', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        nom: nom,
+        categorie: cat,
+        quantite: qte,
+        ajoute_par: nomMedecin,
+        date_ajout: new Date().toLocaleDateString('fr-FR')
+      })
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Erreur ajout pharma:', res.status, errText);
+      hopWarning('Erreur lors de l\'ajout. Verifie que la table pharmacie_hop existe sur Supabase. Code: ' + res.status);
+      return;
+    }
+    document.getElementById('pharma-nom').value = '';
+    document.getElementById('pharma-qte').value = '1';
+    const ok = document.getElementById('pharma-ok');
+    if (ok) { ok.style.display = 'block'; setTimeout(function(){ok.style.display='none';}, 3000); }
+    hopSuccess('Remede ajoute au stock !');
+    await renderPharmacieHop(state.currentUser.grade);
+  } catch(e) {
+    console.warn('ajout pharma:', e);
+    hopWarning('Erreur de connexion. Reessayez.');
+  }
+}
+
+async function utiliserRemedeHop(id, nom, qteActuelle) {
+  if (!await hopConfirmAsync('Utiliser 1 unite de "' + nom + '" ?\n\nStock actuel : ' + qteActuelle + ' \u2192 nouveau stock : ' + (qteActuelle - 1), false)) return;
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/pharmacie_hop?id=eq.' + id, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ quantite: qteActuelle - 1 })
+    });
+    if (!res.ok) { hopWarning('Erreur lors de l\'utilisation. Code: ' + res.status); return; }
+    hopSuccess('Remede utilise. Nouveau stock : ' + (qteActuelle - 1));
+  } catch(e) { console.warn('utiliser pharma:', e); hopWarning('Erreur de connexion.'); return; }
+  await renderPharmacieHop(state.currentUser.grade);
+}
+
+async function supprimerRemedeHop(id) {
+  if (!await hopConfirmAsync('Supprimer definitivement ce remede du stock ?', true)) return;
+  try {
+    await fetch(SB_URL + '/rest/v1/pharmacie_hop?id=eq.' + id, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' }
+    });
+    hopSuccess('Remede supprime.');
+  } catch(e) { console.warn(e); hopWarning('Erreur lors de la suppression.'); }
+  await renderPharmacieHop(state.currentUser.grade);
+}
+
+function filtrerPharma(cat, btn) {
+  document.querySelectorAll('[data-pharma-filter]').forEach(function(b) {
+    b.style.background = 'white'; b.style.color = 'var(--hop-muted)';
+  });
+  btn.style.background = 'var(--hop-mauve)'; btn.style.color = 'white';
+  document.querySelectorAll('.pharma-row-hop').forEach(function(row) {
+    var rowCat = row.getAttribute('data-pharma-cat');
+    row.style.display = (cat === 'tous' || rowCat === cat) ? 'flex' : 'none';
+  });
 }
 
 // ============================================================
