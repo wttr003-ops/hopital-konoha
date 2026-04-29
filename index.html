@@ -4686,22 +4686,45 @@ async function renderRapportsHop(g) {
   if (rapports.length === 0) {
     html += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun rapport enregistr\u00e9.</div>';
   } else {
-    rapports.slice(0, 20).forEach(function(r) {
+    var canDelRap = gradeRankHop(state.currentUser.grade) <= 0;
+    rapports.slice(0, 20).forEach(function(r, idx) {
       var date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '--';
       var heure = r.created_at ? new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+      var dateLong = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) : '--';
       var sc = r.statut_patient === 'D\u00e9c\u00e9d\u00e9'
         ? 'rgba(192,57,43,0.1);color:#7B241C;border:1px solid rgba(192,57,43,0.25)'
         : r.statut_patient === 'Soign\u00e9 \u2014 renvoy\u00e9'
           ? 'rgba(107,171,138,0.12);color:#1E7A45;border:1px solid rgba(107,171,138,0.3)'
           : 'rgba(196,154,26,0.1);color:#7A5A00;border:1px solid rgba(196,154,26,0.25)';
-      html += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border)">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
-        + '<div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+(r.type_intervention||'Rapport')+' &mdash; '+(r.nb_patients||'--')+'</div>'
-        + '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+sc+'">'+( r.statut_patient||'--')+'</span>'
-        + '</div>'
-        + '<div style="font-size:11px;color:var(--hop-muted)">'+(r.auteur||'--')+' &middot; '+date+' '+heure+' &middot; Gravit\u00e9 : '+(r.gravite||'--')+'</div>'
-        + (r.description ? '<div style="font-size:11px;color:var(--hop-muted);font-style:italic;margin-top:3px;padding:6px 10px;background:var(--hop-light);border-radius:6px">'+r.description.slice(0,120)+(r.description.length>120?'...':'')+'</div>' : '')
-        + '</div>';
+      // Header cliquable avec fleche
+      html += '<div style="border-bottom:0.5px solid var(--hop-border)">';
+      html += '<div onclick="toggleRapDetailHop(' + idx + ')" style="padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background 0.15s" onmouseover="this.style.background=\'var(--hop-light)\'" onmouseout="this.style.background=\'\'">';
+      html += '<div style="flex:1">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:10px">';
+      html += '<div style="font-size:13px;font-weight:600;color:var(--hop-text)">'+(r.type_intervention||'Rapport')+' \u2014 '+(r.nb_patients||'--')+'</div>';
+      html += '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+sc+'">'+(r.statut_patient||'--')+'</span>';
+      html += '</div>';
+      html += '<div style="font-size:11px;color:var(--hop-muted)">'+(r.auteur||'--')+' \u00b7 '+date+' '+heure+' \u00b7 Gravit\u00e9 : '+(r.gravite||'--')+'</div>';
+      html += '</div>';
+      html += '<span id="rap-icon-' + idx + '" style="color:var(--hop-muted);font-size:14px;margin-left:12px;transition:transform 0.2s">\u25bc</span>';
+      html += '</div>';
+      // Detail (cache par defaut)
+      html += '<div id="rap-detail-' + idx + '" style="display:none;padding:14px 16px;background:var(--hop-bg2);border-top:1px solid var(--hop-border)">';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
+      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Auteur</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.auteur||'--')+'</div></div>';
+      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Grade</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.grade_auteur||'--')+'</div></div>';
+      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Date</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+dateLong+'</div></div>';
+      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Heure</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+heure+'</div></div>';
+      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Patients</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.nb_patients||'--')+'</div></div>';
+      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Gravit\u00e9</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.gravite||'--')+'</div></div>';
+      html += '</div>';
+      html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">\ud83d\udcdd Rapport d\u00e9taill\u00e9</div>';
+      html += '<div style="background:white;border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;line-height:1.7;color:var(--hop-text);white-space:pre-wrap">'+(r.description||'\u2014')+'</div>';
+      if (canDelRap && r.id) {
+        html += '<div style="margin-top:12px;text-align:right"><button onclick="event.stopPropagation();supprimerRapportHopDirection(' + r.id + ')" style="padding:6px 14px;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\uddd1 Supprimer ce rapport</button></div>';
+      }
+      html += '</div>';
+      html += '</div>';
     });
   }
   html += '</div>';
@@ -4709,7 +4732,7 @@ async function renderRapportsHop(g) {
 }
 
 
-function toggleRapportDetailHop(idx) {
+function toggleRapDetailHop(idx) {
   var detail = document.getElementById('rap-detail-' + idx);
   var icon = document.getElementById('rap-icon-' + idx);
   if (!detail) return;
@@ -4718,17 +4741,17 @@ function toggleRapportDetailHop(idx) {
   if (icon) icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
 }
 
-async function supprimerRapportHop(id) {
-  if (!id) { hopWarning('ID introuvable.'); return; }
-  if (!await hopConfirmAsync('Supprimer ce rapport definitivement ?', true)) return;
+async function supprimerRapportHopDirection(id) {
+  if (!id) { hopWarning('Identifiant manquant.'); return; }
+  if (!await hopConfirmAsync('Supprimer ce rapport definitivement ? Cette action est irreversible.', true)) return;
   try {
     var res = await fetch(SB_URL + '/rest/v1/rapports_hop?id=eq.' + id, {
       method: 'DELETE',
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' }
     });
-    if (!res.ok) { hopWarning('Erreur lors de la suppression.'); return; }
-    hopSuccess('Rapport supprime.');
-  } catch(e) { console.warn(e); hopWarning('Erreur de connexion.'); }
+    if (!res.ok) { hopWarning('Erreur lors de la suppression. Code: ' + res.status); return; }
+    hopSuccess('Rapport supprime avec succes.');
+  } catch(e) { console.warn('suppr rapport:', e); hopWarning('Erreur de connexion.'); return; }
   await renderRapportsHop(state.currentUser.grade);
 }
 
@@ -5420,46 +5443,18 @@ async function renderRecensementHop(g) {
 }
 
 // Filtre de recherche pour le recensement
-function normalizeSearchHop(s) {
-  return (s || '').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[-_'\.,]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
 function filterRecensementHop() {
-  var raw = (document.getElementById('rec-search-hop')?.value || '').trim();
-  var q = normalizeSearchHop(raw);
+  var q = (document.getElementById('rec-search-hop')?.value || '').toLowerCase().trim();
   var countEl = document.getElementById('rec-search-count');
   var emptyEl = document.getElementById('rec-search-empty');
   var cards = document.querySelectorAll('.recens-card-hop');
   var visible = 0;
-
-  // Decouper la recherche en mots
-  var motsCherches = q.split(' ').filter(function(m){ return m.length > 0; });
-
   cards.forEach(function(card) {
-    var dataRaw = card.getAttribute('data-recens-search') || '';
-    var data = normalizeSearchHop(dataRaw);
-    var match = false;
-
-    if (!q) {
-      match = true;
-    } else if (motsCherches.length === 1) {
-      // Un seul mot : doit etre quelque part dans les donnees
-      match = data.indexOf(motsCherches[0]) !== -1;
-    } else {
-      // Plusieurs mots : TOUS doivent etre presents (peu importe l'ordre)
-      match = motsCherches.every(function(mot) {
-        return data.indexOf(mot) !== -1;
-      });
-    }
-
+    var data = card.getAttribute('data-recens-search') || '';
+    var match = !q || data.indexOf(q) !== -1;
     card.style.display = match ? 'flex' : 'none';
     if (match) visible++;
   });
-
   if (countEl) countEl.textContent = q ? visible + ' resultat' + (visible !== 1 ? 's' : '') : '';
   if (emptyEl) emptyEl.style.display = (q && visible === 0) ? 'block' : 'none';
 }
