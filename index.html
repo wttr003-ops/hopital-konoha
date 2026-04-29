@@ -4876,35 +4876,38 @@ async function chargerDiscuMessages(silencieux) {
 
   let messages = [];
   try {
-    const res = await sbGet('discussions_hop', '?order=created_at.asc');
-    if (Array.isArray(res)) messages = res;
-  } catch(e) { console.warn('discussions load:', e); }
+    const res = await fetch(SB_URL + '/rest/v1/tchat_equipe?order=created_at.asc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (res.ok) {
+      messages = await res.json();
+    }
+  } catch(e) { console.warn('tchat load:', e); }
 
-  if (messages.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--hop-muted);font-size:13px;padding:2rem;font-style:italic">🌸 Aucun message pour le moment. Soyez le premier à écrire !</div>';
+  if (!Array.isArray(messages) || messages.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--hop-muted);font-size:13px;padding:2rem;font-style:italic">\ud83c\udf38 Aucun message pour le moment. Soyez le premier \u00e0 \u00e9crire !</div>';
     return;
   }
 
-  // Sauvegarder la position de scroll
   const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
 
   let html = '';
   let lastDate = '';
   messages.forEach(function(m) {
-    const isMe = m.from_user === u.username;
+    const isMe = m.auteur_username === u.username;
     const dateMsg = m.created_at ? new Date(m.created_at).toLocaleDateString('fr-FR') : '';
     if (dateMsg && dateMsg !== lastDate) {
-      html += '<div style="text-align:center;font-size:10px;color:var(--hop-muted);margin:12px 0;text-transform:uppercase;letter-spacing:1px">— ' + dateMsg + ' —</div>';
+      html += '<div style="text-align:center;font-size:10px;color:var(--hop-muted);margin:12px 0;text-transform:uppercase;letter-spacing:1px">\u2014 ' + dateMsg + ' \u2014</div>';
       lastDate = dateMsg;
     }
-    const initials = (m.sender_name || m.from_user || '?').slice(0,2).toUpperCase();
-    const gradeBadge = m.grade ? '<span class="grade-pill-hop ' + (GRADE_CLASS_HOP[m.grade]||'badge-stagiaire') + '" style="font-size:9px;padding:1px 8px">' + m.grade + '</span>' : '';
+    const initials = (m.auteur_nom || m.auteur_username || '?').slice(0,2).toUpperCase();
+    const gradeBadge = m.auteur_grade ? '<span class="grade-pill-hop ' + (GRADE_CLASS_HOP[m.auteur_grade]||'badge-stagiaire') + '" style="font-size:9px;padding:1px 8px">' + m.auteur_grade + '</span>' : '';
 
     html += '<div style="display:flex;align-items:flex-start;gap:0.6rem;margin-bottom:0.75rem;' + (isMe?'flex-direction:row-reverse':'') + '">';
     html += '<div style="width:32px;height:32px;border-radius:50%;background:var(--hop-light);border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2);flex-shrink:0">' + initials + '</div>';
     html += '<div style="max-width:75%;' + (isMe?'align-items:flex-end;':'') + 'display:flex;flex-direction:column">';
     html += '<div style="font-size:10px;color:var(--hop-muted);margin-bottom:3px;' + (isMe?'text-align:right':'') + '">';
-    html += '<strong style="color:var(--hop-mauve2)">' + (m.sender_name||m.from_user) + '</strong> ' + gradeBadge + ' · ' + (m.time||'');
+    html += '<strong style="color:var(--hop-mauve2)">' + (m.auteur_nom||m.auteur_username) + '</strong> ' + gradeBadge + ' \u00b7 ' + (m.heure||'');
     html += '</div>';
     html += '<div style="font-size:13px;line-height:1.55;padding:0.55rem 0.85rem;border-radius:14px;word-break:break-word;color:var(--hop-text);';
     if (isMe) {
@@ -4912,14 +4915,13 @@ async function chargerDiscuMessages(silencieux) {
     } else {
       html += 'background:white;border:1px solid var(--hop-border);border-top-left-radius:4px';
     }
-    html += '">' + escapeHtmlDiscu(m.text||'') + '</div>';
+    html += '">' + escapeHtmlDiscu(m.message||'') + '</div>';
     html += '</div>';
     html += '</div>';
   });
 
   container.innerHTML = html;
 
-  // Scroll vers le bas si on y était déjà
   if (wasAtBottom || !silencieux) {
     container.scrollTop = container.scrollHeight;
   }
@@ -4941,50 +4943,34 @@ async function envoyerDiscuMessage() {
 
   input.value = '';
 
-  // Liste des combinaisons de noms de colonnes a essayer
-  // Au cas ou Supabase aurait garde l'ancien cache avec d'autres noms
-  var tentatives = [
-    { from_user: u.username, sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure },
-    { sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure },
-    { username: u.username, sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure },
-    { user: u.username, sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure }
-  ];
-
-  let envoye = false;
-  let derniereErreur = '';
-
-  for (let i = 0; i < tentatives.length && !envoye; i++) {
-    try {
-      const res = await fetch(SB_URL + '/rest/v1/discussions_hop', {
-        method: 'POST',
-        headers: {
-          'apikey': SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-          'Accept-Profile': 'public'
-        },
-        body: JSON.stringify(tentatives[i])
-      });
-      if (res.ok) {
-        envoye = true;
-        break;
-      } else {
-        const errText = await res.text();
-        derniereErreur = errText;
-        console.log('Tentative ' + (i+1) + ' echec:', res.status, errText);
-      }
-    } catch(e) {
-      derniereErreur = e.message;
-      console.warn('Tentative ' + (i+1) + ' erreur:', e);
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/tchat_equipe', {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        auteur_username: u.username,
+        auteur_nom: nomAffiche,
+        auteur_grade: u.grade || '',
+        message: text,
+        heure: heure
+      })
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('Erreur tchat_equipe:', res.status, errText);
+      hopWarning('Erreur lors de l\'envoi. Code: ' + res.status + '. Verifie que la table tchat_equipe existe sur Supabase.');
+      input.value = text;
+      return;
     }
-  }
-
-  if (envoye) {
     await chargerDiscuMessages();
-  } else {
-    console.error('Toutes les tentatives ont echoue. Derniere erreur:', derniereErreur);
-    hopWarning('Impossible d\'envoyer le message. Le cache de Supabase semble bloque. Solution : Va sur Supabase > Settings > General > Restart project. Detail technique : ' + derniereErreur.slice(0, 100));
+  } catch(e) {
+    console.warn('envoi tchat:', e);
+    hopWarning('Erreur de connexion. Reessayez.');
     input.value = text;
   }
 }
