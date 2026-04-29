@@ -4941,19 +4941,51 @@ async function envoyerDiscuMessage() {
 
   input.value = '';
 
-  try {
-    await sbPost('discussions_hop', {
-      from_user: u.username,
-      sender_name: nomAffiche,
-      grade: u.grade || '',
-      text: text,
-      time: heure
-    });
+  // Liste des combinaisons de noms de colonnes a essayer
+  // Au cas ou Supabase aurait garde l'ancien cache avec d'autres noms
+  var tentatives = [
+    { from_user: u.username, sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure },
+    { sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure },
+    { username: u.username, sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure },
+    { user: u.username, sender_name: nomAffiche, grade: u.grade || '', text: text, time: heure }
+  ];
+
+  let envoye = false;
+  let derniereErreur = '';
+
+  for (let i = 0; i < tentatives.length && !envoye; i++) {
+    try {
+      const res = await fetch(SB_URL + '/rest/v1/discussions_hop', {
+        method: 'POST',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+          'Accept-Profile': 'public'
+        },
+        body: JSON.stringify(tentatives[i])
+      });
+      if (res.ok) {
+        envoye = true;
+        break;
+      } else {
+        const errText = await res.text();
+        derniereErreur = errText;
+        console.log('Tentative ' + (i+1) + ' echec:', res.status, errText);
+      }
+    } catch(e) {
+      derniereErreur = e.message;
+      console.warn('Tentative ' + (i+1) + ' erreur:', e);
+    }
+  }
+
+  if (envoye) {
     await chargerDiscuMessages();
-  } catch(e) {
-    console.warn('envoi discu:', e);
-    hopWarning('Erreur lors de l\'envoi. Vérifiez que la table "discussions_hop" existe sur Supabase.');
-    input.value = text; // Restaurer le texte
+  } else {
+    console.error('Toutes les tentatives ont echoue. Derniere erreur:', derniereErreur);
+    hopWarning('Impossible d\'envoyer le message. Le cache de Supabase semble bloque. Solution : Va sur Supabase > Settings > General > Restart project. Detail technique : ' + derniereErreur.slice(0, 100));
+    input.value = text;
   }
 }
 
