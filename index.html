@@ -5261,6 +5261,14 @@ async function renderRecensementHop(g) {
 
   let h = '<h2 class="dash-section-title-hop">\uD83D\uDD2C Recensement m\u00e9dical</h2>';
 
+  // Barre de recherche
+  h += '<div style="margin-bottom:1rem;position:relative">';
+  h += '<input type="text" id="rec-search-hop" placeholder="\uD83D\uDD0D Rechercher par nom, grade, village..." oninput="filterRecensementHop()" style="width:100%;padding:11px 16px 11px 46px;border:1.5px solid var(--hop-border2);border-radius:25px;font-family:Nunito,sans-serif;font-size:13px;color:var(--hop-text);background:white;outline:none;box-shadow:0 2px 12px rgba(139,94,131,0.08)" onfocus="this.style.borderColor=\'var(--hop-rose2)\'" onblur="this.style.borderColor=\'var(--hop-border2)\'"/>';
+  h += '<svg style="position:absolute;left:15px;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--hop-muted)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  h += '<span id="rec-search-count" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--hop-muted)"></span>';
+  h += '</div>';
+  h += '<div id="rec-search-empty" style="display:none;text-align:center;padding:2rem;color:var(--hop-muted);background:white;border:1px solid var(--hop-border);border-radius:12px;margin-bottom:1rem"><div style="font-size:32px;margin-bottom:0.5rem">\uD83D\uDD0D</div><div style="font-size:14px">Aucun dossier correspondant.</div></div>';
+
   if (!canCreate) {
     h += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Acc\u00e8s r\u00e9serv\u00e9 aux m\u00e9decins.</div>';
     el.innerHTML = h;
@@ -5386,6 +5394,23 @@ async function renderRecensementHop(g) {
   }
   h += '</div>';
   el.innerHTML = h;
+}
+
+// Filtre de recherche pour le recensement
+function filterRecensementHop() {
+  var q = (document.getElementById('rec-search-hop')?.value || '').toLowerCase().trim();
+  var countEl = document.getElementById('rec-search-count');
+  var emptyEl = document.getElementById('rec-search-empty');
+  var cards = document.querySelectorAll('.recens-card-hop');
+  var visible = 0;
+  cards.forEach(function(card) {
+    var data = card.getAttribute('data-recens-search') || '';
+    var match = !q || data.indexOf(q) !== -1;
+    card.style.display = match ? 'flex' : 'none';
+    if (match) visible++;
+  });
+  if (countEl) countEl.textContent = q ? visible + ' resultat' + (visible !== 1 ? 's' : '') : '';
+  if (emptyEl) emptyEl.style.display = (q && visible === 0) ? 'block' : 'none';
 }
 
 // Fonctions utilitaires formulaire
