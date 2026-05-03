@@ -5548,6 +5548,8 @@ async function renderRecensementHop(g) {
     const res = await sbGet('recensements_hop', '?order=created_at.desc');
     if (Array.isArray(res)) dossiers = res;
   } catch(e) { console.warn('recensements:', e); }
+  // Stocker pour le filtre
+  window._allRecensements = dossiers;
 
   const nomMedecin = (state.users && state.users[u.username] && state.users[u.username].fullname)
     ? state.users[u.username].fullname : u.username;
@@ -5672,9 +5674,10 @@ async function renderRecensementHop(g) {
   if (dossiers.length === 0) {
     h += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun dossier de recensement cr\u00e9\u00e9.</div>';
   } else {
-    dossiers.slice(0,20).forEach(function(d) {
+    dossiers.forEach(function(d) {
       var date = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '--';
-      h += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
+      var searchData = ((d.nom_ninja||'') + ' ' + (d.grade_ninja||'') + ' ' + (d.village||'') + ' ' + (d.medecin||'') + ' ' + (d.groupe_sanguin||'')).toLowerCase().replace(/"/g,'');
+      h += '<div class="recens-card-hop" data-recens-search="' + searchData + '" style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
         + '<div>'
         + '<div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+(d.nom_ninja||'--')+'</div>'
         + '<div style="font-size:11px;color:var(--hop-muted)">'+(d.grade_ninja||'--')+' &bull; GS : '+(d.groupe_sanguin||'--')+' &bull; Dr '+(d.medecin||'--')+' &bull; '+date+'</div>'
@@ -5691,19 +5694,98 @@ async function renderRecensementHop(g) {
 
 // Filtre de recherche pour le recensement
 function filterRecensementHop() {
-  var q = (document.getElementById('rec-search-hop')?.value || '').toLowerCase().trim();
+  var raw = (document.getElementById('rec-search-hop')?.value || '').trim();
   var countEl = document.getElementById('rec-search-count');
   var emptyEl = document.getElementById('rec-search-empty');
-  var cards = document.querySelectorAll('.recens-card-hop');
-  var visible = 0;
-  cards.forEach(function(card) {
-    var data = card.getAttribute('data-recens-search') || '';
-    var match = !q || data.indexOf(q) !== -1;
-    card.style.display = match ? 'flex' : 'none';
-    if (match) visible++;
-  });
-  if (countEl) countEl.textContent = q ? visible + ' resultat' + (visible !== 1 ? 's' : '') : '';
-  if (emptyEl) emptyEl.style.display = (q && visible === 0) ? 'block' : 'none';
+
+  // Normaliser une chaine (minuscules, sans accents, espaces nettoyes)
+  function norm(s) {
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[-_'\.,]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  var q = norm(raw);
+  var allDossiers = window._allRecensements || [];
+  var motsCherches = q.split(' ').filter(function(m){ return m.length > 0; });
+
+  // Filtrer les dossiers
+  var filtered;
+  if (!q) {
+    filtered = allDossiers;
+  } else {
+    filtered = allDossiers.filter(function(d) {
+      var data = norm((d.nom_ninja||'') + ' ' + (d.grade_ninja||'') + ' ' + (d.village||'') + ' ' + (d.medecin||'') + ' ' + (d.groupe_sanguin||''));
+      // Tous les mots cherches doivent etre presents (peu importe l'ordre)
+      return motsCherches.every(function(mot) {
+        return data.indexOf(mot) !== -1;
+      });
+    });
+  }
+
+  // Re-render la liste des dossiers
+  // Trouver le conteneur (la div qui contient le titre 'Dossiers crees')
+  var titleDivs = document.querySelectorAll('div');
+  var container = null;
+  for (var i = 0; i < titleDivs.length; i++) {
+    var t = titleDivs[i].textContent || '';
+    if (t.indexOf('Dossiers cr') === 0 && titleDivs[i].nextElementSibling === null && titleDivs[i].parentElement) {
+      container = titleDivs[i].parentElement;
+      break;
+    }
+  }
+  // Fallback : chercher par style
+  if (!container) {
+    var allBlocks = document.querySelectorAll('div[style*="border-radius:14px"]');
+    for (var j = 0; j < allBlocks.length; j++) {
+      if (allBlocks[j].textContent.indexOf('Dossiers cr') !== -1) {
+        container = allBlocks[j];
+        break;
+      }
+    }
+  }
+
+  if (!container) {
+    if (countEl) countEl.textContent = '';
+    return;
+  }
+
+  // Reconstruire le HTML
+  var titleHtml = '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Dossiers cr\u00e9\u00e9s (' + filtered.length + ')</div>';
+
+  var listHtml = '';
+  if (filtered.length === 0) {
+    if (q) {
+      listHtml = '<div style="padding:2rem;text-align:center;color:var(--hop-muted)"><div style="font-size:32px;margin-bottom:8px">\ud83d\udd0d</div><div style="font-size:14px">Aucun dossier correspondant \u00e0 "<strong>' + raw + '</strong>".</div></div>';
+    } else {
+      listHtml = '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Aucun dossier de recensement cr\u00e9\u00e9.</div>';
+    }
+  } else {
+    filtered.forEach(function(d) {
+      var date = d.created_at ? new Date(d.created_at).toLocaleDateString('fr-FR') : '--';
+      listHtml += '<div style="padding:10px 16px;border-bottom:0.5px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">'
+        + '<div>'
+        + '<div style="font-size:13px;font-weight:700;color:var(--hop-text)">' + (d.nom_ninja||'--') + '</div>'
+        + '<div style="font-size:11px;color:var(--hop-muted)">' + (d.grade_ninja||'--') + ' \u2022 GS : ' + (d.groupe_sanguin||'--') + ' \u2022 Dr ' + (d.medecin||'--') + ' \u2022 ' + date + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px">'
+        + '<button onclick="voirDossierHop(' + d.id + ')" style="padding:4px 12px;background:rgba(139,94,131,0.1);color:var(--hop-mauve);border:1px solid rgba(139,94,131,0.25);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Voir</button>'
+        + '</div>'
+        + '</div>';
+    });
+  }
+
+  container.innerHTML = titleHtml + listHtml;
+
+  // Mettre a jour le compteur
+  if (countEl) {
+    countEl.textContent = q ? filtered.length + ' resultat' + (filtered.length !== 1 ? 's' : '') : '';
+  }
+  if (emptyEl) {
+    emptyEl.style.display = 'none'; // On gere l'affichage du vide dans la liste maintenant
+  }
 }
 
 // Fonctions utilitaires formulaire
