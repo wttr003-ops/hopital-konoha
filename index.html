@@ -1782,10 +1782,19 @@ async function syncFromSupabase() {
 
 // Realtime polling
 let realtimeHop = null;
+let _hopWindowFocused = true;
+window.addEventListener('focus', function(){ _hopWindowFocused = true; });
+window.addEventListener('blur', function(){ _hopWindowFocused = false; });
 function startRealtime() {
   if (realtimeHop) return;
   realtimeHop = setInterval(async () => {
     if (!state.currentUser) return;
+    if (!_hopWindowFocused) return; // Pas de sync si onglet inactif
+    // Verifier qu'on est sur un onglet qui a besoin de sync
+    const active = document.querySelector('.dash-tab-hop.active');
+    if (!active) return;
+    const needsSync = ['dash-rdvs','dash-candidatures','dash-citizen-rdvs','dash-citizen-candid'].indexOf(active.id) !== -1;
+    if (!needsSync) return; // Pas besoin de sync sur les autres onglets
     const oldMsg = Object.values(state.messages).reduce((a,b)=>a+b.length,0);
     const oldRdv = state.rdvs.length;
     const oldCandid = state.candidatures.length;
@@ -1810,7 +1819,7 @@ function startRealtime() {
         if (fg && fg !== u.grade) { state.currentUser.grade = fg; localStorage.setItem('hop_session', JSON.stringify(state.currentUser)); updateNav(); }
       }
     }
-  }, 5000);
+  }, 30000);
 }
 function stopRealtime() { if (realtimeHop) { clearInterval(realtimeHop); realtimeHop = null; } }
 
@@ -5088,13 +5097,13 @@ async function renderDiscussionsHop(g) {
   if (discussionsRefreshInterval) clearInterval(discussionsRefreshInterval);
   discussionsRefreshInterval = setInterval(async function() {
     var tab = document.getElementById('dash-discussions');
-    if (tab && tab.classList.contains('active')) {
+    if (tab && tab.classList.contains('active') && _hopWindowFocused) {
       await chargerDiscuMessages(true);
-    } else {
+    } else if (!tab || !tab.classList.contains('active')) {
       clearInterval(discussionsRefreshInterval);
       discussionsRefreshInterval = null;
     }
-  }, 5000);
+  }, 15000);
 }
 
 async function chargerDiscuMessages(silencieux) {
