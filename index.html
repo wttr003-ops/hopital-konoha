@@ -12,21 +12,21 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --hop-bg:       #FDF6FA;
-  --hop-bg2:      #F8EEF4;
-  --hop-card:     #FFFFFF;
-  --hop-mauve:    #8B5E83;
-  --hop-mauve2:   #6B3F6B;
-  --hop-rose:     #E8A0C0;
-  --hop-rose2:    #D4779A;
-  --hop-pink:     #FFB7C5;
-  --hop-light:    #FFF0F5;
-  --hop-dark:     #3D2040;
-  --hop-text:     #4A2550;
-  --hop-muted:    #9B7A9B;
-  --hop-border:   rgba(200,140,180,0.25);
-  --hop-border2:  rgba(200,140,180,0.5);
-  --hop-gold:     #C9956A;
+  --hop-bg:       #0a0a0a;
+  --hop-bg2:      #1a1a1a;
+  --hop-card:     #1a1a1a;
+  --hop-mauve:    #d4779a;
+  --hop-mauve2:   #e8a0c0;
+  --hop-rose:     #f9a8d4;
+  --hop-rose2:    #ec4899;
+  --hop-pink:     #fbcfe8;
+  --hop-light:    #2a1a25;
+  --hop-dark:     #fce7f3;
+  --hop-text:     #fce7f3;
+  --hop-muted:    #b8a0b0;
+  --hop-border:   rgba(212,119,154,0.2);
+  --hop-border2:  rgba(212,119,154,0.4);
+  --hop-gold:     #fbbf24;
   --hop-green:    #6BAB8A;
 }
 
@@ -55,7 +55,7 @@ body {
 
 /* ---- DISCLAIMER ---- */
 .disclaimer {
-  background: rgba(139,94,131,0.08);
+  background: rgba(212,119,154,0.08);
   border-bottom: 1px solid var(--hop-border);
   text-align: center;
   padding: 5px 1rem;
@@ -71,7 +71,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 200;
-  background: rgba(253,246,250,0.97);
+  background: rgba(10,10,10,0.97);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--hop-border);
   display: flex;
@@ -227,7 +227,7 @@ body {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #FDF6FA 0%, #F5E0ED 40%, #EDD5E8 70%, #F8EEF4 100%);
+  background: linear-gradient(160deg, #0a0a0a 0%, #1a0f15 40%, #2a1525 70%, #1a1a1a 100%);
   padding: 4rem 2rem;
 }
 
@@ -297,7 +297,7 @@ body {
 
 /* ---- STATS ---- */
 .stats-bar-hop {
-  background: white;
+  background: #1a1a1a;
   border-top: 1px solid var(--hop-border);
   border-bottom: 1px solid var(--hop-border);
   display: flex;
@@ -327,7 +327,7 @@ body {
 
 /* ---- SECTIONS ---- */
 .section-hop { padding: 4rem 2rem; position: relative; z-index: 2; }
-.section-pink { background: linear-gradient(180deg, #FFF5F8 0%, #FDF0F6 100%); border-top: 1px solid var(--hop-border); border-bottom: 1px solid var(--hop-border); }
+.section-pink { background: linear-gradient(180deg, #15101a 0%, #1f1525 100%); border-top: 1px solid var(--hop-border); border-bottom: 1px solid var(--hop-border); }
 .section-inner-hop { max-width: 1100px; margin: 0 auto; }
 
 .section-tag-hop {
@@ -388,7 +388,7 @@ body {
 .histoire-sidebar-hop { display: flex; flex-direction: column; gap: 0.75rem; }
 
 .hop-fact-card {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 12px;
   padding: 1rem 1.1rem;
@@ -411,7 +411,7 @@ body {
 .services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.25rem; }
 
 .service-card {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 16px;
   padding: 1.75rem;
@@ -428,7 +428,7 @@ body {
 .grades-hop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
 
 .grade-hop-card {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 12px;
   padding: 1.25rem;
@@ -458,13 +458,13 @@ body {
 .grade-hop-card p { font-size: 12px; color: var(--hop-muted); }
 
 /* ---- RECRUTEMENT CTA ---- */
-.recruit-cta-hop { background: linear-gradient(135deg, #F5E0ED, #EDD5E8); padding: 4rem 2rem; }
+.recruit-cta-hop { background: linear-gradient(135deg, #1a0f15, #2a1525); padding: 4rem 2rem; }
 .recruit-desc-hop { font-size: 15px; color: var(--hop-muted); max-width: 520px; margin: 0 auto 1.5rem; line-height: 1.7; }
 .req-chips-hop { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; list-style: none; margin-bottom: 2rem; }
-.req-chips-hop li { background: white; border: 1px solid var(--hop-border2); color: var(--hop-mauve2); font-size: 12px; padding: 5px 16px; border-radius: 20px; font-weight: 500; }
+.req-chips-hop li { background: #1a1a1a; border: 1px solid var(--hop-border2); color: var(--hop-mauve2); font-size: 12px; padding: 5px 16px; border-radius: 20px; font-weight: 500; }
 
 /* ---- FOOTER ---- */
-.footer-hop { background: white; border-top: 1px solid var(--hop-border); padding: 2rem; text-align: center; position: relative; z-index: 2; }
+.footer-hop { background: #1a1a1a; border-top: 1px solid var(--hop-border); padding: 2rem; text-align: center; position: relative; z-index: 2; }
 .footer-inner-hop { display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
 .footer-logo-hop { font-size: 28px; }
 .footer-title-hop { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--hop-mauve2); font-weight: 600; }
@@ -473,7 +473,7 @@ body {
 /* ---- AUTH ---- */
 .auth-page-hop {
   min-height: 100vh;
-  background: linear-gradient(160deg, #FDF6FA, #F5E0ED);
+  background: linear-gradient(160deg, #0a0a0a, #1a0f15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -483,7 +483,7 @@ body {
 }
 
 .auth-box-hop {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 20px;
   padding: 2.5rem;
@@ -506,8 +506,8 @@ body {
 .form-group-hop select,
 .form-group-hop textarea {
   width: 100%;
-  background: var(--hop-bg);
-  border: 1.5px solid var(--hop-border);
+  background: #2a1a25;
+  border: 1.5px solid var(--hop-border2);
   border-radius: 10px;
   padding: 10px 14px;
   color: var(--hop-text);
@@ -532,7 +532,7 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0.9rem 2rem;
-  background: white;
+  background: #1a1a1a;
   border-bottom: 1px solid var(--hop-border);
   position: sticky;
   top: 0;
@@ -547,7 +547,7 @@ body {
 
 /* ---- DASHBOARD ---- */
 .dash-topbar-hop {
-  background: white;
+  background: #1a1a1a;
   border-bottom: 1px solid var(--hop-border);
   padding: 0.85rem 2rem;
   display: flex;
@@ -569,7 +569,7 @@ body {
 
 .dash-sidebar-hop {
   width: 200px;
-  background: white;
+  background: #1a1a1a;
   border-right: 1px solid var(--hop-border);
   flex-shrink: 0;
   padding: 1.5rem 0;
@@ -604,7 +604,7 @@ body {
 /* ---- KPI ---- */
 .kpi-grid-hop { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .kpi-card-hop {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 14px;
   padding: 1.25rem;
@@ -616,7 +616,7 @@ body {
 
 /* ---- DASH TABLES ---- */
 .dash-block-hop {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 14px;
   overflow: hidden;
@@ -641,9 +641,9 @@ body {
 .detail-card-body-hop { padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--hop-border); background: var(--hop-bg2); }
 .detail-section-hop { margin-top: 1rem; margin-bottom: 1rem; }
 .detail-section-label-hop { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--hop-rose2); margin-bottom: 0.5rem; font-weight: 700; }
-.detail-section-text-hop { font-size: 13px; color: var(--hop-text); line-height: 1.7; background: white; border-left: 3px solid var(--hop-rose2); border-radius: 0 8px 8px 0; padding: 0.75rem 1rem; }
+.detail-section-text-hop { font-size: 13px; color: var(--hop-text); line-height: 1.7; background: #1a1a1a; border-left: 3px solid var(--hop-rose2); border-radius: 0 8px 8px 0; padding: 0.75rem 1rem; }
 .detail-grid-hop { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; margin-bottom: 1rem; }
-.detail-field-hop { background: white; border: 1px solid var(--hop-border); border-radius: 8px; padding: 0.5rem 0.75rem; }
+.detail-field-hop { background: #1a1a1a; border: 1px solid var(--hop-border); border-radius: 8px; padding: 0.5rem 0.75rem; }
 .detail-field-label-hop { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--hop-muted); margin-bottom: 3px; }
 .detail-field-val-hop { font-size: 13px; color: var(--hop-mauve2); font-weight: 600; }
 .detail-actions-hop { display: flex; gap: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--hop-border); flex-wrap: wrap; }
@@ -661,7 +661,7 @@ body {
 .btn-no-hop { background: rgba(192,57,43,0.1); color: #C0392B; border: 1px solid rgba(192,57,43,0.2); }
 
 /* ---- MESSAGERIE ---- */
-.discussion-panel-hop { margin-top: 1rem; border: 1px solid var(--hop-border); border-radius: 12px; overflow: hidden; background: white; }
+.discussion-panel-hop { margin-top: 1rem; border: 1px solid var(--hop-border); border-radius: 12px; overflow: hidden; background: #1a1a1a; }
 .discussion-header-hop { display: flex; align-items: center; gap: 7px; padding: 0.6rem 1rem; background: var(--hop-light); border-bottom: 1px solid var(--hop-border); font-size: 11px; font-weight: 700; color: var(--hop-rose2); text-transform: uppercase; letter-spacing: 1.5px; }
 .discussion-body-hop { padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-height: 260px; overflow-y: auto; }
 .msg-system-hop { text-align: center; font-size: 11px; color: var(--hop-muted); font-style: italic; padding: 4px 0; }
@@ -673,16 +673,16 @@ body {
 .msg-meta-hop { font-size: 10px; color: var(--hop-muted); margin-bottom: 3px; }
 .msg-bubble-hop { font-size: 13px; line-height: 1.55; padding: 0.55rem 0.85rem; border-radius: 12px; max-width: 82%; word-break: break-word; color: var(--hop-text); }
 .bubble-me-hop { background: linear-gradient(135deg, var(--hop-light), #F5D5E8); border: 1px solid var(--hop-border2); border-top-right-radius: 3px; }
-.bubble-other-hop { background: white; border: 1px solid var(--hop-border); border-top-left-radius: 3px; }
+.bubble-other-hop { background: #1a1a1a; border: 1px solid var(--hop-border); border-top-left-radius: 3px; }
 .discussion-input-area-hop { border-top: 1px solid var(--hop-border); background: var(--hop-bg); padding: 0.6rem 0.85rem; }
-.discussion-input-hop { flex: 1; background: white; border: 1.5px solid var(--hop-border); border-radius: 20px; padding: 7px 14px; color: var(--hop-text); font-size: 13px; font-family: 'Nunito', sans-serif; outline: none; resize: none; line-height: 1.4; }
+.discussion-input-hop { flex: 1; background: #1a1a1a; border: 1.5px solid var(--hop-border); border-radius: 20px; padding: 7px 14px; color: var(--hop-text); font-size: 13px; font-family: 'Nunito', sans-serif; outline: none; resize: none; line-height: 1.4; }
 .discussion-input-hop:focus { border-color: var(--hop-rose2); }
 .discussion-input-row-hop { display: flex; gap: 0.5rem; align-items: center; }
 .discussion-send-btn-hop { display: flex; align-items: center; gap: 5px; background: linear-gradient(135deg, var(--hop-mauve), var(--hop-rose2)); color: white; border: none; border-radius: 20px; padding: 8px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Nunito', sans-serif; }
 
 /* ---- JOURNAL CARDS ---- */
 .journal-card-hop {
-  background: white;
+  background: #1a1a1a;
   border: 1px solid var(--hop-border);
   border-radius: 14px;
   padding: 1.5rem;
@@ -1103,7 +1103,7 @@ body {
       </div>
 
       <!-- ESPACE SOIGNANT -->
-      <div class="auth-box-hop" style="border:2px solid var(--hop-mauve);background:linear-gradient(160deg,#FDF6FA,#F5E0ED)">
+      <div class="auth-box-hop" style="border:2px solid var(--hop-mauve);background:linear-gradient(160deg,#1a0f15,#2a1525)">
         <div class="auth-logo-hop">⚕️</div>
         <h2 style="color:var(--hop-mauve2)">Espace Soignant</h2>
         <p class="auth-sub-hop">Accès réservé au personnel médical</p>
@@ -1193,7 +1193,7 @@ body {
           <div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">Rendez-vous médical</div>
           <div style="font-size:11px;color:var(--hop-muted);margin-top:2px">Consultation, soins, urgence</div>
         </button>
-        <button id="rdv-type-btn-don" onclick="switchRdvType('don')" style="flex:1;padding:14px 10px;border:1.5px solid var(--hop-border2);border-radius:12px;background:white;cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;transition:all 0.15s">
+        <button id="rdv-type-btn-don" onclick="switchRdvType('don')" style="flex:1;padding:14px 10px;border:1.5px solid var(--hop-border2);border-radius:12px;background:#1a1a1a;cursor:pointer;text-align:center;font-family:'Nunito',sans-serif;transition:all 0.15s">
           <div style="font-size:22px;margin-bottom:6px">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#D4779A" stroke-width="1.8" style="display:inline"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </div>
@@ -2021,7 +2021,7 @@ function switchRdvType(type) {
   const btnRdv  = document.getElementById('rdv-type-btn-rdv');
   const btnDon  = document.getElementById('rdv-type-btn-don');
   const active  = 'border-color:var(--hop-rose2);background:var(--hop-light)';
-  const normal  = 'border-color:var(--hop-border2);background:white';
+  const normal  = 'border-color:var(--hop-border2);background:#1a1a1a';
 
   if (type === 'rdv') {
     if (classic) classic.style.display = 'block';
@@ -3198,7 +3198,7 @@ function renderDossiersContent(g) {
       <button id="dos-tab-create" onclick="switchDosTab('create')" style="padding:8px 20px;border-radius:20px;border:none;cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;background:linear-gradient(135deg,var(--hop-mauve),var(--hop-rose2));color:white;box-shadow:0 2px 10px rgba(139,94,131,0.3)">
         ➕ Créer / Mettre à jour
       </button>
-      <button id="dos-tab-list" onclick="switchDosTab('list')" style="padding:8px 20px;border-radius:20px;border:1.5px solid var(--hop-border2);cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;background:white;color:var(--hop-mauve2)">
+      <button id="dos-tab-list" onclick="switchDosTab('list')" style="padding:8px 20px;border-radius:20px;border:1.5px solid var(--hop-border2);cursor:pointer;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;background:#1a1a1a;color:var(--hop-mauve2)">
         📋 Dossiers patients (${Object.keys(dossiers).length})
       </button>
     </div>
@@ -3285,7 +3285,7 @@ function renderDossiersContent(g) {
     <div id="dos-panel-list" style="display:none">`;
   // Barre de recherche
   html += '<div style="margin-bottom:1rem;position:relative">'
-    + '<input type="text" id="dos-search" placeholder="🔍 Rechercher un patient par nom et prénom..." oninput="filterDossiers()" style="width:100%;padding:11px 16px 11px 46px;border:1.5px solid var(--hop-border2);border-radius:25px;font-family:\'Nunito\',sans-serif;font-size:13px;color:var(--hop-text);background:white;outline:none;box-shadow:0 2px 12px rgba(139,94,131,0.08);" onfocus="this.style.borderColor=\'var(--hop-rose2)\'" onblur="this.style.borderColor=\'var(--hop-border2)\'"/>'
+    + '<input type="text" id="dos-search" placeholder="🔍 Rechercher un patient par nom et prénom..." oninput="filterDossiers()" style="width:100%;padding:11px 16px 11px 46px;border:1.5px solid var(--hop-border2);border-radius:25px;font-family:\'Nunito\',sans-serif;font-size:13px;color:var(--hop-text);background:#1a1a1a;outline:none;box-shadow:0 2px 12px rgba(139,94,131,0.08);" onfocus="this.style.borderColor=\'var(--hop-rose2)\'" onblur="this.style.borderColor=\'var(--hop-border2)\'"/>'
     + '<svg style="position:absolute;left:15px;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--hop-muted)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
     + '<span id="dos-search-count" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--hop-muted)"></span>'
     + '</div>'
@@ -4111,10 +4111,10 @@ async function renderPharmacieHop(g) {
   const faibles = remedes.filter(function(r){ return (r.quantite||0) > 0 && (r.quantite||0) < 5; }).length;
 
   html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.25rem">';
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Remedes</div><div style="font-size:24px;font-weight:700;color:var(--hop-mauve2);font-family:Cormorant Garamond,serif">' + totalRemedes + '</div></div>';
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Stock total</div><div style="font-size:24px;font-weight:700;color:#1E7A45;font-family:Cormorant Garamond,serif">' + totalQuantite + '</div></div>';
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Stock faible</div><div style="font-size:24px;font-weight:700;color:#7A5A00;font-family:Cormorant Garamond,serif">' + faibles + '</div></div>';
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Epuises</div><div style="font-size:24px;font-weight:700;color:#7B241C;font-family:Cormorant Garamond,serif">' + epuises + '</div></div>';
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Remedes</div><div style="font-size:24px;font-weight:700;color:var(--hop-mauve2);font-family:Cormorant Garamond,serif">' + totalRemedes + '</div></div>';
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Stock total</div><div style="font-size:24px;font-weight:700;color:#1E7A45;font-family:Cormorant Garamond,serif">' + totalQuantite + '</div></div>';
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Stock faible</div><div style="font-size:24px;font-weight:700;color:#7A5A00;font-family:Cormorant Garamond,serif">' + faibles + '</div></div>';
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Epuises</div><div style="font-size:24px;font-weight:700;color:#7B241C;font-family:Cormorant Garamond,serif">' + epuises + '</div></div>';
   html += '</div>';
 
   // Formulaire ajout (Chef Medecin uniquement)
@@ -4136,12 +4136,12 @@ async function renderPharmacieHop(g) {
   html += '<div style="display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap">';
   html += '<button onclick="filtrerPharma(\'tous\',this)" data-pharma-filter="tous" style="padding:5px 14px;border-radius:20px;border:1px solid var(--hop-border2);font-size:12px;cursor:pointer;font-family:Nunito,sans-serif;background:var(--hop-mauve);color:white">Tous</button>';
   CATEGORIES_PHARMA.forEach(function(cat) {
-    html += '<button onclick="filtrerPharma(\'' + cat + '\',this)" data-pharma-filter="' + cat + '" style="padding:5px 14px;border-radius:20px;border:1px solid var(--hop-border2);font-size:12px;cursor:pointer;font-family:Nunito,sans-serif;background:white;color:var(--hop-muted)">' + (PHARMA_ICONS[cat]||'') + ' ' + cat + '</button>';
+    html += '<button onclick="filtrerPharma(\'' + cat + '\',this)" data-pharma-filter="' + cat + '" style="padding:5px 14px;border-radius:20px;border:1px solid var(--hop-border2);font-size:12px;cursor:pointer;font-family:Nunito,sans-serif;background:#1a1a1a;color:var(--hop-muted)">' + (PHARMA_ICONS[cat]||'') + ' ' + cat + '</button>';
   });
   html += '</div>';
 
   // Liste des remedes
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">';
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">';
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Stock pharmacie (' + totalRemedes + ' remedes)</div>';
 
   if (remedes.length === 0) {
@@ -4334,22 +4334,22 @@ async function renderFrigoContent(g) {
 
   // KPIs
   html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem">
-    <div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
+    <div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Poches disponibles</div>
       <div style="font-size:28px;font-weight:700;color:#1E8449;font-family:'Cormorant Garamond',serif">${totalDispo}</div>
     </div>
-    <div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
+    <div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Total en stock</div>
       <div style="font-size:28px;font-weight:700;color:var(--hop-mauve2);font-family:'Cormorant Garamond',serif">${totalPoches}</div>
     </div>
-    <div style="background:white;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
+    <div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;padding:1rem;text-align:center;box-shadow:0 2px 8px rgba(139,94,131,0.06)">
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:4px">Groupes en stock</div>
       <div style="font-size:28px;font-weight:700;color:var(--hop-rose2);font-family:'Cormorant Garamond',serif">${Object.values(stats).filter(s=>s.dispo>0).length}</div>
     </div>
   </div>`;
 
   // Grille des groupes sanguins
-  html += `<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
+  html += `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
     <div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">
       Stock par groupe sanguin
     </div>
@@ -4422,7 +4422,7 @@ async function renderFrigoContent(g) {
   }
 
   // Liste des poches
-  html += `<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
+  html += `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
     <div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">
       <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Toutes les poches (${poches.length})</div>
       <div style="display:flex;gap:6px">
@@ -4709,7 +4709,7 @@ async function renderPresencesHop(g) {
 
         html += '<div style="background:var(--hop-light);border-radius:8px;margin-bottom:8px;overflow:hidden">'
           + '<div onclick="toggleFicheHop(&quot;'+ficheId+'&quot;)" style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer">'
-          + '<div style="width:34px;height:34px;border-radius:50%;background:white;border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'+nom2.slice(0,2).toUpperCase()+'</div>'
+          + '<div style="width:34px;height:34px;border-radius:50%;background:#1a1a1a;border:1px solid var(--hop-border2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-mauve2)">'+nom2.slice(0,2).toUpperCase()+'</div>'
           + '<div style="flex:1"><div style="font-size:13px;font-weight:700;color:var(--hop-text)">'+nom2+'</div>'
           + '<div style="font-size:11px;color:var(--hop-muted)">'+d.grade+' &bull; '+d.services+' service(s) &bull; '+fh+'h'+String(fm).padStart(2,'0')+'</div></div>'
           + '<div style="text-align:right;margin-right:8px"><div style="font-size:16px;font-weight:700;color:var(--hop-rose2)">'+d.total.toLocaleString('fr-FR')+'</div>'
@@ -4918,7 +4918,7 @@ async function renderRapportsHop(g) {
     + '</div>';
 
   // Liste des rapports
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
     + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Rapports r\u00e9cents ('+rapports.length+')</div>';
 
   if (rapports.length === 0) {
@@ -4949,15 +4949,15 @@ async function renderRapportsHop(g) {
       // Detail (cache par defaut)
       html += '<div id="rap-detail-' + idx + '" style="display:none;padding:14px 16px;background:var(--hop-bg2);border-top:1px solid var(--hop-border)">';
       html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">';
-      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Auteur</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.auteur||'--')+'</div></div>';
-      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Grade</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.grade_auteur||'--')+'</div></div>';
-      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Date</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+dateLong+'</div></div>';
-      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Heure</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+heure+'</div></div>';
-      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Patients</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.nb_patients||'--')+'</div></div>';
-      html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Gravit\u00e9</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.gravite||'--')+'</div></div>';
+      html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Auteur</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.auteur||'--')+'</div></div>';
+      html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Grade</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.grade_auteur||'--')+'</div></div>';
+      html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Date</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+dateLong+'</div></div>';
+      html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Heure</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+heure+'</div></div>';
+      html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Patients</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.nb_patients||'--')+'</div></div>';
+      html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--hop-muted);margin-bottom:3px">Gravit\u00e9</div><div style="font-size:13px;font-weight:600;color:var(--hop-mauve2)">'+(r.gravite||'--')+'</div></div>';
       html += '</div>';
       html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">\ud83d\udcdd Rapport d\u00e9taill\u00e9</div>';
-      html += '<div style="background:white;border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;line-height:1.7;color:var(--hop-text);white-space:pre-wrap">'+(r.description||'\u2014')+'</div>';
+      html += '<div style="background:#1a1a1a;border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;line-height:1.7;color:var(--hop-text);white-space:pre-wrap">'+(r.description||'\u2014')+'</div>';
       if (canDelRap && r.id) {
         html += '<div style="margin-top:12px;text-align:right"><button onclick="event.stopPropagation();supprimerRapportHopDirection(' + r.id + ')" style="padding:6px 14px;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\uddd1 Supprimer ce rapport</button></div>';
       }
@@ -5071,7 +5071,7 @@ async function renderDiscussionsHop(g) {
   html += '🌸 Espace de discussion réservé à l\'équipe médicale. Tous les soignants peuvent participer.';
   html += '</div>';
 
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">';
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(139,94,131,0.06)">';
   html += '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);display:flex;align-items:center;justify-content:space-between">';
   html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Tchat équipe en direct</div>';
   html += '<button onclick="renderDiscussionsHop(state.currentUser.grade)" style="font-size:11px;padding:3px 10px;background:var(--hop-light);border:1px solid var(--hop-border2);border-radius:6px;cursor:pointer;color:var(--hop-muted)">↻ Actualiser</button>';
@@ -5081,7 +5081,7 @@ async function renderDiscussionsHop(g) {
   html += '<div style="text-align:center;color:var(--hop-muted);font-size:13px;padding:1rem">Chargement des messages...</div>';
   html += '</div>';
 
-  html += '<div style="border-top:1px solid var(--hop-border);background:white;padding:0.75rem 1rem">';
+  html += '<div style="border-top:1px solid var(--hop-border);background:#1a1a1a;padding:0.75rem 1rem">';
   html += '<div style="font-size:11px;color:var(--hop-muted);margin-bottom:6px">' + nomAffiche + ' <span class="grade-pill-hop ' + (GRADE_CLASS_HOP[u.grade]||'badge-stagiaire') + '" style="font-size:9px">' + u.grade + '</span></div>';
   html += '<div style="display:flex;gap:0.5rem;align-items:flex-end">';
   html += '<textarea id="discu-input-hop" rows="2" placeholder="Écris ton message à l\'équipe..." style="flex:1;background:var(--hop-bg);border:1.5px solid var(--hop-border);border-radius:12px;padding:8px 12px;color:var(--hop-text);font-size:13px;font-family:\'Nunito\',sans-serif;outline:none;resize:none;line-height:1.4" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();envoyerDiscuMessage();}"></textarea>';
@@ -5151,7 +5151,7 @@ async function chargerDiscuMessages(silencieux) {
     if (isMe) {
       html += 'background:linear-gradient(135deg,var(--hop-light),#F5D5E8);border:1px solid var(--hop-border2);border-top-right-radius:4px';
     } else {
-      html += 'background:white;border:1px solid var(--hop-border);border-top-left-radius:4px';
+      html += 'background:#1a1a1a;border:1px solid var(--hop-border);border-top-left-radius:4px';
     }
     html += '">' + escapeHtmlDiscu(m.message||'') + '</div>';
     html += '</div>';
@@ -5238,7 +5238,7 @@ function renderSalairesHop(g) {
     + '💡 Les salaires sont calculés automatiquement à la fin de chaque service en fonction du grade et de la durée. Modifiez les taux ci-dessous.'
     + '</div>';
 
-  html += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
+  html += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">'
     + '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Taux horaires '+(isDir?'— Modifiables':'— Lecture seule')+'</div>';
 
   GRADES_HOP_SAL.forEach(function(gs) {
@@ -5305,7 +5305,7 @@ async function forceFinServiceHop(presenceId, username, nomAgent, grade, priseHe
 
   const popup = document.createElement('div');
   popup.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center';
-  popup.innerHTML = '<div style="background:white;border:1px solid var(--hop-border);border-radius:16px;padding:2rem;max-width:380px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+  popup.innerHTML = '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:16px;padding:2rem;max-width:380px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
     + '<div style="font-size:40px;margin-bottom:0.75rem">&#9632;&#65039;</div>'
     + '<div style="font-size:17px;font-weight:700;color:#c0392b;margin-bottom:4px">Cl\u00f4turer le service</div>'
     + '<div style="font-size:13px;color:var(--hop-muted);margin-bottom:1rem"><strong style="color:var(--hop-text)">'+nomAgent+'</strong> &mdash; '+grade+'</div>'
@@ -5567,11 +5567,11 @@ async function renderRecensementHop(g) {
 
   // Barre de recherche
   h += '<div style="margin-bottom:1rem;position:relative">';
-  h += '<input type="text" id="rec-search-hop" placeholder="\uD83D\uDD0D Rechercher par nom, grade, village..." oninput="filterRecensementHop()" style="width:100%;padding:11px 16px 11px 46px;border:1.5px solid var(--hop-border2);border-radius:25px;font-family:Nunito,sans-serif;font-size:13px;color:var(--hop-text);background:white;outline:none;box-shadow:0 2px 12px rgba(139,94,131,0.08)" onfocus="this.style.borderColor=\'var(--hop-rose2)\'" onblur="this.style.borderColor=\'var(--hop-border2)\'"/>';
+  h += '<input type="text" id="rec-search-hop" placeholder="\uD83D\uDD0D Rechercher par nom, grade, village..." oninput="filterRecensementHop()" style="width:100%;padding:11px 16px 11px 46px;border:1.5px solid var(--hop-border2);border-radius:25px;font-family:Nunito,sans-serif;font-size:13px;color:var(--hop-text);background:#1a1a1a;outline:none;box-shadow:0 2px 12px rgba(139,94,131,0.08)" onfocus="this.style.borderColor=\'var(--hop-rose2)\'" onblur="this.style.borderColor=\'var(--hop-border2)\'"/>';
   h += '<svg style="position:absolute;left:15px;top:50%;transform:translateY(-50%);pointer-events:none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--hop-muted)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   h += '<span id="rec-search-count" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--hop-muted)"></span>';
   h += '</div>';
-  h += '<div id="rec-search-empty" style="display:none;text-align:center;padding:2rem;color:var(--hop-muted);background:white;border:1px solid var(--hop-border);border-radius:12px;margin-bottom:1rem"><div style="font-size:32px;margin-bottom:0.5rem">\uD83D\uDD0D</div><div style="font-size:14px">Aucun dossier correspondant.</div></div>';
+  h += '<div id="rec-search-empty" style="display:none;text-align:center;padding:2rem;color:var(--hop-muted);background:#1a1a1a;border:1px solid var(--hop-border);border-radius:12px;margin-bottom:1rem"><div style="font-size:32px;margin-bottom:0.5rem">\uD83D\uDD0D</div><div style="font-size:14px">Aucun dossier correspondant.</div></div>';
 
   if (!canCreate) {
     h += '<div style="padding:2rem;text-align:center;color:var(--hop-muted)">Acc\u00e8s r\u00e9serv\u00e9 aux m\u00e9decins.</div>';
@@ -5677,7 +5677,7 @@ async function renderRecensementHop(g) {
   h += '</div>';
 
   // LISTE DES DOSSIERS
-  h += '<div style="background:white;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">';
+  h += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden">';
   h += '<div style="padding:10px 16px;border-bottom:1px solid var(--hop-border);font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">Dossiers cr\u00e9\u00e9s ('+dossiers.length+')</div>';
 
   if (dossiers.length === 0) {
@@ -5910,7 +5910,7 @@ async function voirDossierHop(id) {
     ['Père', d.fam_pere||'—'], ['Mère', d.fam_mere||'—'],
   ];
 
-  popup.innerHTML = '<div style="background:white;border-radius:16px;padding:1.75rem;max-width:560px;width:94%;max-height:90vh;overflow-y:auto;margin:auto">'
+  popup.innerHTML = '<div style="background:#1a1a1a;border-radius:16px;padding:1.75rem;max-width:560px;width:94%;max-height:90vh;overflow-y:auto;margin:auto">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">'
     + '<div style="font-size:17px;font-weight:700;color:var(--hop-mauve2)">Dossier — '+d.nom_ninja+'</div>'
     + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--hop-muted)">&times;</button>'
