@@ -4059,13 +4059,14 @@ function toggleMortDetail(i) {
 // ============================================================
 // PHARMACIE NINJA — Gestion des remedes
 // ============================================================
-const CATEGORIES_PHARMA = ['Stimulant', 'Antidote', 'Medecine naturelle', 'Anesthesie', 'Soin general', 'Autre'];
+const CATEGORIES_PHARMA = ['Stimulant', 'Antidote', 'Medecine naturelle', 'Anesthesie', 'Soin general', 'Prothese', 'Autre'];
 const PHARMA_ICONS = {
   'Stimulant': '\ud83d\udc8a',
   'Antidote': '\ud83e\uddea',
   'Medecine naturelle': '\ud83c\udf3f',
   'Anesthesie': '\ud83d\udc89',
   'Soin general': '\ud83e\ude79',
+  'Prothese': '\ud83e\uddbe',
   'Autre': '\u2697\ufe0f'
 };
 const PHARMA_COLORS = {
@@ -4074,6 +4075,7 @@ const PHARMA_COLORS = {
   'Medecine naturelle': '#8B5E83',
   'Anesthesie': '#9B7A9B',
   'Soin general': '#2980b9',
+  'Prothese': '#B87BA8',
   'Autre': '#7f8c8d'
 };
 
@@ -4128,6 +4130,7 @@ async function renderPharmacieHop(g) {
     html += '<select id="pharma-cat">' + CATEGORIES_PHARMA.map(function(c){return '<option>'+c+'</option>';}).join('') + '</select>';
     html += '</div></div>';
     html += '<button class="btn-primary" onclick="ajouterRemedeHop()" style="width:auto;padding:9px 24px">\u2795 Ajouter au stock</button>';
+    html += ' <button onclick="initProthesesHop()" style="width:auto;padding:9px 18px;border-radius:8px;border:1px solid #B87BA8;background:transparent;color:#B87BA8;font-family:Nunito,sans-serif;font-weight:600;cursor:pointer;font-size:13px">\ud83e\uddbe Initialiser les proth\u00e8ses</button>';
     html += '<div id="pharma-ok" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Remede ajoute !</div>';
     html += '</div>';
   }
@@ -4238,6 +4241,51 @@ async function ajouterRemedeHop() {
     console.warn('ajout pharma:', e);
     hopWarning('Erreur de connexion. Reessayez.');
   }
+}
+
+// Initialise le stock de protheses (5 articles)
+async function initProthesesHop() {
+  const u = state.currentUser;
+  if (!await hopConfirmAsync('Ajouter les 5 protheses au stock pharmacie ?\n\n\u2022 Prothese pour bras droit\n\u2022 Prothese pour bras gauche\n\u2022 Prothese pour jambe droite\n\u2022 Prothese pour jambe gauche\n\u2022 \u0152il de verre (sur demande)', false)) return;
+
+  const nomMedecin = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
+  const today = new Date().toLocaleDateString('fr-FR');
+
+  const protheses = [
+    { nom: 'Prothese pour bras droit',    quantite: 1 },
+    { nom: 'Prothese pour bras gauche',   quantite: 1 },
+    { nom: 'Prothese pour jambe droite',  quantite: 1 },
+    { nom: 'Prothese pour jambe gauche',  quantite: 1 },
+    { nom: 'Oeil de verre (sur demande)', quantite: 0 }
+  ];
+
+  let okCount = 0;
+  let failCount = 0;
+  for (const p of protheses) {
+    try {
+      const res = await fetch(SB_URL + '/rest/v1/pharmacie_hop', {
+        method: 'POST',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({
+          nom: p.nom,
+          categorie: 'Prothese',
+          quantite: p.quantite,
+          ajoute_par: nomMedecin,
+          date_ajout: today
+        })
+      });
+      if (res.ok) okCount++; else failCount++;
+    } catch(e) { failCount++; }
+  }
+
+  if (okCount > 0) hopSuccess(okCount + ' prothese(s) ajoutee(s) au stock !');
+  if (failCount > 0) hopWarning(failCount + ' prothese(s) n\'ont pas pu etre ajoutees.');
+  await renderPharmacieHop(state.currentUser.grade);
 }
 
 async function utiliserRemedeHop(id, nom, qteActuelle) {
