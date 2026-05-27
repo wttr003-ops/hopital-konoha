@@ -4127,12 +4127,12 @@ async function renderPharmacieHop(g) {
     html += '<div class="form-group-hop" style="margin:0"><label>Nom du remede *</label><input type="text" id="pharma-nom" placeholder="Ex: Pilule du Soldat"/></div>';
     html += '<div class="form-group-hop" style="margin:0"><label>Quantite *</label><input type="number" id="pharma-qte" min="1" value="1"/></div>';
     html += '<div class="form-group-hop" style="margin:0"><label>Categorie</label>';
-    html += '<select id="pharma-cat" onchange="onPharmaCatChange()">' + CATEGORIES_PHARMA.map(function(c){return '<option>'+c+'</option>';}).join('') + '</select>';
+    html += '<select id="pharma-cat">' + CATEGORIES_PHARMA.map(function(c){return '<option>'+c+'</option>';}).join('') + '</select>';
     html += '</div></div>';
     html += '<button class="btn-primary" onclick="ajouterRemedeHop()" style="width:auto;padding:9px 24px">\u2795 Ajouter au stock</button>';
     html += '<div id="pharma-ok" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Remede ajoute !</div>';
-    // Panneau prothèses (caché par défaut, visible si catégorie = Prothese)
-    html += '<div id="pharma-protheses-panel" style="display:none;margin-top:1rem;padding:1rem;background:rgba(184,123,168,0.08);border:1px solid rgba(184,123,168,0.3);border-radius:10px">';
+    // Panneau prothèses (toujours visible pour le Chef Médecin)
+    html += '<div id="pharma-protheses-panel" style="margin-top:1rem;padding:1rem;background:rgba(184,123,168,0.08);border:1px solid rgba(184,123,168,0.3);border-radius:10px">';
     html += '<div style="font-size:11px;font-weight:700;color:#B87BA8;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.75rem">\ud83e\uddbe Proth\u00e8ses disponibles</div>';
     html += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:0.75rem">';
     html += '<div style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--hop-text)">\ud83e\uddbe Proth\u00e8se pour bras droit</div>';
@@ -4252,13 +4252,6 @@ async function ajouterRemedeHop() {
     console.warn('ajout pharma:', e);
     hopWarning('Erreur de connexion. Reessayez.');
   }
-}
-
-// Affiche/cache le panneau prothèses selon la catégorie sélectionnée
-function onPharmaCatChange() {
-  const cat = document.getElementById('pharma-cat')?.value;
-  const panel = document.getElementById('pharma-protheses-panel');
-  if (panel) panel.style.display = (cat === 'Prothese') ? 'block' : 'none';
 }
 
 // Initialise le stock de protheses (5 articles)
