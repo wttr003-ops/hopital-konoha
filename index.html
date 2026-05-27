@@ -4131,17 +4131,25 @@ async function renderPharmacieHop(g) {
     html += '</div></div>';
     html += '<button class="btn-primary" onclick="ajouterRemedeHop()" style="width:auto;padding:9px 24px">\u2795 Ajouter au stock</button>';
     html += '<div id="pharma-ok" class="form-msg-hop success" style="display:none;margin-top:8px">\u2713 Remede ajoute !</div>';
-    // Panneau prothèses (toujours visible pour le Chef Médecin)
+    // Panneau prothèses (toujours visible pour le Chef Médecin) — clic = recopie le nom dans le champ
     html += '<div id="pharma-protheses-panel" style="margin-top:1rem;padding:1rem;background:rgba(184,123,168,0.08);border:1px solid rgba(184,123,168,0.3);border-radius:10px">';
-    html += '<div style="font-size:11px;font-weight:700;color:#B87BA8;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.75rem">\ud83e\uddbe Proth\u00e8ses disponibles</div>';
-    html += '<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:0.75rem">';
-    html += '<div style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--hop-text)">\ud83e\uddbe Proth\u00e8se pour bras droit</div>';
-    html += '<div style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--hop-text)">\ud83e\uddbe Proth\u00e8se pour bras gauche</div>';
-    html += '<div style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--hop-text)">\ud83e\uddbf Proth\u00e8se pour jambe droite</div>';
-    html += '<div style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--hop-text)">\ud83e\uddbf Proth\u00e8se pour jambe gauche</div>';
-    html += '<div style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--hop-text)">\ud83d\udc41\ufe0f \u0152il de verre <em style="color:var(--hop-muted);font-size:11px">(sur demande)</em></div>';
+    html += '<div style="font-size:11px;font-weight:700;color:#B87BA8;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">\ud83e\uddbe Proth\u00e8ses disponibles</div>';
+    html += '<div style="font-size:11px;color:var(--hop-muted);margin-bottom:0.75rem;font-style:italic">Clique sur un nom pour le copier dans le champ ci-dessus</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:6px">';
+    const NOMS_PROTHESES = [
+      { icon: '\ud83e\uddbe', nom: 'Proth\u00e8se pour bras droit' },
+      { icon: '\ud83e\uddbe', nom: 'Proth\u00e8se pour bras gauche' },
+      { icon: '\ud83e\uddbf', nom: 'Proth\u00e8se pour jambe droite' },
+      { icon: '\ud83e\uddbf', nom: 'Proth\u00e8se pour jambe gauche' },
+      { icon: '\ud83d\udc41\ufe0f', nom: '\u0152il de verre (sur demande)' }
+    ];
+    NOMS_PROTHESES.forEach(function(p) {
+      html += '<div onclick="copierNomProthese(this)" data-nom="' + p.nom + '" style="background:#1a1a1a;border:1px solid rgba(184,123,168,0.2);border-radius:8px;padding:8px 12px;font-size:13px;color:var(--hop-text);cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:space-between" onmouseover="this.style.background=\'rgba(184,123,168,0.15)\';this.style.borderColor=\'#B87BA8\'" onmouseout="this.style.background=\'#1a1a1a\';this.style.borderColor=\'rgba(184,123,168,0.2)\'">';
+      html += '<span>' + p.icon + ' ' + p.nom + '</span>';
+      html += '<span style="font-size:11px;color:#B87BA8;opacity:0.7">\ud83d\udccb copier</span>';
+      html += '</div>';
+    });
     html += '</div>';
-    html += '<button onclick="initProthesesHop()" style="padding:8px 18px;border-radius:8px;border:1px solid #B87BA8;background:transparent;color:#B87BA8;font-family:Nunito,sans-serif;font-weight:600;cursor:pointer;font-size:13px">\ud83e\uddbe Ajouter ces 5 proth\u00e8ses au stock</button>';
     html += '</div>';
     html += '</div>';
   }
@@ -4254,49 +4262,21 @@ async function ajouterRemedeHop() {
   }
 }
 
-// Initialise le stock de protheses (5 articles)
-async function initProthesesHop() {
-  const u = state.currentUser;
-  if (!await hopConfirmAsync('Ajouter les 5 protheses au stock pharmacie ?\n\n\u2022 Prothese pour bras droit\n\u2022 Prothese pour bras gauche\n\u2022 Prothese pour jambe droite\n\u2022 Prothese pour jambe gauche\n\u2022 \u0152il de verre (sur demande)', false)) return;
-
-  const nomMedecin = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
-  const today = new Date().toLocaleDateString('fr-FR');
-
-  const protheses = [
-    { nom: 'Prothese pour bras droit',    quantite: 1 },
-    { nom: 'Prothese pour bras gauche',   quantite: 1 },
-    { nom: 'Prothese pour jambe droite',  quantite: 1 },
-    { nom: 'Prothese pour jambe gauche',  quantite: 1 },
-    { nom: 'Oeil de verre (sur demande)', quantite: 0 }
-  ];
-
-  let okCount = 0;
-  let failCount = 0;
-  for (const p of protheses) {
-    try {
-      const res = await fetch(SB_URL + '/rest/v1/pharmacie_hop', {
-        method: 'POST',
-        headers: {
-          'apikey': SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({
-          nom: p.nom,
-          categorie: 'Prothese',
-          quantite: p.quantite,
-          ajoute_par: nomMedecin,
-          date_ajout: today
-        })
-      });
-      if (res.ok) okCount++; else failCount++;
-    } catch(e) { failCount++; }
+// Clic sur un nom de prothese : recopie le nom dans le champ "Nom du remede" + selectionne Prothese
+function copierNomProthese(elem) {
+  const nom = elem.getAttribute('data-nom');
+  if (!nom) return;
+  const inputNom = document.getElementById('pharma-nom');
+  const selectCat = document.getElementById('pharma-cat');
+  if (inputNom) {
+    inputNom.value = nom;
+    inputNom.focus();
   }
-
-  if (okCount > 0) hopSuccess(okCount + ' prothese(s) ajoutee(s) au stock !');
-  if (failCount > 0) hopWarning(failCount + ' prothese(s) n\'ont pas pu etre ajoutees.');
-  await renderPharmacieHop(state.currentUser.grade);
+  if (selectCat) selectCat.value = 'Prothese';
+  // Petit feedback visuel
+  const original = elem.style.background;
+  elem.style.background = 'rgba(184,123,168,0.35)';
+  setTimeout(function(){ elem.style.background = original; }, 300);
 }
 
 async function utiliserRemedeHop(id, nom, qteActuelle) {
