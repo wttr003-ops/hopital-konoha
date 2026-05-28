@@ -756,7 +756,9 @@ body {
   cursor:pointer;font-family:inherit;transition:opacity .15s;
 }
 #hop-popup-btns button:hover { opacity:0.85; }
-</style></head><body>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head><body>
 
 
 <canvas id="petals-canvas"></canvas>
@@ -4907,6 +4909,8 @@ async function renderRapportsHop(g) {
     const res = await sbGet('rapports_hop', '?order=created_at.desc');
     if (Array.isArray(res)) rapports = res;
   } catch(e) { console.warn('rapports hop:', e); }
+  // Rendre les rapports accessibles aux fonctions PDF
+  window._rapportsHopCache = rapports;
 
   const TYPES_RAP = [
     'Rapport de soins',
@@ -4997,6 +5001,12 @@ async function renderRapportsHop(g) {
       html += '</div>';
       html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">\ud83d\udcdd Rapport d\u00e9taill\u00e9</div>';
       html += '<div style="background:#1a1a1a;border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:12px 16px;font-size:13px;line-height:1.7;color:var(--hop-text);white-space:pre-wrap">'+(r.description||'\u2014')+'</div>';
+      // Boutons PDF (toujours visibles)
+      html += '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--hop-border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+      html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-right:4px">\ud83d\udcc4 Version PDF</div>';
+      html += '<button onclick="event.stopPropagation();apercuPDFRapportHop(' + idx + ')" style="padding:7px 16px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\udc41\ufe0f Aper\u00e7u PDF</button>';
+      html += '<button onclick="event.stopPropagation();telechargerPDFRapportHop(' + idx + ')" style="padding:7px 16px;background:rgba(184,123,168,0.12);color:#B87BA8;border:1px solid rgba(184,123,168,0.4);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\udcbe T\u00e9l\u00e9charger le PDF</button>';
+      html += '</div>';
       if (canDelRap && r.id) {
         html += '<div style="margin-top:12px;text-align:right"><button onclick="event.stopPropagation();supprimerRapportHopDirection(' + r.id + ')" style="padding:6px 14px;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\uddd1 Supprimer ce rapport</button></div>';
       }
@@ -5008,6 +5018,177 @@ async function renderRapportsHop(g) {
   el.innerHTML = html;
 }
 
+// ============================================================
+// GENERATION PDF DES RAPPORTS
+// ============================================================
+function genererBlobPDFRapport(idx) {
+  const rapports = window._rapportsHopCache || [];
+  const r = rapports[idx];
+  if (!r) { hopWarning('Rapport introuvable.'); return null; }
+  if (typeof window.jspdf === 'undefined') { hopWarning('Module PDF non charge. Rechargez la page.'); return null; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 20;
+  const contentW = pageW - marginX * 2;
+
+  // Couleurs theme Konoha
+  const rose = [212, 119, 154];
+  const mauve = [184, 123, 168];
+  const gris = [120, 120, 130];
+  const noir = [40, 40, 50];
+
+  // ===== EN-TETE =====
+  doc.setFillColor(rose[0], rose[1], rose[2]);
+  doc.rect(0, 0, pageW, 35, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('HOPITAL DE KONOHA', marginX, 16);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.text('Rapport medical officiel', marginX, 24);
+  doc.setFontSize(9);
+  doc.text('Village Cache des Feuilles - Service medical', marginX, 30);
+
+  // Logo fleur stylisee en haut a droite
+  doc.setFontSize(28);
+  doc.text('*', pageW - marginX - 5, 22);
+
+  // ===== TITRE DU RAPPORT =====
+  let y = 50;
+  doc.setTextColor(rose[0], rose[1], rose[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  const titre = r.type_intervention || 'Rapport medical';
+  doc.text(titre, marginX, y);
+  y += 8;
+
+  // Date du rapport
+  const dateLong = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) : '--';
+  const heure = r.created_at ? new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '';
+  doc.setTextColor(gris[0], gris[1], gris[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(10);
+  doc.text('Etabli le ' + dateLong + ' a ' + heure, marginX, y);
+  y += 12;
+
+  // ===== BLOC INFORMATIONS =====
+  doc.setFillColor(248, 240, 245);
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(marginX, y, contentW, 38, 2, 2, 'FD');
+
+  const colW = contentW / 2;
+  const lineH = 8;
+  let infoY = y + 7;
+
+  function ligneInfo(label, val, x, yy) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(mauve[0], mauve[1], mauve[2]);
+    doc.text(label.toUpperCase(), x + 4, yy);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(noir[0], noir[1], noir[2]);
+    doc.text(String(val || '--'), x + 4, yy + 5);
+  }
+
+  ligneInfo('Auteur',   r.auteur || '--',        marginX,        infoY);
+  ligneInfo('Grade',    r.grade_auteur || '--',  marginX + colW, infoY);
+  ligneInfo('Patients', r.nb_patients || '--',   marginX,        infoY + lineH * 2);
+  ligneInfo('Gravite',  r.gravite || '--',       marginX + colW, infoY + lineH * 2);
+
+  y += 44;
+
+  // ===== STATUT PATIENT =====
+  const statut = r.statut_patient || '--';
+  let coulStatut = [200, 154, 26];
+  if (statut === 'Decede' || statut === 'D\u00e9c\u00e9d\u00e9') coulStatut = [192, 57, 43];
+  else if (statut.indexOf('Soign') >= 0) coulStatut = [107, 171, 138];
+
+  doc.setFillColor(coulStatut[0], coulStatut[1], coulStatut[2]);
+  doc.roundedRect(marginX, y, 65, 9, 2, 2, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('STATUT : ' + statut.toUpperCase(), marginX + 3, y + 6);
+  y += 16;
+
+  // ===== RAPPORT DETAILLE =====
+  doc.setTextColor(rose[0], rose[1], rose[2]);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text('RAPPORT DETAILLE', marginX, y);
+
+  // Ligne sous le titre
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y + 1.5, marginX + 40, y + 1.5);
+  y += 8;
+
+  // Contenu (avec saut de ligne et pagination)
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  const description = r.description || '--';
+  const lignes = doc.splitTextToSize(description, contentW - 4);
+  const lineHeight = 5.5;
+
+  lignes.forEach(function(ligne) {
+    if (y > pageH - 25) {
+      doc.addPage();
+      y = 20;
+    }
+    doc.text(ligne, marginX + 2, y);
+    y += lineHeight;
+  });
+
+  // ===== PIED DE PAGE =====
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(220, 200, 215);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, pageH - 15, pageW - marginX, pageH - 15);
+    doc.setTextColor(gris[0], gris[1], gris[2]);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text('Hopital de Konoha - Document confidentiel', marginX, pageH - 10);
+    doc.text('Page ' + i + ' / ' + totalPages, pageW - marginX - 20, pageH - 10);
+  }
+
+  return doc;
+}
+
+function nomFichierPDFRapport(idx) {
+  const rapports = window._rapportsHopCache || [];
+  const r = rapports[idx];
+  if (!r) return 'rapport.pdf';
+  const dateStr = r.created_at ? new Date(r.created_at).toISOString().slice(0,10) : 'sans-date';
+  const auteur = (r.auteur || 'inconnu').replace(/[^a-zA-Z0-9]/g, '_');
+  const type = (r.type_intervention || 'rapport').replace(/[^a-zA-Z0-9]/g, '_');
+  return 'Rapport_' + type + '_' + auteur + '_' + dateStr + '.pdf';
+}
+
+function apercuPDFRapportHop(idx) {
+  const doc = genererBlobPDFRapport(idx);
+  if (!doc) return;
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+  // Liberer l'URL apres 1 minute
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+}
+
+function telechargerPDFRapportHop(idx) {
+  const doc = genererBlobPDFRapport(idx);
+  if (!doc) return;
+  doc.save(nomFichierPDFRapport(idx));
+  hopSuccess('PDF telecharge !');
+}
 
 function toggleRapDetailHop(idx) {
   var detail = document.getElementById('rap-detail-' + idx);
