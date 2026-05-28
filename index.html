@@ -5006,6 +5006,7 @@ async function renderRapportsHop(g) {
       html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-right:4px">\ud83d\udcc4 Version PDF</div>';
       html += '<button onclick="event.stopPropagation();apercuPDFRapportHop(' + idx + ')" style="padding:7px 16px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\udc41\ufe0f Aper\u00e7u PDF</button>';
       html += '<button onclick="event.stopPropagation();telechargerPDFRapportHop(' + idx + ')" style="padding:7px 16px;background:rgba(184,123,168,0.12);color:#B87BA8;border:1px solid rgba(184,123,168,0.4);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\udcbe T\u00e9l\u00e9charger le PDF</button>';
+      html += '<button onclick="event.stopPropagation();copierLienPDFRapportHop(' + idx + ', this)" style="padding:7px 16px;background:rgba(139,94,131,0.12);color:#8B5E83;border:1px solid rgba(139,94,131,0.4);border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\udd17 Copier le lien</button>';
       html += '</div>';
       if (canDelRap && r.id) {
         html += '<div style="margin-top:12px;text-align:right"><button onclick="event.stopPropagation();supprimerRapportHopDirection(' + r.id + ')" style="padding:6px 14px;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">\ud83d\uddd1 Supprimer ce rapport</button></div>';
@@ -5188,6 +5189,66 @@ function telechargerPDFRapportHop(idx) {
   if (!doc) return;
   doc.save(nomFichierPDFRapport(idx));
   hopSuccess('PDF telecharge !');
+}
+
+// Upload le PDF vers Supabase Storage et copie le lien public dans le presse-papier
+async function copierLienPDFRapportHop(idx, btn) {
+  const doc = genererBlobPDFRapport(idx);
+  if (!doc) return;
+
+  // Feedback visuel : bouton en mode "chargement"
+  const btnTexteInitial = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '\u23f3 Upload...'; btn.disabled = true; }
+
+  try {
+    const blob = doc.output('blob');
+    const nomFichier = nomFichierPDFRapport(idx);
+    const cheminStockage = 'rapports/' + Date.now() + '_' + nomFichier;
+    const BUCKET = 'rapports-pdf';
+
+    const uploadUrl = SB_URL + '/storage/v1/object/' + BUCKET + '/' + cheminStockage;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/pdf',
+        'x-upsert': 'true'
+      },
+      body: blob
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      // Bucket inexistant ou pas configure en public
+      if (res.status === 404 || errText.indexOf('Bucket not found') >= 0 || errText.indexOf('bucket') >= 0) {
+        hopWarning('Le bucket "rapports-pdf" n\'existe pas encore sur Supabase. Consulte les instructions de configuration (Correction n\u00b023).');
+      } else if (res.status === 403 || res.status === 401) {
+        hopWarning('Acc\u00e8s refus\u00e9. V\u00e9rifie que le bucket "rapports-pdf" est bien en mode public sur Supabase.');
+      } else {
+        hopWarning('Erreur upload PDF : ' + res.status);
+      }
+      console.warn('Upload PDF echec:', errText);
+      return;
+    }
+
+    // URL publique du fichier
+    const lienPublic = SB_URL + '/storage/v1/object/public/' + BUCKET + '/' + cheminStockage;
+
+    // Copie dans le presse-papier
+    try {
+      await navigator.clipboard.writeText(lienPublic);
+      hopSuccess('Lien copi\u00e9 ! Tu peux le coller (Ctrl+V) sur Discord, par mail, etc.');
+    } catch(e) {
+      // Si clipboard API echoue, on affiche le lien dans une alerte pour copie manuelle
+      window.prompt('Copie ce lien (Ctrl+C) :', lienPublic);
+    }
+  } catch(e) {
+    console.warn('copierLienPDF:', e);
+    hopWarning('Erreur reseau. Reessaie dans un instant.');
+  } finally {
+    if (btn) { btn.innerHTML = btnTexteInitial; btn.disabled = false; }
+  }
 }
 
 function toggleRapDetailHop(idx) {
