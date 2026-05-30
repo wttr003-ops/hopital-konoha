@@ -4564,6 +4564,20 @@ function renderDetailFicheDon(f, isDir) {
   function bloc(titre, contenu) {
     return '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">' + titre + '</div><div style="font-size:12px;color:var(--hop-text);line-height:1.6;background:#1a1a1a;border-left:3px solid var(--hop-rose2);border-radius:0 6px 6px 0;padding:6px 10px;white-space:pre-wrap">' + (contenu || '—') + '</div></div>';
   }
+  // Bloc QCM Oui/Non : badge coloré + détail si Oui
+  function blocQcm(titre, val) {
+    let badge, detail = '';
+    if (!val || val === 'Non') {
+      badge = '<span style="display:inline-block;padding:2px 10px;border-radius:12px;background:rgba(120,120,130,0.15);color:#888;font-size:10px;font-weight:700;border:1px solid rgba(120,120,130,0.3)">✗ NON</span>';
+    } else {
+      badge = '<span style="display:inline-block;padding:2px 10px;border-radius:12px;background:rgba(212,119,154,0.15);color:var(--hop-rose2);font-size:10px;font-weight:700;border:1px solid rgba(212,119,154,0.4)">✓ OUI</span>';
+      if (val !== 'Oui') {
+        detail = '<div style="font-size:12px;color:var(--hop-text);line-height:1.6;background:#1a1a1a;border-left:3px solid var(--hop-rose2);border-radius:0 6px 6px 0;padding:6px 10px;margin-top:6px;white-space:pre-wrap">' + val + '</div>';
+      }
+    }
+    return '<div style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px;justify-content:space-between"><div style="font-size:10px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">' + titre + '</div>' + badge + '</div>' + detail + '</div>';
+  }
+
   let h = '';
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
   h += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Âge</div><div style="font-size:13px;color:var(--hop-text);font-weight:600">' + (f.age || '—') + '</div></div>';
@@ -4572,12 +4586,12 @@ function renderDetailFicheDon(f, isDir) {
 
   h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:8px 0 8px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">❤️ État de santé du donneur</div>';
   h += bloc('État général', f.etat_general);
-  h += bloc('Blessures récentes (- de 7 jours)', f.blessures_recentes);
-  h += bloc('Maladies connues', f.maladies_connues);
-  h += bloc('Antécédents médicaux importants', f.antecedents);
-  h += bloc('Traitements en cours', f.traitements);
-  h += bloc('Consommation de substances', f.substances);
-  h += bloc('Allergies / Intolérances', f.allergies);
+  h += blocQcm('Blessures récentes (- de 7 jours)', f.blessures_recentes);
+  h += blocQcm('Maladies connues', f.maladies_connues);
+  h += blocQcm('Antécédents médicaux importants', f.antecedents);
+  h += blocQcm('Traitements en cours', f.traitements);
+  h += blocQcm('Consommation de substances', f.substances);
+  h += blocQcm('Allergies / Intolérances', f.allergies);
 
   h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">⚠️ Aptitude au don</div>';
   if (f.apte === false) h += bloc('Raison du refus', f.raison_refus);
@@ -4625,6 +4639,31 @@ function filtrerFichesDon() {
   if (cible) cible.innerHTML = renderListeFichesDon(filtrees, canEdit, isDir);
 }
 
+// Génère un bloc de question Oui/Non avec textarea conditionnel (caché si Non)
+function qcmOuiNonFicheDon(id, label) {
+  return `<div style="margin-bottom:10px">
+    <label style="font-size:11px;color:var(--hop-muted);display:block;margin-bottom:4px">${label}</label>
+    <div style="display:flex;gap:14px;font-size:13px;margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fd-${id}-oui" value="non" checked onchange="toggleQcmDetail('${id}', false)"> Non</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fd-${id}-oui" value="oui" onchange="toggleQcmDetail('${id}', true)"> Oui</label>
+    </div>
+    <textarea id="fd-${id}" rows="2" placeholder="Précisez..." style="display:none;width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-rose2);border-radius:6px;color:var(--hop-text);font-family:Nunito;resize:vertical"></textarea>
+  </div>`;
+}
+
+// Affiche/cache le textarea selon la réponse Oui/Non
+function toggleQcmDetail(id, show) {
+  const txt = document.getElementById('fd-' + id);
+  if (!txt) return;
+  if (show) {
+    txt.style.display = 'block';
+    setTimeout(function(){ txt.focus(); }, 50);
+  } else {
+    txt.style.display = 'none';
+    txt.value = '';
+  }
+}
+
 // Ouvre le formulaire (modal) de création de fiche
 function ouvrirFormFicheDon() {
   // Supprime un ancien modal s'il existe
@@ -4650,26 +4689,32 @@ function ouvrirFormFicheDon() {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <div><label style="font-size:11px;color:var(--hop-muted)">Grade</label><input id="fd-grade" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
-        <div><label style="font-size:11px;color:var(--hop-muted)">Section / Unité</label><input id="fd-section" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+        <div><label style="font-size:11px;color:var(--hop-muted)">Section / Unité</label>
+          <select id="fd-section" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito">
+            <option value="">—</option>
+            <option>Section police</option>
+            <option>Section des bureaux des missions</option>
+            <option>Section diplomate</option>
+            <option>Section des renseignements</option>
+            <option>Section finances</option>
+            <option>Section académie</option>
+            <option>Section médecins</option>
+          </select>
+        </div>
       </div>
 
       <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">❤️ État de santé</div>
       <label style="font-size:11px;color:var(--hop-muted)">État général (fatigue, blessures récentes…)</label>
-      <textarea id="fd-etat" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
-      <label style="font-size:11px;color:var(--hop-muted)">Blessures récentes (- de 7 jours)</label>
-      <textarea id="fd-blessures" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
-      <label style="font-size:11px;color:var(--hop-muted)">Maladies connues</label>
-      <textarea id="fd-maladies" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
-      <label style="font-size:11px;color:var(--hop-muted)">Antécédents médicaux importants</label>
-      <textarea id="fd-antecedents" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
-      <label style="font-size:11px;color:var(--hop-muted)">Traitements en cours</label>
-      <textarea id="fd-traitements" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
-      <label style="font-size:11px;color:var(--hop-muted)">Consommation de substances (médicaments, pilules militaires, poisons…)</label>
-      <textarea id="fd-substances" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
-      <label style="font-size:11px;color:var(--hop-muted)">Allergies / Intolérances</label>
-      <textarea id="fd-allergies" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:14px;resize:vertical"></textarea>
+      <textarea id="fd-etat" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:12px;resize:vertical"></textarea>
 
-      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">⚠️ Aptitude au don</div>
+      ${qcmOuiNonFicheDon('blessures', 'Blessures r\u00e9centes (- de 7 jours)')}
+      ${qcmOuiNonFicheDon('maladies', 'Maladies connues')}
+      ${qcmOuiNonFicheDon('antecedents', 'Ant\u00e9c\u00e9dents m\u00e9dicaux importants')}
+      ${qcmOuiNonFicheDon('traitements', 'Traitements en cours')}
+      ${qcmOuiNonFicheDon('substances', 'Consommation de substances (m\u00e9dicaments, pilules militaires, poisons\u2026)')}
+      ${qcmOuiNonFicheDon('allergies', 'Allergies / Intol\u00e9rances')}
+
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px 0">⚠️ Aptitude au don</div>
       <div style="display:flex;gap:14px;margin-bottom:8px;font-size:13px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fd-apte" value="oui" checked> Oui</label>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fd-apte" value="non"> Non</label>
@@ -4734,6 +4779,14 @@ async function enregistrerFicheDon() {
   const nom = document.getElementById('fd-nom')?.value.trim();
   if (!nom) { hopWarning('Le nom du donneur est obligatoire.'); return; }
 
+  // Helper : récupère la valeur d'un QCM Oui/Non — retourne "Non" si non coché, sinon la description (ou "Oui" si vide)
+  function getQcmVal(id) {
+    const radio = document.querySelector('input[name="fd-' + id + '-oui"]:checked');
+    if (!radio || radio.value === 'non') return 'Non';
+    const txt = document.getElementById('fd-' + id)?.value.trim();
+    return txt ? txt : 'Oui';
+  }
+
   const apteRadio = document.querySelector('input[name="fd-apte"]:checked');
   const fiche = {
     nom_complet: nom,
@@ -4741,12 +4794,12 @@ async function enregistrerFicheDon() {
     grade: document.getElementById('fd-grade')?.value.trim() || null,
     section_unite: document.getElementById('fd-section')?.value.trim() || null,
     etat_general: document.getElementById('fd-etat')?.value.trim() || null,
-    blessures_recentes: document.getElementById('fd-blessures')?.value.trim() || null,
-    maladies_connues: document.getElementById('fd-maladies')?.value.trim() || null,
-    antecedents: document.getElementById('fd-antecedents')?.value.trim() || null,
-    traitements: document.getElementById('fd-traitements')?.value.trim() || null,
-    substances: document.getElementById('fd-substances')?.value.trim() || null,
-    allergies: document.getElementById('fd-allergies')?.value.trim() || null,
+    blessures_recentes: getQcmVal('blessures'),
+    maladies_connues: getQcmVal('maladies'),
+    antecedents: getQcmVal('antecedents'),
+    traitements: getQcmVal('traitements'),
+    substances: getQcmVal('substances'),
+    allergies: getQcmVal('allergies'),
     apte: apteRadio ? apteRadio.value === 'oui' : true,
     raison_refus: document.getElementById('fd-raison')?.value.trim() || null,
     quantite_prelevee: document.getElementById('fd-quantite')?.value || null,
