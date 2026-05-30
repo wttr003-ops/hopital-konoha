@@ -4500,7 +4500,287 @@ async function renderFrigoContent(g) {
   }
 
   html += `</div>`;
+
+  // ============================================================
+  // SECTION FICHES DE DON DU SANG
+  // ============================================================
+  // Charger les fiches depuis Supabase
+  let fiches = [];
+  try {
+    const resF = await sbGet('fiches_don_hop', '?order=created_at.desc');
+    if (Array.isArray(resF)) fiches = resF;
+  } catch(e) {
+    fiches = JSON.parse(localStorage.getItem('hop_fiches_don') || '[]');
+  }
+  window._fichesDonCache = fiches;
+
+  html += `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-top:1.25rem;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--hop-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">
+        🩸 Fiches de don de sang <span style="color:var(--hop-muted);font-weight:500;text-transform:none;letter-spacing:0;margin-left:6px">(${fiches.length})</span>
+      </div>
+      ${canEdit ? `<button onclick="ouvrirFormFicheDon()" style="padding:7px 16px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">+ Nouvelle fiche de don</button>` : ''}
+    </div>
+    <div style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--hop-muted);margin-bottom:10px;line-height:1.6">Vous trouverez ici même, le mode opératoire primaire afin de pouvoir récolter le sang de ninja volontaire utile pour de graves blessures ou en temps de guerre.</div>
+
+      <input type="text" id="recherche-fiche-don" oninput="filtrerFichesDon()" placeholder="🔍 Rechercher par nom..." style="width:100%;padding:8px 12px;background:#0f0f0f;border:1px solid var(--hop-border);border-radius:8px;color:var(--hop-text);font-size:13px;font-family:Nunito,sans-serif;margin-bottom:10px">
+
+      <div id="liste-fiches-don">${renderListeFichesDon(fiches, canEdit, isDir)}</div>
+    </div>
+  </div>`;
+
   el.innerHTML = html;
+}
+
+// Rendu de la liste des fiches (utilisé aussi par le filtre de recherche)
+function renderListeFichesDon(fiches, canEdit, isDir) {
+  if (!fiches || fiches.length === 0) {
+    return '<div style="text-align:center;padding:1.5rem;color:var(--hop-muted);font-style:italic;font-size:13px">Aucune fiche de don pour le moment</div>';
+  }
+  let h = '';
+  fiches.forEach(function(f, idx) {
+    const apteCoul = f.apte === false ? '#C0392B' : '#1E8449';
+    const apteTxt  = f.apte === false ? '✗ Non apte' : '✓ Apte';
+    h += '<div style="background:#0f0f0f;border:1px solid var(--hop-border);border-radius:10px;margin-bottom:8px;overflow:hidden">';
+    h += '<div onclick="toggleFicheDon(' + idx + ')" style="padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.15s" onmouseover="this.style.background=\'rgba(212,119,154,0.05)\'" onmouseout="this.style.background=\'\'">';
+    h += '<div style="width:36px;height:36px;border-radius:50%;background:rgba(212,119,154,0.15);border:2px solid var(--hop-rose2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--hop-rose2);flex-shrink:0">' + (f.groupe_sanguin || '?') + '</div>';
+    h += '<div style="flex:1;min-width:0">';
+    h += '<div style="font-size:14px;font-weight:600;color:var(--hop-text)">' + (f.nom_complet || 'Anonyme') + '</div>';
+    h += '<div style="font-size:11px;color:var(--hop-muted);margin-top:2px">' + (f.grade || '—') + ' · ' + (f.section_unite || '—') + ' · ' + (f.quantite_prelevee ? f.quantite_prelevee + ' mL' : '— mL') + '</div>';
+    h += '</div>';
+    h += '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;color:' + apteCoul + ';background:' + apteCoul + '15;border:1px solid ' + apteCoul + '40">' + apteTxt + '</span>';
+    h += '<span id="fiche-icon-' + idx + '" style="color:var(--hop-muted);font-size:14px">▸</span>';
+    h += '</div>';
+    h += '<div id="fiche-detail-' + idx + '" style="display:none;padding:14px;border-top:1px solid var(--hop-border);background:#080808">';
+    h += renderDetailFicheDon(f, isDir);
+    h += '</div>';
+    h += '</div>';
+  });
+  return h;
+}
+
+// Rendu du détail d'une fiche (panneau qui se déplie)
+function renderDetailFicheDon(f, isDir) {
+  function bloc(titre, contenu) {
+    return '<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">' + titre + '</div><div style="font-size:12px;color:var(--hop-text);line-height:1.6;background:#1a1a1a;border-left:3px solid var(--hop-rose2);border-radius:0 6px 6px 0;padding:6px 10px;white-space:pre-wrap">' + (contenu || '—') + '</div></div>';
+  }
+  let h = '';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+  h += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Âge</div><div style="font-size:13px;color:var(--hop-text);font-weight:600">' + (f.age || '—') + '</div></div>';
+  h += '<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:8px;padding:8px 12px"><div style="font-size:9px;color:var(--hop-muted);text-transform:uppercase;letter-spacing:1px">Groupe sanguin</div><div style="font-size:13px;color:var(--hop-rose2);font-weight:700">' + (f.groupe_sanguin || '—') + '</div></div>';
+  h += '</div>';
+
+  h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:8px 0 8px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">❤️ État de santé du donneur</div>';
+  h += bloc('État général', f.etat_general);
+  h += bloc('Blessures récentes (- de 7 jours)', f.blessures_recentes);
+  h += bloc('Maladies connues', f.maladies_connues);
+  h += bloc('Antécédents médicaux importants', f.antecedents);
+  h += bloc('Traitements en cours', f.traitements);
+  h += bloc('Consommation de substances', f.substances);
+  h += bloc('Allergies / Intolérances', f.allergies);
+
+  h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">⚠️ Aptitude au don</div>';
+  if (f.apte === false) h += bloc('Raison du refus', f.raison_refus);
+  else h += '<div style="font-size:12px;color:#1E8449;background:rgba(30,132,73,0.08);border-left:3px solid #1E8449;padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:12px">✓ Donneur déclaré apte au don</div>';
+
+  h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">🧪 Collecte sanguine</div>';
+  h += bloc('Quantité prélevée', (f.quantite_prelevee ? f.quantite_prelevee + ' mL' : null));
+  h += bloc('État du donneur après prélèvement', f.etat_apres_prelevement);
+
+  h += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">🏥 Suivi & stockage</div>';
+  h += bloc('Sang stocké dans', f.stockage);
+  h += bloc('Remarques du médecin', f.remarques);
+  h += bloc('Médecin responsable', f.medecin_responsable);
+
+  if (f.created_at) {
+    h += '<div style="font-size:10px;color:var(--hop-muted);font-style:italic;text-align:right;margin-top:10px">Fiche établie le ' + new Date(f.created_at).toLocaleDateString('fr-FR') + '</div>';
+  }
+  if (isDir && f.id) {
+    h += '<div style="margin-top:10px;text-align:right"><button onclick="event.stopPropagation();supprimerFicheDon(' + f.id + ')" style="padding:6px 14px;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.3);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">🗑 Supprimer cette fiche</button></div>';
+  }
+  return h;
+}
+
+function toggleFicheDon(idx) {
+  const detail = document.getElementById('fiche-detail-' + idx);
+  const icon   = document.getElementById('fiche-icon-' + idx);
+  if (!detail) return;
+  if (detail.style.display === 'none') {
+    detail.style.display = 'block';
+    if (icon) icon.textContent = '▾';
+  } else {
+    detail.style.display = 'none';
+    if (icon) icon.textContent = '▸';
+  }
+}
+
+function filtrerFichesDon() {
+  const q = (document.getElementById('recherche-fiche-don')?.value || '').toLowerCase().trim();
+  const fiches = window._fichesDonCache || [];
+  const filtrees = q ? fiches.filter(function(f){ return (f.nom_complet || '').toLowerCase().indexOf(q) >= 0; }) : fiches;
+  const u = state.currentUser;
+  const canEdit = u && gradeRankHop(u.grade) <= 3;
+  const isDir   = u && gradeRankHop(u.grade) <= 1;
+  const cible = document.getElementById('liste-fiches-don');
+  if (cible) cible.innerHTML = renderListeFichesDon(filtrees, canEdit, isDir);
+}
+
+// Ouvre le formulaire (modal) de création de fiche
+function ouvrirFormFicheDon() {
+  // Supprime un ancien modal s'il existe
+  const old = document.getElementById('modal-fiche-don');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-fiche-don';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem';
+  modal.onclick = function(e) { if (e.target === modal) fermerFormFicheDon(); };
+
+  modal.innerHTML = `
+    <div style="background:#0a0a0a;border:1px solid var(--hop-border2);border-radius:14px;max-width:720px;width:100%;padding:1.5rem;color:var(--hop-text);font-family:Nunito,sans-serif">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0;font-family:'Cormorant Garamond',serif;color:var(--hop-rose2);font-size:22px">🩸 Nouvelle fiche de don de sang</h3>
+        <button onclick="fermerFormFicheDon()" style="background:none;border:none;color:var(--hop-muted);font-size:24px;cursor:pointer">×</button>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">🪪 Identité du donneur</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:8px">
+        <div><label style="font-size:11px;color:var(--hop-muted)">Nom complet *</label><input id="fd-nom" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+        <div><label style="font-size:11px;color:var(--hop-muted)">Âge</label><input id="fd-age" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div><label style="font-size:11px;color:var(--hop-muted)">Grade</label><input id="fd-grade" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+        <div><label style="font-size:11px;color:var(--hop-muted)">Section / Unité</label><input id="fd-section" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">❤️ État de santé</div>
+      <label style="font-size:11px;color:var(--hop-muted)">État général (fatigue, blessures récentes…)</label>
+      <textarea id="fd-etat" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Blessures récentes (- de 7 jours)</label>
+      <textarea id="fd-blessures" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Maladies connues</label>
+      <textarea id="fd-maladies" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Antécédents médicaux importants</label>
+      <textarea id="fd-antecedents" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Traitements en cours</label>
+      <textarea id="fd-traitements" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Consommation de substances (médicaments, pilules militaires, poisons…)</label>
+      <textarea id="fd-substances" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Allergies / Intolérances</label>
+      <textarea id="fd-allergies" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:14px;resize:vertical"></textarea>
+
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">⚠️ Aptitude au don</div>
+      <div style="display:flex;gap:14px;margin-bottom:8px;font-size:13px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fd-apte" value="oui" checked> Oui</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="fd-apte" value="non"> Non</label>
+      </div>
+      <label style="font-size:11px;color:var(--hop-muted)">Raison (si refus)</label>
+      <textarea id="fd-raison" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:14px;resize:vertical"></textarea>
+
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">🧪 Collecte sanguine</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px">
+        <div><label style="font-size:11px;color:var(--hop-muted)">Quantité prélevée (mL)</label><input id="fd-quantite" type="number" min="0" placeholder="450" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+        <div><label style="font-size:11px;color:var(--hop-muted)">État après prélèvement</label>
+          <select id="fd-etat-apres" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito">
+            <option value="">—</option>
+            <option>Stable</option>
+            <option>Fatigué</option>
+            <option>À surveiller</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:14px"><label style="font-size:11px;color:var(--hop-muted)">Groupe sanguin (effectuez un roll 1–100 si inconnu : 1-37 O+ · 38-66 A+ · 67-75 B+ · 76-82 O- · 83-88 A- · 89-91 AB+ · 92-94 B- · 95-100 AB-)</label>
+        <select id="fd-groupe" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito">
+          <option value="">—</option>
+          <option>O+</option><option>A+</option><option>B+</option><option>O-</option><option>A-</option><option>AB+</option><option>B-</option><option>AB-</option>
+        </select>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:6px 0 8px 0">🏥 Suivi & stockage</div>
+      <label style="font-size:11px;color:var(--hop-muted)">Sang stocké dans</label>
+      <select id="fd-stockage" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px">
+        <option value="">—</option>
+        <option>Réserve générale</option>
+        <option>Urgences</option>
+        <option>Cas spécifiques</option>
+      </select>
+      <label style="font-size:11px;color:var(--hop-muted)">Remarques du médecin</label>
+      <textarea id="fd-remarques" rows="2" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:8px;resize:vertical"></textarea>
+      <label style="font-size:11px;color:var(--hop-muted)">Nom du médecin responsable</label>
+      <input id="fd-medecin" type="text" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:14px">
+
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="fermerFormFicheDon()" style="padding:9px 20px;background:transparent;color:var(--hop-muted);border:1px solid var(--hop-border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">Annuler</button>
+        <button onclick="enregistrerFicheDon()" style="padding:9px 24px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">💾 Enregistrer la fiche</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  // Pré-remplir le nom du médecin avec l'utilisateur connecté
+  const u = state.currentUser;
+  if (u && state.users && state.users[u.username]) {
+    const medecinInput = document.getElementById('fd-medecin');
+    if (medecinInput) medecinInput.value = state.users[u.username].fullname || u.username;
+  }
+}
+
+function fermerFormFicheDon() {
+  const modal = document.getElementById('modal-fiche-don');
+  if (modal) modal.remove();
+}
+
+async function enregistrerFicheDon() {
+  const nom = document.getElementById('fd-nom')?.value.trim();
+  if (!nom) { hopWarning('Le nom du donneur est obligatoire.'); return; }
+
+  const apteRadio = document.querySelector('input[name="fd-apte"]:checked');
+  const fiche = {
+    nom_complet: nom,
+    age: document.getElementById('fd-age')?.value.trim() || null,
+    grade: document.getElementById('fd-grade')?.value.trim() || null,
+    section_unite: document.getElementById('fd-section')?.value.trim() || null,
+    etat_general: document.getElementById('fd-etat')?.value.trim() || null,
+    blessures_recentes: document.getElementById('fd-blessures')?.value.trim() || null,
+    maladies_connues: document.getElementById('fd-maladies')?.value.trim() || null,
+    antecedents: document.getElementById('fd-antecedents')?.value.trim() || null,
+    traitements: document.getElementById('fd-traitements')?.value.trim() || null,
+    substances: document.getElementById('fd-substances')?.value.trim() || null,
+    allergies: document.getElementById('fd-allergies')?.value.trim() || null,
+    apte: apteRadio ? apteRadio.value === 'oui' : true,
+    raison_refus: document.getElementById('fd-raison')?.value.trim() || null,
+    quantite_prelevee: document.getElementById('fd-quantite')?.value || null,
+    etat_apres_prelevement: document.getElementById('fd-etat-apres')?.value || null,
+    groupe_sanguin: document.getElementById('fd-groupe')?.value || null,
+    stockage: document.getElementById('fd-stockage')?.value || null,
+    remarques: document.getElementById('fd-remarques')?.value.trim() || null,
+    medecin_responsable: document.getElementById('fd-medecin')?.value.trim() || null,
+    created_by: state.currentUser?.username || null
+  };
+
+  try {
+    await sbPost('fiches_don_hop', fiche);
+    hopSuccess('Fiche de don enregistrée !');
+  } catch(e) {
+    console.warn('save fiche don:', e);
+    // Fallback localStorage
+    const cached = JSON.parse(localStorage.getItem('hop_fiches_don') || '[]');
+    fiche.id = Date.now();
+    fiche.created_at = new Date().toISOString();
+    cached.unshift(fiche);
+    localStorage.setItem('hop_fiches_don', JSON.stringify(cached));
+    hopSuccess('Fiche enregistrée (mode local).');
+  }
+
+  fermerFormFicheDon();
+  renderFrigoContent(state.currentUser.grade);
+}
+
+async function supprimerFicheDon(id) {
+  if (!await hopConfirmAsync('Supprimer définitivement cette fiche de don ?', true)) return;
+  try { await fetch(SB_URL + '/rest/v1/fiches_don_hop?id=eq.' + id, { method:'DELETE', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY} }); } catch(e) {}
+  renderFrigoContent(state.currentUser.grade);
 }
 
 async function savePocheSang() {
