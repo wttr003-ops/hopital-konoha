@@ -4365,6 +4365,34 @@ async function renderFrigoContent(g) {
 
   let html = `<h2 class="dash-section-title-hop">🧊 Frigo à sang — Banque de l'hôpital</h2>`;
 
+  // ============================================================
+  // SECTION FICHES DE DON DU SANG (en haut)
+  // ============================================================
+  let fiches = [];
+  try {
+    const resF = await sbGet('fiches_don_hop', '?order=created_at.desc');
+    if (Array.isArray(resF)) fiches = resF;
+  } catch(e) {
+    fiches = JSON.parse(localStorage.getItem('hop_fiches_don') || '[]');
+  }
+  window._fichesDonCache = fiches;
+
+  html += `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--hop-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">
+        🩸 Fiches de don de sang <span style="color:var(--hop-muted);font-weight:500;text-transform:none;letter-spacing:0;margin-left:6px">(${fiches.length})</span>
+      </div>
+      ${canEdit ? `<button onclick="ouvrirFormFicheDon()" style="padding:7px 16px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">+ Nouvelle fiche de don</button>` : ''}
+    </div>
+    <div style="padding:14px 16px">
+      <div style="font-size:12px;color:var(--hop-muted);margin-bottom:10px;line-height:1.6">Vous trouverez ici même, le mode opératoire primaire afin de pouvoir récolter le sang de ninja volontaire utile pour de graves blessures ou en temps de guerre.</div>
+
+      <input type="text" id="recherche-fiche-don" oninput="filtrerFichesDon()" placeholder="🔍 Rechercher par nom..." style="width:100%;padding:8px 12px;background:#0f0f0f;border:1px solid var(--hop-border);border-radius:8px;color:var(--hop-text);font-size:13px;font-family:Nunito,sans-serif;margin-bottom:10px">
+
+      <div id="liste-fiches-don">${renderListeFichesDon(fiches, canEdit, isDir)}</div>
+    </div>
+  </div>`;
+
   // Info box
   html += `<div style="background:rgba(192,57,43,0.06);border:1px solid rgba(192,57,43,0.2);border-radius:10px;padding:0.75rem 1rem;margin-bottom:1.25rem;font-size:12px;color:#7B241C;display:flex;align-items:center;gap:8px">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0392B" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="rgba(192,57,43,0.15)"/></svg>
@@ -4500,35 +4528,6 @@ async function renderFrigoContent(g) {
   }
 
   html += `</div>`;
-
-  // ============================================================
-  // SECTION FICHES DE DON DU SANG
-  // ============================================================
-  // Charger les fiches depuis Supabase
-  let fiches = [];
-  try {
-    const resF = await sbGet('fiches_don_hop', '?order=created_at.desc');
-    if (Array.isArray(resF)) fiches = resF;
-  } catch(e) {
-    fiches = JSON.parse(localStorage.getItem('hop_fiches_don') || '[]');
-  }
-  window._fichesDonCache = fiches;
-
-  html += `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-radius:14px;overflow:hidden;margin-top:1.25rem;box-shadow:0 2px 10px rgba(139,94,131,0.06)">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--hop-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px">
-        🩸 Fiches de don de sang <span style="color:var(--hop-muted);font-weight:500;text-transform:none;letter-spacing:0;margin-left:6px">(${fiches.length})</span>
-      </div>
-      ${canEdit ? `<button onclick="ouvrirFormFicheDon()" style="padding:7px 16px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">+ Nouvelle fiche de don</button>` : ''}
-    </div>
-    <div style="padding:14px 16px">
-      <div style="font-size:12px;color:var(--hop-muted);margin-bottom:10px;line-height:1.6">Vous trouverez ici même, le mode opératoire primaire afin de pouvoir récolter le sang de ninja volontaire utile pour de graves blessures ou en temps de guerre.</div>
-
-      <input type="text" id="recherche-fiche-don" oninput="filtrerFichesDon()" placeholder="🔍 Rechercher par nom..." style="width:100%;padding:8px 12px;background:#0f0f0f;border:1px solid var(--hop-border);border-radius:8px;color:var(--hop-text);font-size:13px;font-family:Nunito,sans-serif;margin-bottom:10px">
-
-      <div id="liste-fiches-don">${renderListeFichesDon(fiches, canEdit, isDir)}</div>
-    </div>
-  </div>`;
 
   el.innerHTML = html;
 }
