@@ -3456,20 +3456,31 @@ function genererBlobCertificatIncapacite(data) {
   const introLines = doc.splitTextToSize(intro, contentW);
   introLines.forEach(function(l){ doc.text(l, marginX, y); y += 6; });
 
-  // ===== BLOC IDENTITÉ PATIENT =====
+  // ===== BLOC IDENTITÉ PATIENT (avec dates bien visibles) =====
   y += 4;
   doc.setFillColor(248, 240, 245);
   doc.setDrawColor(rose[0], rose[1], rose[2]);
   doc.setLineWidth(0.4);
-  doc.roundedRect(marginX, y, contentW, 32, 2, 2, 'FD');
 
+  // Calcul de la durée de convalescence si les 2 dates sont fournies
+  let dureeJours = null;
+  if (data.date_debut && data.date_fin) {
+    const d1 = new Date(data.date_debut);
+    const d2 = new Date(data.date_fin);
+    const diff = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    if (diff >= 0) dureeJours = diff;
+  }
+
+  // Le bloc est plus grand si on a une durée à afficher
+  const hauteurBloc = dureeJours !== null ? 50 : 42;
+  doc.roundedRect(marginX, y, contentW, hauteurBloc, 2, 2, 'FD');
+
+  // Ligne 1 : Patient + Groupe sanguin
   doc.setFont('helvetica','bold');
   doc.setFontSize(8);
   doc.setTextColor(mauve[0], mauve[1], mauve[2]);
   doc.text('PATIENT', marginX + 4, y + 7);
-  doc.text('GROUPE SANGUIN', marginX + 95, y + 7);
-  doc.text('DATE DE PRISE EN CHARGE', marginX + 4, y + 19);
-  doc.text("DATE DE L'EXAMEN", marginX + 95, y + 19);
+  doc.text('GROUPE SANGUIN', marginX + 110, y + 7);
 
   doc.setFont('helvetica','normal');
   doc.setFontSize(12);
@@ -3477,20 +3488,65 @@ function genererBlobCertificatIncapacite(data) {
   doc.text(data.patient || '--', marginX + 4, y + 14);
   doc.setTextColor(rose[0], rose[1], rose[2]);
   doc.setFont('helvetica','bold');
-  doc.text(data.groupe_sanguin || '--', marginX + 95, y + 14);
+  doc.text(data.groupe_sanguin || '--', marginX + 110, y + 14);
+
+  // Petite ligne de séparation
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.2);
+  doc.line(marginX + 4, y + 19, marginX + contentW - 4, y + 19);
+
+  // Ligne 2 : Date prise en charge + Date retour en mission
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(mauve[0], mauve[1], mauve[2]);
+  doc.text('DATE DE PRISE EN CHARGE', marginX + 4, y + 25);
+  doc.text('DATE DE RETOUR EN MISSION', marginX + 110, y + 25);
 
   doc.setFont('helvetica','normal');
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setTextColor(noir[0], noir[1], noir[2]);
-  // Si pas de date de prise en charge fournie, on prend la date d'aujourd'hui (jour de l'examen)
   const dateDebutFR = data.date_debut
-    ? new Date(data.date_debut).toLocaleDateString('fr-FR')
-    : new Date().toLocaleDateString('fr-FR');
-  doc.text(dateDebutFR, marginX + 4, y + 26);
-  const dateExamen = new Date().toLocaleDateString('fr-FR');
-  doc.text(dateExamen, marginX + 95, y + 26);
+    ? new Date(data.date_debut).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})
+    : new Date().toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'});
+  doc.text(dateDebutFR, marginX + 4, y + 32);
 
-  y += 40;
+  if (data.date_fin) {
+    doc.setTextColor(rouge[0], rouge[1], rouge[2]);
+    doc.setFont('helvetica','bold');
+    const dateFinFR = new Date(data.date_fin).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'});
+    doc.text(dateFinFR, marginX + 110, y + 32);
+  } else {
+    doc.setTextColor(gris[0], gris[1], gris[2]);
+    doc.setFont('helvetica','italic');
+    doc.text('A determiner', marginX + 110, y + 32);
+  }
+
+  // Ligne 3 (optionnelle) : Durée de convalescence si calculable
+  if (dureeJours !== null) {
+    doc.setDrawColor(rose[0], rose[1], rose[2]);
+    doc.setLineWidth(0.2);
+    doc.line(marginX + 4, y + 37, marginX + contentW - 4, y + 37);
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);
+    doc.setTextColor(mauve[0], mauve[1], mauve[2]);
+    doc.text('DUREE DE CONVALESCENCE PRESCRITE', marginX + 4, y + 43);
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(11);
+    doc.setTextColor(rouge[0], rouge[1], rouge[2]);
+    let texteDuree = '';
+    if (dureeJours === 0) texteDuree = 'Reprise immediate possible';
+    else if (dureeJours === 1) texteDuree = '1 jour de repos strict';
+    else if (dureeJours < 7) texteDuree = dureeJours + ' jours de repos strict';
+    else if (dureeJours < 14) texteDuree = dureeJours + ' jours (environ ' + Math.round(dureeJours/7) + ' semaine' + (Math.round(dureeJours/7) > 1 ? 's' : '') + ')';
+    else if (dureeJours < 30) texteDuree = dureeJours + ' jours (' + Math.round(dureeJours/7) + ' semaines)';
+    else if (dureeJours < 365) texteDuree = dureeJours + ' jours (environ ' + Math.round(dureeJours/30) + ' mois)';
+    else texteDuree = dureeJours + ' jours';
+    doc.text(texteDuree, marginX + 4, y + 48);
+  }
+
+  y += hauteurBloc + 8;
 
   // ===== DIAGNOSTIC MÉDICAL =====
   doc.setTextColor(rose[0], rose[1], rose[2]);
