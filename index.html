@@ -3406,36 +3406,81 @@ async function uploaderCertificatIncapacite(data) {
   const blob = doc.output('blob');
   const nomFich = 'Certificat_' + (data.patient || 'patient').replace(/[^a-zA-Z0-9]/g,'_') + '_' + Date.now() + '.pdf';
 
-  // Upload sur catbox.moe (gratuit, permanent, sans config, sans compte)
-  try {
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('fileToUpload', blob, nomFich);
-
-    const res = await fetch('https://catbox.moe/user/api.php', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) {
-      console.warn('Catbox upload failed:', res.status);
-      hopWarning('Le PDF est genere mais l\'upload du lien partageable a echoue. L\'apercu reste accessible.');
-      return null;
+  // Cascade de services d'hébergement gratuits — on essaie dans l'ordre jusqu'à ce qu'un marche
+  const services = [
+    {
+      nom: 'tmpfiles.org',
+      upload: async function() {
+        const fd = new FormData();
+        fd.append('file', blob, nomFich);
+        const r = await fetch('https://tmpfiles.org/api/v1/upload', { method:'POST', body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        if (j.status !== 'success' || !j.data || !j.data.url) throw new Error('Reponse invalide');
+        // tmpfiles renvoie /dl/ qui force le téléchargement — on remplace par l'aperçu direct
+        return j.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/').replace('/dl/dl/', '/dl/');
+      }
+    },
+    {
+      nom: 'catbox.moe',
+      upload: async function() {
+        const fd = new FormData();
+        fd.append('reqtype', 'fileupload');
+        fd.append('fileToUpload', blob, nomFich);
+        const r = await fetch('https://catbox.moe/user/api.php', { method:'POST', body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const txt = (await r.text()).trim();
+        if (!txt.startsWith('https://')) throw new Error('Reponse : ' + txt.slice(0,60));
+        return txt;
+      }
+    },
+    {
+      nom: '0x0.st',
+      upload: async function() {
+        const fd = new FormData();
+        fd.append('file', blob, nomFich);
+        const r = await fetch('https://0x0.st', { method:'POST', body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const txt = (await r.text()).trim();
+        if (!txt.startsWith('https://')) throw new Error('Reponse : ' + txt.slice(0,60));
+        return txt;
+      }
+    },
+    {
+      nom: 'file.io',
+      upload: async function() {
+        const fd = new FormData();
+        fd.append('file', blob, nomFich);
+        // expires=1w pour que le fichier reste 1 semaine
+        const r = await fetch('https://file.io/?expires=1w', { method:'POST', body: fd });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const j = await r.json();
+        if (!j.success || !j.link) throw new Error('Reponse invalide');
+        return j.link;
+      }
     }
+  ];
 
-    const url = (await res.text()).trim();
-    if (url && url.startsWith('https://')) {
-      hopSuccess('Certificat genere et lien partageable cree !');
-      return url;
-    } else {
-      console.warn('Catbox response inattendue:', url);
-      return null;
+  const erreurs = [];
+  for (const svc of services) {
+    try {
+      console.log('[Certificat] Essai upload via ' + svc.nom + '...');
+      const url = await svc.upload();
+      if (url) {
+        console.log('[Certificat] ✓ Upload reussi via ' + svc.nom + ' : ' + url);
+        hopSuccess('Certificat genere ! Lien partageable cree via ' + svc.nom + '.');
+        return url;
+      }
+    } catch(e) {
+      console.warn('[Certificat] ✗ Echec ' + svc.nom + ' :', e.message || e);
+      erreurs.push(svc.nom + ' (' + (e.message || 'erreur') + ')');
     }
-  } catch(e) {
-    console.warn('uploadCertif catbox:', e);
-    hopWarning('Lien partageable indisponible (apercu fonctionne).');
-    return null;
   }
+
+  // Tous les services ont echoué
+  console.warn('[Certificat] Aucun service d\'hebergement n\'a fonctionne. Erreurs :', erreurs);
+  hopWarning('Le PDF est genere et l\'apercu fonctionne, mais aucun service d\'hebergement n\'a pu creer de lien partageable. Tu peux toujours telecharger le PDF depuis l\'apercu et l\'envoyer manuellement sur Discord.');
+  return null;
 }
 
 // Stocke les données nécessaires pour la regénération locale du PDF
@@ -3499,6 +3544,15 @@ async function copierLienCertificat(url) {
   } catch(e) {
     window.prompt('Copie ce lien (Ctrl+C) :', url);
   }
+}
+
+// Télécharge directement le PDF du certificat (sans passer par un service externe)
+function telechargerCertificat(data) {
+  const doc = genererBlobCertificatIncapacite(data);
+  if (!doc) { hopWarning('Module PDF non charge.'); return; }
+  const nomFich = 'Certificat_' + (data.patient || 'patient').replace(/[^a-zA-Z0-9]/g,'_') + '.pdf';
+  doc.save(nomFich);
+  hopSuccess('Certificat telecharge ! Tu peux l\'envoyer en piece jointe sur Discord.');
 }
 
 function renderDossiersContent(g) {
@@ -3688,14 +3742,24 @@ function renderDossiersContent(g) {
             <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
               📅 Créé le <strong>${d.date||'—'}</strong>
             </div>
-            ${d.certificat_url ? `
-            <div style="margin-top:10px;padding:10px 12px;background:rgba(212,119,154,0.06);border:1px solid rgba(212,119,154,0.3);border-radius:8px">
-              <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📜 Certificat d'incapacité de terrain</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button onclick='apercuCertificat("${d.certificat_url}", ${JSON.stringify({patient:d.patient,soignant:d.soignant,blessure:d.blessure,gravite:d.gravite,desc:(d.desc||d.description||''),statut:d.statut,groupe_sanguin:d.groupe_sanguin}).replace(/"/g,'&quot;').replace(/'/g,'&#39;')})' style="padding:6px 14px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">👁 Aperçu du certificat</button>
-                <button onclick="copierLienCertificat('${d.certificat_url}')" style="padding:6px 14px;background:rgba(139,94,131,0.12);color:#8B5E83;border:1px solid rgba(139,94,131,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">🔗 Copier le lien</button>
-              </div>
-            </div>` : ''}
+            ${(d.certificat_url || (d.gravite && d.statut && d.desc)) ? (() => {
+              // Affiche le panneau certificat si on a soit l'URL, soit assez de données pour regénérer le PDF
+              // Mais surtout on l'affiche seulement si le dossier en avait un (via le flag certificat_url)
+              if (!d.certificat_url) return '';
+              const dossierJSON = JSON.stringify({patient:d.patient,soignant:d.soignant,blessure:d.blessure,gravite:d.gravite,desc:(d.desc||d.description||''),statut:d.statut,groupe_sanguin:d.groupe_sanguin}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+              const lienOk = d.certificat_url && d.certificat_url.startsWith('http');
+              let boutons = `<button onclick='apercuCertificat("${d.certificat_url}", ${dossierJSON})' style="padding:6px 14px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">👁 Aperçu du certificat</button>`;
+              boutons += `<button onclick='telechargerCertificat(${dossierJSON})' style="padding:6px 14px;background:rgba(184,123,168,0.12);color:#B87BA8;border:1px solid rgba(184,123,168,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">💾 Télécharger le PDF</button>`;
+              if (lienOk) {
+                boutons += `<button onclick="copierLienCertificat('${d.certificat_url}')" style="padding:6px 14px;background:rgba(139,94,131,0.12);color:#8B5E83;border:1px solid rgba(139,94,131,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">🔗 Copier le lien</button>`;
+              }
+              return `
+              <div style="margin-top:10px;padding:10px 12px;background:rgba(212,119,154,0.06);border:1px solid rgba(212,119,154,0.3);border-radius:8px">
+                <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📜 Certificat d'incapacité de terrain</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">${boutons}</div>
+                ${!lienOk ? '<div style="font-size:10px;color:var(--hop-muted);font-style:italic;margin-top:6px">💡 Lien partageable indisponible — télécharge le PDF et envoie-le directement sur Discord.</div>' : ''}
+              </div>`;
+            })() : ''}
             ${gradeRankHop(g) <= 1 ? `<button onclick="deleteDossierEntry(${d.id||0},'${safeId}-${i}')" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">🗑 Supprimer cette entrée</button>` : ''}
           </div>
         </div>`;
@@ -3807,8 +3871,13 @@ async function saveDossier() {
     } catch(e) {
       console.warn('certif:', e);
     }
-    // Toujours stocker les données du certif en local pour pouvoir le regénérer en aperçu
-    if (certificatUrl) stockerDataCertifLocal(certificatUrl, certificatData);
+    // Si l'upload a échoué, on garde quand même un marqueur "local-only" pour afficher
+    // les boutons Aperçu et Télécharger même sans lien partageable
+    if (!certificatUrl) {
+      certificatUrl = 'local-only';
+    } else {
+      stockerDataCertifLocal(certificatUrl, certificatData);
+    }
   }
 
   // Save to Supabase
