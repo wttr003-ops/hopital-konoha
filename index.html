@@ -1869,11 +1869,20 @@ async function syncFromSupabase() {
     // Sync dossiers médicaux
     const dossiers = await sbGet('dossiers_hop', '?order=id.asc');
     if (Array.isArray(dossiers) && dossiers.length > 0) {
-      const localDossiers = dossiers.map(d => ({
-        id: d.id, patient: d.patient, soignant: d.soignant, blessure: d.blessure,
-        gravite: d.gravite, gravité: d.gravite, desc: d.description, traitement: d.traitement,
-        statut: d.statut, date: d.date, groupe_sanguin: d.groupe_sanguin, createdBy: d.created_by
-      }));
+      const localDossiers = dossiers.map(d => {
+        const obj = {
+          id: d.id, patient: d.patient, soignant: d.soignant, blessure: d.blessure,
+          gravite: d.gravite, gravité: d.gravite, desc: d.description, description: d.description,
+          traitement: d.traitement, statut: d.statut, date: d.date,
+          groupe_sanguin: d.groupe_sanguin, createdBy: d.created_by,
+          certificat_url: d.certificat_url || null,
+          date_debut: d.date_debut || null,
+          date_fin: d.date_fin || null
+        };
+        // Enrichir avec les métadonnées encodées dans la description
+        // (utile quand les colonnes dédiées n'existent pas en BDD)
+        return enrichirDossierAvecMeta(obj);
+      });
       localStorage.setItem('hop_dossiers', JSON.stringify(localDossiers));
     }
   } catch(e) { console.warn('syncFromSupabase error', e); }
@@ -4110,7 +4119,7 @@ function renderDossiersContent(g) {
 
             <div class="detail-section-hop" style="margin-top:1rem">
               <div class="detail-section-label-hop">📋 Description médicale confidentielle</div>
-              <div class="detail-section-text-hop">${d.desc||d.description||'—'}</div>
+              <div class="detail-section-text-hop">${descriptionSansBlocMeta(d.desc||d.description||'')||'—'}</div>
             </div>
             <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
               📅 Créé le <strong>${d.date||'—'}</strong>
@@ -4119,7 +4128,7 @@ function renderDossiersContent(g) {
               // Affiche le panneau certificat si on a soit l'URL, soit assez de données pour regénérer le PDF
               // Mais surtout on l'affiche seulement si le dossier en avait un (via le flag certificat_url)
               if (!d.certificat_url) return '';
-              const dossierJSON = JSON.stringify({patient:d.patient,soignant:d.soignant,blessure:d.blessure,gravite:d.gravite,desc:(d.desc||d.description||''),statut:d.statut,groupe_sanguin:d.groupe_sanguin}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+              const dossierJSON = JSON.stringify({patient:d.patient,soignant:d.soignant,blessure:d.blessure,gravite:d.gravite,desc:descriptionSansBlocMeta(d.desc||d.description||''),statut:d.statut,groupe_sanguin:d.groupe_sanguin,date_debut:d.date_debut,date_fin:d.date_fin}).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
               const lienOk = d.certificat_url && d.certificat_url.startsWith('http');
               let boutons = `<button onclick='apercuCertificat("${d.certificat_url}", ${dossierJSON})' style="padding:6px 14px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">👁 Aperçu du certificat</button>`;
               boutons += `<button onclick='telechargerCertificat(${dossierJSON})' style="padding:6px 14px;background:rgba(184,123,168,0.12);color:#B87BA8;border:1px solid rgba(184,123,168,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">💾 Télécharger le PDF</button>`;
@@ -4211,6 +4220,84 @@ function toggleDosDetail(idx) {
 }
 
 
+// ============================================================
+// PERSISTANCE DES MÉTADONNÉES (certificat, dates) VIA LA DESCRIPTION
+// ============================================================
+// Pour éviter d'imposer la création de colonnes Supabase, on encode les
+// métadonnées (certificat_url, date_debut, date_fin) à la fin de la
+// description du dossier sous forme d'un bloc structuré. Au chargement,
+// on extrait ces infos pour les afficher dans leurs sections dédiées.
+
+const META_SEPARATEUR = '━━━━━━━━━━━━━━━━━━━━━━━';
+
+// Construit le bloc méta à apposer à la description avant envoi en BDD
+function construireBlocMetaDossier(opts) {
+  const lignes = [];
+  if (opts.date_debut) {
+    const d = new Date(opts.date_debut);
+    lignes.push("📅 Prise en charge : " + d.toLocaleDateString('fr-FR'));
+  }
+  if (opts.date_fin) {
+    const d = new Date(opts.date_fin);
+    lignes.push("🏥 Retour en mission prévu : " + d.toLocaleDateString('fr-FR'));
+  }
+  if (opts.certificat_url && opts.certificat_url !== 'local-only') {
+    lignes.push("📜 Certificat d'incapacité : " + opts.certificat_url);
+  } else if (opts.certificat_voulu) {
+    lignes.push("📜 Certificat d'incapacité de terrain établi");
+  }
+  if (lignes.length === 0) return '';
+  return '\n\n' + META_SEPARATEUR + '\n' + lignes.join('\n') + '\n' + META_SEPARATEUR;
+}
+
+// Extrait les métadonnées d'une description et enrichit l'objet dossier
+function enrichirDossierAvecMeta(d) {
+  if (!d) return d;
+  const txt = d.description || d.desc || '';
+
+  // Lien certificat
+  if (!d.certificat_url) {
+    const mUrl = txt.match(/Certificat d'incapacit[ée][^\n]*?(https?:\/\/\S+)/i);
+    if (mUrl) {
+      d.certificat_url = mUrl[1];
+    } else if (/Certificat d'incapacit[ée]/i.test(txt)) {
+      d.certificat_url = 'local-only';
+    }
+  }
+
+  // Date de prise en charge (format dd/mm/yyyy dans le texte → on convertit en yyyy-mm-dd)
+  if (!d.date_debut) {
+    const m = txt.match(/Prise en charge\s*[:—–]\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+    if (m) {
+      const parts = m[1].split('/');
+      if (parts.length === 3) {
+        d.date_debut = parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+      }
+    }
+  }
+
+  // Date de retour en mission
+  if (!d.date_fin) {
+    const m = txt.match(/Retour en mission(?: pr[ée]vu)?\s*[:—–]\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);
+    if (m) {
+      const parts = m[1].split('/');
+      if (parts.length === 3) {
+        d.date_fin = parts[2] + '-' + parts[1].padStart(2,'0') + '-' + parts[0].padStart(2,'0');
+      }
+    }
+  }
+
+  return d;
+}
+
+// Nettoie une description en retirant le bloc méta (pour affichage propre)
+function descriptionSansBlocMeta(desc) {
+  if (!desc) return desc;
+  const idx = desc.indexOf(META_SEPARATEUR);
+  if (idx === -1) return desc;
+  return desc.substring(0, idx).replace(/\n+$/, '');
+}
+
 async function saveDossier() {
   const patient        = document.getElementById('dos-patient')?.value.trim();
   const soignant       = document.getElementById('dos-soignant')?.value;
@@ -4254,6 +4341,16 @@ async function saveDossier() {
   }
 
   // Save to Supabase (avec sbPost résilient — retire automatiquement les colonnes inconnues)
+  // On apponde aussi un bloc méta dans la description pour pouvoir retrouver
+  // le certificat et les dates même si les colonnes dédiées n'existent pas en BDD
+  const blocMeta = construireBlocMetaDossier({
+    date_debut: dateDebut,
+    date_fin: dateFin,
+    certificat_url: certificatUrl,
+    certificat_voulu: certificatVoulu
+  });
+  const descriptionAvecMeta = desc + blocMeta;
+
   let newId = null;
   let savedToSupabase = false;
   try {
@@ -4262,7 +4359,7 @@ async function saveDossier() {
       soignant,
       blessure: blessure || null,
       gravite: gravite || 'modérée',
-      description: desc,
+      description: descriptionAvecMeta,
       traitement: traitement || null,
       statut: statut || 'aucun',
       groupe_sanguin: groupe_sanguin || null,
@@ -4281,7 +4378,7 @@ async function saveDossier() {
     hopWarning('La sauvegarde en BDD a échoué. Le dossier est seulement en local pour cette session. Détail console (F12).');
   }
 
-  // Save to localStorage
+  // Save to localStorage (avec la description complète + métadonnées en clair)
   const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
   dossiers.push({
     id: newId,
@@ -4289,7 +4386,8 @@ async function saveDossier() {
     soignant,
     blessure,
     gravite,
-    desc,
+    desc: descriptionAvecMeta,
+    description: descriptionAvecMeta,
     traitement,
     statut,
     groupe_sanguin,
