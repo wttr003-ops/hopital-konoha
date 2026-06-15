@@ -3183,7 +3183,6 @@ function ouvrirMultiBlessures() {
   let dejaSelect = [];
   try { dejaSelect = JSON.parse(document.getElementById('dos-blessure-selection')?.value || '[]'); } catch(e) {}
 
-  // Récupérer la valeur "Autre" déjà saisie (s'il y en a une dans la sélection actuelle)
   let autreActuel = '';
   dejaSelect.forEach(function(b) { if (b.indexOf('Autre : ') === 0) autreActuel = b.substring(8); });
   const dejaSelectSansAutre = dejaSelect.filter(function(b){ return b.indexOf('Autre : ') !== 0; });
@@ -3193,41 +3192,96 @@ function ouvrirMultiBlessures() {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem';
   modal.onclick = function(e) { if (e.target === modal) fermerMultiBlessures(); };
 
-  let html = '<div style="background:#0a0a0a;border:1px solid var(--hop-border2);border-radius:14px;max-width:640px;width:100%;padding:1.5rem;color:var(--hop-text);font-family:Nunito,sans-serif">';
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">';
-  html += '<h3 style="margin:0;font-family:\'Cormorant Garamond\',serif;color:var(--hop-rose2);font-size:22px">📋 Sélection des types / motifs</h3>';
+  let html = '<div style="background:#0a0a0a;border:1px solid var(--hop-border2);border-radius:14px;max-width:720px;width:100%;padding:1.5rem;color:var(--hop-text);font-family:Nunito,sans-serif">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">';
+  html += '<h3 style="margin:0;font-family:\'Cormorant Garamond\',serif;color:var(--hop-rose2);font-size:22px">🩹 Sélection des types / motifs</h3>';
   html += '<button onclick="fermerMultiBlessures()" style="background:none;border:none;color:var(--hop-muted);font-size:24px;cursor:pointer">×</button>';
   html += '</div>';
-  html += '<div style="font-size:12px;color:var(--hop-muted);margin-bottom:14px">Coche tous les types qui s\'appliquent. Tu peux en sélectionner plusieurs.</div>';
+  html += '<div style="font-size:12px;color:var(--hop-muted);margin-bottom:8px">Coche tous les types qui s\'appliquent. Tu peux en sélectionner plusieurs.</div>';
+  html += '<div id="multi-bles-count" style="font-size:11px;color:var(--hop-rose2);font-weight:600;margin-bottom:14px;padding:6px 12px;background:rgba(212,119,154,0.08);border-left:3px solid var(--hop-rose2);border-radius:0 6px 6px 0">0 élément sélectionné</div>';
 
-  let currentGroup = '';
-  BLESSURES.forEach(function(b, idx) {
-    if (b === '-- Choisir (optionnel) --') return; // ignore l'entrée placeholder
+  // Construction par catégories en cartes visuelles distinctes
+  let currentGroupHtml = '';
+  let currentGroupLabel = '';
+  let openedGroup = false;
+
+  function closeGroup() {
+    if (openedGroup) {
+      html += currentGroupHtml + '</div></div>';
+      openedGroup = false;
+      currentGroupHtml = '';
+    }
+  }
+
+  function openGroup(label) {
+    closeGroup();
+    // Choisir un thème de couleur selon la catégorie
+    const colors = {
+      'combat':       { c: '#C0392B', bg: 'rgba(192,57,43,0.06)',  border: 'rgba(192,57,43,0.3)' },
+      'soin':         { c: '#6BAB8A', bg: 'rgba(107,171,138,0.06)', border: 'rgba(107,171,138,0.3)' },
+      'don':          { c: '#D4779A', bg: 'rgba(212,119,154,0.08)', border: 'rgba(212,119,154,0.35)' },
+      'pharmaco':     { c: '#B87BA8', bg: 'rgba(184,123,168,0.08)', border: 'rgba(184,123,168,0.35)' },
+      'analyse':      { c: '#8B5E83', bg: 'rgba(139,94,131,0.08)',  border: 'rgba(139,94,131,0.35)' },
+      'reeducation':  { c: '#7AAEDC', bg: 'rgba(122,174,220,0.08)', border: 'rgba(122,174,220,0.35)' }
+    };
+    let theme = colors.combat;
+    const labelLower = label.toLowerCase();
+    if (labelLower.indexOf('soin') >= 0) theme = colors.soin;
+    else if (labelLower.indexOf('don') >= 0) theme = colors.don;
+    else if (labelLower.indexOf('pharmac') >= 0) theme = colors.pharmaco;
+    else if (labelLower.indexOf('analys') >= 0 || labelLower.indexOf('diagnos') >= 0) theme = colors.analyse;
+    else if (labelLower.indexOf('rééd') >= 0 || labelLower.indexOf('reed') >= 0) theme = colors.reeducation;
+
+    html += '<div style="background:' + theme.bg + ';border:1px solid ' + theme.border + ';border-radius:10px;padding:12px 14px;margin-bottom:14px">';
+    html += '<div style="font-size:12px;font-weight:700;color:' + theme.c + ';text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid ' + theme.border + '">' + label + '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">';
+    currentGroupLabel = label;
+    openedGroup = true;
+  }
+
+  BLESSURES.forEach(function(b) {
+    if (b === '-- Choisir (optionnel) --') return;
     if (b.indexOf('---') === 0) {
       const label = b.replace(/---/g,'').trim();
-      html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">' + label + '</div>';
+      openGroup(label);
     } else if (b === 'Autre (préciser dans description)') {
-      // On gère "Autre" séparément en bas
+      // Géré en bas
     } else {
+      if (!openedGroup) openGroup('Autres motifs');
       const checked = dejaSelectSansAutre.indexOf(b) >= 0 ? 'checked' : '';
-      html += '<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--hop-text)" onmouseover="this.style.background=\'rgba(212,119,154,0.06)\'" onmouseout="this.style.background=\'\'">';
-      html += '<input type="checkbox" value="' + b.replace(/"/g, '&quot;') + '" ' + checked + ' style="accent-color:var(--hop-rose2);cursor:pointer">' + b;
-      html += '</label>';
+      html += '<label style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--hop-text);transition:background 0.15s" onmouseover="this.style.background=\'rgba(212,119,154,0.1)\'" onmouseout="this.style.background=\'\'">';
+      html += '<input type="checkbox" value="' + b.replace(/"/g, '&quot;') + '" ' + checked + ' onchange="majCountMultiBles()" style="accent-color:var(--hop-rose2);cursor:pointer;flex-shrink:0">';
+      html += '<span style="flex:1">' + b + '</span></label>';
     }
   });
+  closeGroup();
 
-  // Bloc "Autre" en bas avec champ texte libre
-  html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">✏️ Autre</div>';
-  html += '<input type="text" id="multi-blessure-autre" placeholder="Préciser un autre type (optionnel)..." value="' + autreActuel.replace(/"/g,'&quot;') + '" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:14px">';
+  // Bloc "Autre" en bas
+  html += '<div style="background:rgba(212,119,154,0.05);border:1px dashed rgba(212,119,154,0.4);border-radius:10px;padding:12px 14px;margin-bottom:14px">';
+  html += '<div style="font-size:12px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px">✏️ Autre — préciser librement</div>';
+  html += '<input type="text" id="multi-blessure-autre" placeholder="Saisissez un type qui n\'est pas dans la liste..." value="' + autreActuel.replace(/"/g,'&quot;') + '" oninput="majCountMultiBles()" style="width:100%;padding:9px 12px;background:#1a1a1a;border:1px solid rgba(212,119,154,0.3);border-radius:6px;color:var(--hop-text);font-family:Nunito;font-size:13px">';
+  html += '</div>';
 
-  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">';
+  // Footer
+  html += '<div style="display:flex;gap:8px;justify-content:flex-end;padding-top:8px;border-top:1px solid var(--hop-border)">';
   html += '<button onclick="fermerMultiBlessures()" style="padding:9px 20px;background:transparent;color:var(--hop-muted);border:1px solid var(--hop-border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">Annuler</button>';
-  html += '<button onclick="validerMultiBlessures()" style="padding:9px 24px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">✓ Valider</button>';
+  html += '<button onclick="validerMultiBlessures()" style="padding:9px 24px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">✓ Valider la sélection</button>';
   html += '</div>';
   html += '</div>';
 
   modal.innerHTML = html;
   document.body.appendChild(modal);
+  majCountMultiBles();
+}
+
+function majCountMultiBles() {
+  const modal = document.getElementById('modal-multi-blessures');
+  if (!modal) return;
+  const n = modal.querySelectorAll('input[type="checkbox"]:checked').length;
+  const autre = document.getElementById('multi-blessure-autre')?.value.trim();
+  const total = n + (autre ? 1 : 0);
+  const counter = document.getElementById('multi-bles-count');
+  if (counter) counter.textContent = total === 0 ? '0 élément sélectionné' : (total + ' élément' + (total > 1 ? 's' : '') + ' sélectionné' + (total > 1 ? 's' : ''));
 }
 
 function fermerMultiBlessures() {
@@ -3281,9 +3335,10 @@ function genererBlobCertificatIncapacite(data) {
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = 20;
+  const contentW = pageW - marginX*2;
 
   // Couleurs
-  const rose = [212,119,154], mauve = [184,123,168], gris = [120,120,130], noir = [40,40,50];
+  const rose = [212,119,154], mauve = [184,123,168], gris = [120,120,130], noir = [40,40,50], rouge = [192,57,43];
 
   // ===== EN-TÊTE =====
   doc.setFillColor(rose[0], rose[1], rose[2]);
@@ -3298,103 +3353,234 @@ function genererBlobCertificatIncapacite(data) {
   doc.setFontSize(9);
   doc.text("Hopital de Konoha - Village Cache des Feuilles", marginX, 32);
 
-  // ===== INTRO =====
+  // ===== PRÉAMBULE =====
   let y = 55;
   doc.setTextColor(noir[0], noir[1], noir[2]);
   doc.setFont('helvetica','normal');
   doc.setFontSize(11);
-  const intro = "Je soussigne(e), " + (data.soignant || '...') + ", medecin de l'Hopital de Konoha, certifie avoir examine ce jour :";
-  const introLines = doc.splitTextToSize(intro, pageW - marginX*2);
+  const intro = "Je soussigne(e), " + (data.soignant || '...') + ", en qualite de medecin attache(e) a l'Hopital de Konoha, certifie avoir examine ce jour le patient ci-apres designe.";
+  const introLines = doc.splitTextToSize(intro, contentW);
   introLines.forEach(function(l){ doc.text(l, marginX, y); y += 6; });
 
-  // ===== BLOC PATIENT =====
+  // ===== BLOC IDENTITÉ PATIENT =====
   y += 4;
   doc.setFillColor(248, 240, 245);
   doc.setDrawColor(rose[0], rose[1], rose[2]);
   doc.setLineWidth(0.4);
-  doc.roundedRect(marginX, y, pageW - marginX*2, 24, 2, 2, 'FD');
+  doc.roundedRect(marginX, y, contentW, 32, 2, 2, 'FD');
+
   doc.setFont('helvetica','bold');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(mauve[0], mauve[1], mauve[2]);
   doc.text('PATIENT', marginX + 4, y + 7);
-  doc.text('GROUPE SANGUIN', marginX + 100, y + 7);
+  doc.text('GROUPE SANGUIN', marginX + 95, y + 7);
+  doc.text('DATE DE PRISE EN CHARGE', marginX + 4, y + 19);
+  doc.text("DATE DE L'EXAMEN", marginX + 95, y + 19);
+
   doc.setFont('helvetica','normal');
-  doc.setFontSize(13);
+  doc.setFontSize(12);
   doc.setTextColor(noir[0], noir[1], noir[2]);
-  doc.text(data.patient || '--', marginX + 4, y + 16);
+  doc.text(data.patient || '--', marginX + 4, y + 14);
   doc.setTextColor(rose[0], rose[1], rose[2]);
   doc.setFont('helvetica','bold');
-  doc.text(data.groupe_sanguin || '--', marginX + 100, y + 16);
-  y += 32;
+  doc.text(data.groupe_sanguin || '--', marginX + 95, y + 14);
 
-  // ===== DIAGNOSTIC =====
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  const dateDebutFR = data.date_debut ? new Date(data.date_debut).toLocaleDateString('fr-FR') : '--';
+  doc.text(dateDebutFR, marginX + 4, y + 26);
+  const dateExamen = new Date().toLocaleDateString('fr-FR');
+  doc.text(dateExamen, marginX + 95, y + 26);
+
+  y += 40;
+
+  // ===== DIAGNOSTIC MÉDICAL =====
   doc.setTextColor(rose[0], rose[1], rose[2]);
   doc.setFont('helvetica','bold');
   doc.setFontSize(11);
-  doc.text('DIAGNOSTIC', marginX, y);
+  doc.text('DIAGNOSTIC MEDICAL', marginX, y);
   doc.setDrawColor(rose[0], rose[1], rose[2]);
   doc.setLineWidth(0.5);
-  doc.line(marginX, y+1.5, marginX + 30, y+1.5);
+  doc.line(marginX, y+1.5, marginX + 50, y+1.5);
   y += 8;
 
+  // Type / motif sous forme de liste à puces
   doc.setTextColor(noir[0], noir[1], noir[2]);
-  doc.setFont('helvetica','normal');
+  doc.setFont('helvetica','bold');
   doc.setFontSize(10);
-  if (data.blessure) {
-    const blesLines = doc.splitTextToSize('Type / motif : ' + data.blessure, pageW - marginX*2);
-    blesLines.forEach(function(l){ doc.text(l, marginX, y); y += 5.5; });
-  }
-  if (data.gravite) {
-    doc.text('Gravite : ' + data.gravite, marginX, y);
+  doc.text('Type(s) / motif(s) :', marginX, y);
+  y += 6;
+
+  doc.setFont('helvetica','normal');
+  const motifs = (data.blessure || '').split(/[,;]/).map(function(m){ return m.trim(); }).filter(function(m){ return m.length > 0; });
+  if (motifs.length === 0) {
+    doc.text('  • Non renseigne', marginX + 4, y);
     y += 5.5;
+  } else {
+    motifs.forEach(function(m) {
+      const lines = doc.splitTextToSize('• ' + m, contentW - 8);
+      lines.forEach(function(l, idx) {
+        if (y > pageH - 40) { doc.addPage(); y = 20; }
+        doc.text(idx === 0 ? l : '  ' + l, marginX + 4, y);
+        y += 5.5;
+      });
+    });
   }
   y += 2;
 
-  // Description
-  const descLines = doc.splitTextToSize(data.desc || '', pageW - marginX*2);
+  // Gravité avec couleur
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.text('Gravite evaluee :', marginX, y);
+  const gravite = (data.gravite || 'moderee').toLowerCase();
+  let couleurGravite = [200,154,26]; // jaune par défaut
+  if (gravite.indexOf('critique') >= 0) couleurGravite = rouge;
+  else if (gravite.indexOf('grave') >= 0) couleurGravite = [230, 126, 34];
+  else if (gravite.indexOf('moder') >= 0) couleurGravite = [200, 154, 26];
+  else if (gravite.indexOf('leg') >= 0) couleurGravite = [107, 171, 138];
+  doc.setTextColor(couleurGravite[0], couleurGravite[1], couleurGravite[2]);
+  doc.setFont('helvetica','bold');
+  doc.text((data.gravite || 'Moderee').toUpperCase(), marginX + 38, y);
+  y += 8;
+
+  // ===== OBSERVATIONS CLINIQUES =====
+  doc.setTextColor(rose[0], rose[1], rose[2]);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('OBSERVATIONS CLINIQUES', marginX, y);
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y+1.5, marginX + 60, y+1.5);
+  y += 8;
+
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  const descLines = doc.splitTextToSize(data.desc || 'Aucune observation supplementaire.', contentW);
   descLines.forEach(function(l) {
-    if (y > pageH - 60) { doc.addPage(); y = 20; }
+    if (y > pageH - 50) { doc.addPage(); y = 20; }
     doc.text(l, marginX, y);
     y += 5.5;
   });
+  y += 4;
 
   // ===== DÉCLARATION D'INCAPACITÉ =====
-  y += 8;
+  if (y > pageH - 80) { doc.addPage(); y = 20; }
   doc.setFillColor(255, 240, 240);
-  doc.setDrawColor(192, 57, 43);
-  doc.setLineWidth(0.5);
-  doc.roundedRect(marginX, y, pageW - marginX*2, 28, 2, 2, 'FD');
-  doc.setTextColor(192, 57, 43);
+  doc.setDrawColor(rouge[0], rouge[1], rouge[2]);
+  doc.setLineWidth(0.6);
+  const hauteurDecl = data.date_fin ? 38 : 32;
+  doc.roundedRect(marginX, y, contentW, hauteurDecl, 2, 2, 'FD');
+  doc.setTextColor(rouge[0], rouge[1], rouge[2]);
   doc.setFont('helvetica','bold');
   doc.setFontSize(11);
-  doc.text("DECLARATION D'INCAPACITE", marginX + 4, y + 8);
+  doc.text("DECLARATION D'INCAPACITE DE TERRAIN", marginX + 4, y + 8);
+
   doc.setFont('helvetica','normal');
   doc.setFontSize(10);
   doc.setTextColor(60, 30, 30);
-  const declLines = doc.splitTextToSize("Le patient sus-nomme est declare INAPTE aux missions de terrain jusqu'a nouvel ordre. Tout deploiement operationnel est formellement contre-indique tant que l'etat de sante du patient n'aura pas ete reevalue par un medecin de l'hopital.", pageW - marginX*2 - 8);
+  let texteDecl = "Au vu de l'etat de sante du patient et des constatations medicales ci-dessus, je declare le sus-nomme(e) FORMELLEMENT INAPTE a toute mission de terrain et a toute activite operationnelle.";
+  const declLines = doc.splitTextToSize(texteDecl, contentW - 8);
   let dy = y + 14;
   declLines.forEach(function(l){ doc.text(l, marginX + 4, dy); dy += 5; });
-  y += 36;
+
+  if (data.date_fin) {
+    const dateFinFR = new Date(data.date_fin).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(rouge[0], rouge[1], rouge[2]);
+    doc.text("Date de reevaluation prevue : " + dateFinFR, marginX + 4, dy + 3);
+  }
+  y += hauteurDecl + 6;
+
+  // ===== JUSTIFICATION MÉDICALE (texte adapté selon gravité) =====
+  if (y > pageH - 70) { doc.addPage(); y = 20; }
+  doc.setTextColor(rose[0], rose[1], rose[2]);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('JUSTIFICATION MEDICALE', marginX, y);
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y+1.5, marginX + 55, y+1.5);
+  y += 8;
+
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+
+  // Texte adapté selon la gravité
+  let justif = '';
+  if (gravite.indexOf('critique') >= 0) {
+    justif = "Le patient se trouve dans un etat de gravite critique necessitant une prise en charge medicale intensive et un repos strict. Toute reprise prematuree de l'activite operationnelle exposerait le patient a un risque vital majeur, voire fatal. L'organisme doit retrouver l'integralite de ses fonctions vitales avant tout deploiement. Une mission entreprise dans cet etat constituerait une mise en danger directe de la vie du patient et serait incompatible avec les obligations de protection du shinobi par son village.";
+  } else if (gravite.indexOf('grave') >= 0) {
+    justif = "Les blessures constatees presentent une gravite importante necessitant une periode de convalescence complete. Le corps du patient doit beneficier d'un repos absolu afin que les tissus leses se regenerent et que les fonctions physiologiques se retablissent integralement. Une reprise anticipee des activites de terrain compromettrait gravement la guerison et pourrait entrainer des complications mettant en peril la vie du patient lors de sa prochaine mission.";
+  } else if (gravite.indexOf('moder') >= 0) {
+    justif = "L'etat de sante du patient necessite une periode de repos complet afin de permettre a son organisme de se regenerer pleinement. Une reprise precipitee des activites operationnelles compromettrait la recuperation et exposerait le patient a des risques serieux de rechute, d'aggravation des lesions, ou de complications medicales pouvant survenir en situation de combat.";
+  } else if (gravite.indexOf('leg') >= 0) {
+    justif = "Bien que les blessures soient circonscrites, le patient necessite une periode d'observation et de repos pour assurer une guerison complete. Toute activite de terrain prematuree pourrait aggraver les lesions actuelles et compromettre la pleine recuperation des capacites operationnelles du shinobi.";
+  } else {
+    justif = "L'etat du patient requiert une periode de repos et d'observation medicale avant toute reprise d'activite operationnelle. Toute mission anticipee est susceptible d'aggraver son etat ou de generer de nouvelles complications dans le cadre des conditions exigeantes du terrain.";
+  }
+
+  const justifLines = doc.splitTextToSize(justif, contentW);
+  justifLines.forEach(function(l) {
+    if (y > pageH - 50) { doc.addPage(); y = 20; }
+    doc.text(l, marginX, y);
+    y += 5.5;
+  });
+  y += 6;
+
+  // ===== RECOMMANDATIONS =====
+  if (y > pageH - 45) { doc.addPage(); y = 20; }
+  doc.setFillColor(252, 248, 235);
+  doc.setDrawColor(200, 154, 26);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(marginX, y, contentW, 24, 2, 2, 'FD');
+  doc.setTextColor(170, 130, 20);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.text("RECOMMANDATIONS DU MEDECIN", marginX + 4, y + 7);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(80, 60, 30);
+  const recos = "Repos complet - Hydratation reguliere - Alimentation equilibree - Suivi medical regulier - Reprise progressive de l'activite uniquement apres reevaluation medicale.";
+  const recoLines = doc.splitTextToSize(recos, contentW - 8);
+  let ry = y + 13;
+  recoLines.forEach(function(l){ doc.text(l, marginX + 4, ry); ry += 4.5; });
+  y += 30;
 
   // ===== SIGNATURE =====
-  y = Math.max(y, pageH - 50);
+  if (y > pageH - 35) { doc.addPage(); y = pageH - 35; }
+  else y = Math.max(y, pageH - 35);
   doc.setTextColor(noir[0], noir[1], noir[2]);
   doc.setFont('helvetica','italic');
   doc.setFontSize(10);
   const dateLong = new Date().toLocaleDateString('fr-FR', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
   doc.text('Fait a Konoha, le ' + dateLong, marginX, y);
-  y += 12;
+  y += 7;
   doc.setFont('helvetica','bold');
   doc.text('Medecin responsable : ' + (data.soignant || '--'), marginX, y);
-
-  // ===== PIED DE PAGE =====
-  doc.setDrawColor(220, 200, 215);
-  doc.setLineWidth(0.3);
-  doc.line(marginX, pageH - 15, pageW - marginX, pageH - 15);
-  doc.setTextColor(gris[0], gris[1], gris[2]);
+  y += 5;
   doc.setFont('helvetica','italic');
   doc.setFontSize(8);
-  doc.text('Hopital de Konoha - Certificat medical officiel - Document confidentiel', marginX, pageH - 10);
+  doc.setTextColor(gris[0], gris[1], gris[2]);
+  doc.text("Signature et cachet de l'Hopital de Konoha", marginX, y);
+
+  // ===== PIED DE PAGE =====
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(220, 200, 215);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, pageH - 15, pageW - marginX, pageH - 15);
+    doc.setTextColor(gris[0], gris[1], gris[2]);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(8);
+    doc.text('Hopital de Konoha - Certificat medical officiel - Document confidentiel', marginX, pageH - 10);
+    if (totalPages > 1) {
+      doc.text('Page ' + i + ' / ' + totalPages, pageW - marginX - 20, pageH - 10);
+    }
+  }
 
   return doc;
 }
@@ -3641,6 +3827,12 @@ function renderDossiersContent(g) {
       <div class="form-group-hop" style="margin-bottom:0.75rem"><label>Description complète *</label>
         <textarea id="dos-desc" rows="4" placeholder="Décrivez précisément : blessures, soins apportés, médicaments administrés, état du patient..."></textarea>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="form-group-hop" style="margin:0"><label>📅 Date de prise en charge <span style="font-size:10px;color:var(--hop-muted)">(optionnel)</span></label>
+          <input type="date" id="dos-date-debut" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+        <div class="form-group-hop" style="margin:0"><label>🏥 Date estimée de retour en mission <span style="font-size:10px;color:var(--hop-muted)">(fin convalescence)</span></label>
+          <input type="date" id="dos-date-fin" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
         <div class="form-group-hop" style="margin:0"><label>Traitement administré</label>
           <input type="text" id="dos-traitement" placeholder="Ex: Chakra de guérison niveau 3..."/></div>
@@ -3730,12 +3922,40 @@ function renderDossiersContent(g) {
               <div class="detail-field-hop"><span class="detail-field-label-hop">Patient</span><span class="detail-field-val-hop">${d.patient||'—'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Soignant</span><span class="detail-field-val-hop">${d.soignant||'—'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Groupe sanguin</span><span class="detail-field-val-hop" style="font-weight:700;color:var(--hop-mauve2)">${d.groupe_sanguin||'— Inconnu —'}</span></div>
-              <div class="detail-field-hop"><span class="detail-field-label-hop">Type / Motif</span><span class="detail-field-val-hop">${blessure}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Gravité</span><span class="detail-field-val-hop" style="color:${gc};font-weight:700">${d.gravite||d.gravité||'—'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Traitement</span><span class="detail-field-val-hop">${d.traitement||'—'}</span></div>
               <div class="detail-field-hop"><span class="detail-field-label-hop">Statut</span><span class="detail-field-val-hop">${statut}</span></div>
             </div>
-            <div class="detail-section-hop">
+
+            ${blessure !== '—' ? (() => {
+              const motifs = blessure.split(/[,;]/).map(m => m.trim()).filter(m => m.length > 0);
+              if (motifs.length === 0) return '';
+              return `<div class="detail-section-hop" style="margin-top:1rem">
+                <div class="detail-section-label-hop">🩹 Type(s) / Motif(s) — ${motifs.length} élément${motifs.length>1?'s':''}</div>
+                <div style="background:#1a1a1a;border-left:3px solid var(--hop-rose2);border-radius:0 8px 8px 0;padding:10px 14px">
+                  <ul style="margin:0;padding-left:18px;list-style:none">
+                    ${motifs.map(m => `<li style="font-size:13px;color:var(--hop-text);line-height:1.8;padding:3px 0;position:relative;padding-left:14px"><span style="position:absolute;left:0;color:var(--hop-rose2);font-weight:700">▸</span>${m}</li>`).join('')}
+                  </ul>
+                </div>
+              </div>`;
+            })() : ''}
+
+            ${(d.date_debut || d.date_fin) ? `
+            <div class="detail-section-hop" style="margin-top:1rem">
+              <div class="detail-section-label-hop">📅 Période de convalescence</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                ${d.date_debut ? `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-left:3px solid #6BAB8A;border-radius:0 6px 6px 0;padding:8px 12px">
+                  <div style="font-size:9px;color:#6BAB8A;text-transform:uppercase;letter-spacing:1px;font-weight:700">Prise en charge</div>
+                  <div style="font-size:13px;color:var(--hop-text);font-weight:600;margin-top:2px">${new Date(d.date_debut).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})}</div>
+                </div>` : ''}
+                ${d.date_fin ? `<div style="background:#1a1a1a;border:1px solid var(--hop-border);border-left:3px solid #D4779A;border-radius:0 6px 6px 0;padding:8px 12px">
+                  <div style="font-size:9px;color:#D4779A;text-transform:uppercase;letter-spacing:1px;font-weight:700">Retour en mission prévu</div>
+                  <div style="font-size:13px;color:var(--hop-text);font-weight:600;margin-top:2px">${new Date(d.date_fin).toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})}</div>
+                </div>` : ''}
+              </div>
+            </div>` : ''}
+
+            <div class="detail-section-hop" style="margin-top:1rem">
               <div class="detail-section-label-hop">📋 Description médicale confidentielle</div>
               <div class="detail-section-text-hop">${d.desc||d.description||'—'}</div>
             </div>
@@ -3858,6 +4078,8 @@ async function saveDossier() {
   const statut         = document.getElementById('dos-statut')?.value;
   const groupe_sanguin = document.getElementById('dos-sang')?.value || null;
   const certificatVoulu= document.getElementById('dos-certificat')?.checked;
+  const dateDebut      = document.getElementById('dos-date-debut')?.value || null;
+  const dateFin        = document.getElementById('dos-date-fin')?.value || null;
 
   if (!patient || !soignant || !desc) { hopWarning('Patient, soignant et description sont obligatoires.'); return; }
 
@@ -3865,14 +4087,12 @@ async function saveDossier() {
   let certificatUrl = null;
   let certificatData = null;
   if (certificatVoulu) {
-    certificatData = { patient, soignant, blessure, gravite, desc, statut, groupe_sanguin };
+    certificatData = { patient, soignant, blessure, gravite, desc, statut, groupe_sanguin, date_debut: dateDebut, date_fin: dateFin };
     try {
       certificatUrl = await uploaderCertificatIncapacite(certificatData);
     } catch(e) {
       console.warn('certif:', e);
     }
-    // Si l'upload a échoué, on garde quand même un marqueur "local-only" pour afficher
-    // les boutons Aperçu et Télécharger même sans lien partageable
     if (!certificatUrl) {
       certificatUrl = 'local-only';
     } else {
@@ -3893,6 +4113,8 @@ async function saveDossier() {
       statut: statut || 'aucun',
       groupe_sanguin: groupe_sanguin || null,
       certificat_url: certificatUrl,
+      date_debut: dateDebut,
+      date_fin: dateFin,
       date: new Date().toLocaleDateString('fr-FR'),
       created_by: state.currentUser?.username
     });
@@ -3912,13 +4134,15 @@ async function saveDossier() {
     statut,
     groupe_sanguin,
     certificat_url: certificatUrl,
+    date_debut: dateDebut,
+    date_fin: dateFin,
     date: new Date().toLocaleDateString('fr-FR'),
     createdBy: state.currentUser?.username
   });
   localStorage.setItem('hop_dossiers', JSON.stringify(dossiers));
 
   // Reset form
-  ['dos-patient','dos-desc','dos-traitement'].forEach(id => {
+  ['dos-patient','dos-desc','dos-traitement','dos-date-debut','dos-date-fin'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   ['dos-soignant','dos-sang'].forEach(id => {
