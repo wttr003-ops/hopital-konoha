@@ -1699,9 +1699,101 @@ async function sbFetch(table, method='GET', body=null, query='') {
   return res.ok;
 }
 async function sbGet(t, q='')    { return sbFetch(t,'GET',null,q); }
-async function sbPost(t, b)      { return sbFetch(t,'POST',b); }
+
+// sbPost RÉSILIENT : si une colonne n'existe pas en BDD (erreur 400 type
+// "Could not find the 'xxx' column"), on retire automatiquement les colonnes
+// inconnues et on retente. Comme ça pas besoin que l'utilisateur fasse de
+// migration manuelle quand on ajoute des nouveaux champs.
+async function sbPost(table, body) {
+  if (!body || typeof body !== 'object') return sbFetch(table, 'POST', body);
+
+  // Tentative 1 : avec toutes les colonnes
+  let cleaned = { ...body };
+  let attempts = 0;
+  const maxAttempts = 8;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    try {
+      return await sbFetch(table, 'POST', cleaned);
+    } catch(e) {
+      const msg = (e.message || '').toLowerCase();
+      // Extrait la colonne inconnue du message d'erreur Supabase/PostgREST
+      // Formats possibles :
+      //   "Could not find the 'certificat_url' column of 'dossiers_hop'"
+      //   "column \"date_debut\" of relation does not exist"
+      //   "Column 'foo' not found"
+      let badCol = null;
+      const m1 = msg.match(/(?:could not find the |column ['"`])([a-z0-9_]+)['"`]/i);
+      const m2 = msg.match(/column ['"`]?([a-z0-9_]+)['"`]? (?:of relation|does not exist|not found)/i);
+      if (m1 && m1[1]) badCol = m1[1];
+      else if (m2 && m2[1]) badCol = m2[1];
+
+      if (badCol && Object.prototype.hasOwnProperty.call(cleaned, badCol)) {
+        console.warn('[sbPost] Colonne "' + badCol + '" absente sur "' + table + '" → on l\'enleve et on retente.');
+        delete cleaned[badCol];
+        continue;
+      }
+      // Erreur non récupérable
+      throw e;
+    }
+  }
+  throw new Error('sbPost: trop de retries pour ' + table);
+}
+
 async function sbPatch(t, q, b)  { return sbFetch(t,'PATCH',b,q); }
 async function sbDelete(t, q)    { return sbFetch(t,'DELETE',null,q); }
+
+// Insert direct (sans passer par sbFetch) avec gestion résiliente des colonnes manquantes.
+// Utile pour les endroits où on a besoin de fetch direct (avec Prefer: return=representation par ex.)
+async function sbInsertDirect(table, body, opts) {
+  opts = opts || {};
+  if (!body || typeof body !== 'object') return null;
+
+  let cleaned = { ...body };
+  let attempts = 0;
+  const maxAttempts = 8;
+
+  while (attempts < maxAttempts) {
+    attempts++;
+    const url = SB_URL + '/rest/v1/' + table;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': opts.prefer || 'return=representation'
+      },
+      body: JSON.stringify(cleaned)
+    });
+
+    if (res.ok) {
+      const txt = await res.text();
+      try { return txt ? JSON.parse(txt) : true; } catch(e) { return true; }
+    }
+
+    // Tentative de récupération de la colonne fautive
+    const errText = await res.text();
+    const msg = (errText || '').toLowerCase();
+    console.warn('[sbInsertDirect] HTTP', res.status, errText);
+
+    let badCol = null;
+    const m1 = msg.match(/(?:could not find the |column ['"`])([a-z0-9_]+)['"`]/i);
+    const m2 = msg.match(/column ['"`]?([a-z0-9_]+)['"`]? (?:of relation|does not exist|not found)/i);
+    if (m1 && m1[1]) badCol = m1[1];
+    else if (m2 && m2[1]) badCol = m2[1];
+
+    if (badCol && Object.prototype.hasOwnProperty.call(cleaned, badCol)) {
+      console.warn('[sbInsertDirect] Colonne "' + badCol + '" absente sur "' + table + '" → on l\'enleve et on retente.');
+      delete cleaned[badCol];
+      continue;
+    }
+    // Non récupérable
+    return null;
+  }
+  return null;
+}
 
 // ============================================================
 // ÉTAT GLOBAL
@@ -2156,12 +2248,9 @@ async function submitPostuler() {
   // POST candidature et récupérer l'ID réel
   let newId = null;
   try {
-    const res = await fetch(SB_URL+'/rest/v1/candidatures_hop', {
-      method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'},
-      body: JSON.stringify({ nom, niveau: niv, specialite: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom })
-    });
-    const data = await res.json();
+    const data = await sbInsertDirect('candidatures_hop',
+      { nom, niveau: niv, specialite: spec, motiv, casier: cas, dispo, status:'wait', author, author_display: nom }
+    );
     if (Array.isArray(data) && data[0]) newId = data[0].id;
   } catch(e) { console.warn('submit candid:', e); }
 
@@ -4100,8 +4189,9 @@ async function saveDossier() {
     }
   }
 
-  // Save to Supabase
+  // Save to Supabase (avec sbPost résilient — retire automatiquement les colonnes inconnues)
   let newId = null;
+  let savedToSupabase = false;
   try {
     const saved = await sbPost('dossiers_hop', {
       patient,
@@ -4118,8 +4208,14 @@ async function saveDossier() {
       date: new Date().toLocaleDateString('fr-FR'),
       created_by: state.currentUser?.username
     });
-    if (Array.isArray(saved) && saved[0]) newId = saved[0].id;
-  } catch(e) { console.warn('saveDossier error:', e); }
+    if (Array.isArray(saved) && saved[0]) {
+      newId = saved[0].id;
+      savedToSupabase = true;
+    }
+  } catch(e) {
+    console.warn('saveDossier error:', e);
+    hopWarning('La sauvegarde en BDD a échoué. Le dossier est seulement en local pour cette session. Détail console (F12).');
+  }
 
   // Save to localStorage
   const dossiers = JSON.parse(localStorage.getItem('hop_dossiers') || '[]');
@@ -4899,26 +4995,16 @@ async function ajouterRemedeHop() {
   const nomMedecin = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
 
   try {
-    const res = await fetch(SB_URL + '/rest/v1/pharmacie_hop', {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        nom: nom,
-        categorie: cat,
-        quantite: qte,
-        ajoute_par: nomMedecin,
-        date_ajout: new Date().toLocaleDateString('fr-FR')
-      })
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Erreur ajout pharma:', res.status, errText);
-      hopWarning('Erreur lors de l\'ajout. Verifie que la table pharmacie_hop existe sur Supabase. Code: ' + res.status);
+    const result = await sbInsertDirect('pharmacie_hop', {
+      nom: nom,
+      categorie: cat,
+      quantite: qte,
+      ajoute_par: nomMedecin,
+      date_ajout: new Date().toLocaleDateString('fr-FR')
+    }, { prefer: 'return=minimal' });
+
+    if (!result) {
+      hopWarning('Erreur lors de l\'ajout. Verifie que la table pharmacie_hop existe sur Supabase.');
       return;
     }
     document.getElementById('pharma-nom').value = '';
@@ -5814,17 +5900,12 @@ async function priseDeServiceHop() {
 
   let presenceId = null, serverPrise = null;
   try {
-    const res = await fetch(SB_URL + '/rest/v1/presences_hop', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({
-        username:   u.username,
-        nom:        nomAgent,
-        grade:      u.grade,
-        prise:      now.toISOString()
-      })
+    const data = await sbInsertDirect('presences_hop', {
+      username:   u.username,
+      nom:        nomAgent,
+      grade:      u.grade,
+      prise:      now.toISOString()
     });
-    const data = await res.json();
     if (Array.isArray(data) && data[0]) {
       presenceId = data[0].id;
       let sp = data[0].created_at || data[0].prise || now.toISOString();
@@ -6081,29 +6162,18 @@ async function soumettreRapportHop() {
 
   try {
     const auteurNom = (state.users && state.users[u.username] && state.users[u.username].fullname) ? state.users[u.username].fullname : u.username;
-    const res = await fetch(SB_URL + '/rest/v1/rapports_hop', {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        auteur:            auteurNom,
-        grade_auteur:      u.grade,
-        type_intervention: type,
-        nb_patients:       nbPatients,
-        gravite:           gravite,
-        statut_patient:    statut,
-        description:       desc
-      })
+    const result = await sbInsertDirect('rapports_hop', {
+      auteur:            auteurNom,
+      grade_auteur:      u.grade,
+      type_intervention: type,
+      nb_patients:       nbPatients,
+      gravite:           gravite,
+      statut_patient:    statut,
+      description:       desc
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Erreur Supabase rapports:', res.status, errText);
-      hopWarning('Erreur lors de l\'envoi du rapport. Vérifiez que la table "rapports_hop" existe dans Supabase. Détail : ' + res.status);
+    if (!result) {
+      hopWarning('Erreur lors de l\'envoi du rapport. Vérifiez que la table "rapports_hop" existe dans Supabase.');
       if (btn) { btn.disabled = false; btn.textContent = 'Soumettre le rapport'; }
       return;
     }
@@ -6254,26 +6324,16 @@ async function envoyerDiscuMessage() {
   input.value = '';
 
   try {
-    const res = await fetch(SB_URL + '/rest/v1/tchat_equipe', {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        auteur_username: u.username,
-        auteur_nom: nomAffiche,
-        auteur_grade: u.grade || '',
-        message: text,
-        heure: heure
-      })
-    });
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('Erreur tchat_equipe:', res.status, errText);
-      hopWarning('Erreur lors de l\'envoi. Code: ' + res.status + '. Verifie que la table tchat_equipe existe sur Supabase.');
+    const result = await sbInsertDirect('tchat_equipe', {
+      auteur_username: u.username,
+      auteur_nom: nomAffiche,
+      auteur_grade: u.grade || '',
+      message: text,
+      heure: heure
+    }, { prefer: 'return=minimal' });
+
+    if (!result) {
+      hopWarning('Erreur lors de l\'envoi. Verifie que la table tchat_equipe existe sur Supabase.');
       input.value = text;
       return;
     }
