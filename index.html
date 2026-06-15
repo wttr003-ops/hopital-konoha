@@ -3482,7 +3482,10 @@ function genererBlobCertificatIncapacite(data) {
   doc.setFont('helvetica','normal');
   doc.setFontSize(10);
   doc.setTextColor(noir[0], noir[1], noir[2]);
-  const dateDebutFR = data.date_debut ? new Date(data.date_debut).toLocaleDateString('fr-FR') : '--';
+  // Si pas de date de prise en charge fournie, on prend la date d'aujourd'hui (jour de l'examen)
+  const dateDebutFR = data.date_debut
+    ? new Date(data.date_debut).toLocaleDateString('fr-FR')
+    : new Date().toLocaleDateString('fr-FR');
   doc.text(dateDebutFR, marginX + 4, y + 26);
   const dateExamen = new Date().toLocaleDateString('fr-FR');
   doc.text(dateExamen, marginX + 95, y + 26);
@@ -3922,8 +3925,8 @@ function renderDossiersContent(g) {
         <textarea id="dos-desc" rows="4" placeholder="Décrivez précisément : blessures, soins apportés, médicaments administrés, état du patient..."></textarea>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
-        <div class="form-group-hop" style="margin:0"><label>📅 Date de prise en charge <span style="font-size:10px;color:var(--hop-muted)">(optionnel)</span></label>
-          <input type="date" id="dos-date-debut" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
+        <div class="form-group-hop" style="margin:0"><label>📅 Date de prise en charge</label>
+          <input type="date" id="dos-date-debut" value="${new Date().toISOString().split('T')[0]}" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
         <div class="form-group-hop" style="margin:0"><label>🏥 Date estimée de retour en mission <span style="font-size:10px;color:var(--hop-muted)">(fin convalescence)</span></label>
           <input type="date" id="dos-date-fin" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito"></div>
       </div>
