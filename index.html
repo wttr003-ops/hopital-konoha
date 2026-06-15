@@ -3405,46 +3405,94 @@ async function uploaderCertificatIncapacite(data) {
 
   const blob = doc.output('blob');
   const nomFich = 'Certificat_' + (data.patient || 'patient').replace(/[^a-zA-Z0-9]/g,'_') + '_' + Date.now() + '.pdf';
-  const cheminStockage = 'certificats/' + nomFich;
-  const BUCKET = 'certificats-pdf';
 
+  // Upload sur catbox.moe (gratuit, permanent, sans config, sans compte)
   try {
-    const res = await fetch(SB_URL + '/storage/v1/object/' + BUCKET + '/' + cheminStockage, {
-      method:'POST',
-      headers:{
-        'apikey': SB_KEY,
-        'Authorization':'Bearer ' + SB_KEY,
-        'Content-Type':'application/pdf',
-        'x-upsert':'true'
-      },
-      body: blob
+    const formData = new FormData();
+    formData.append('reqtype', 'fileupload');
+    formData.append('fileToUpload', blob, nomFich);
+
+    const res = await fetch('https://catbox.moe/user/api.php', {
+      method: 'POST',
+      body: formData
     });
+
     if (!res.ok) {
-      const t = await res.text();
-      if (res.status === 404 || (t && t.indexOf('Bucket') >= 0)) {
-        hopWarning('Cree le bucket "certificats-pdf" en mode public sur Supabase pour activer le lien partageable.');
-      } else {
-        hopWarning('Echec upload certificat : ' + res.status);
-      }
-      console.warn('Upload certif:', t);
+      console.warn('Catbox upload failed:', res.status);
+      hopWarning('Le PDF est genere mais l\'upload du lien partageable a echoue. L\'apercu reste accessible.');
       return null;
     }
-    return SB_URL + '/storage/v1/object/public/' + BUCKET + '/' + cheminStockage;
+
+    const url = (await res.text()).trim();
+    if (url && url.startsWith('https://')) {
+      hopSuccess('Certificat genere et lien partageable cree !');
+      return url;
+    } else {
+      console.warn('Catbox response inattendue:', url);
+      return null;
+    }
   } catch(e) {
-    console.warn('uploadCertif:', e);
+    console.warn('uploadCertif catbox:', e);
+    hopWarning('Lien partageable indisponible (apercu fonctionne).');
     return null;
   }
 }
 
-// Aperçu d'un certificat à partir de son URL Supabase (ouvre dans nouvel onglet)
-function apercuCertificat(url) {
-  if (!url) { hopWarning('Aucun certificat disponible.'); return; }
-  window.open(url, '_blank');
+// Stocke les données nécessaires pour la regénération locale du PDF
+function stockerDataCertifLocal(certificatUrl, data) {
+  if (!certificatUrl) return;
+  try {
+    const cache = JSON.parse(localStorage.getItem('hop_certif_data') || '{}');
+    cache[certificatUrl] = data;
+    localStorage.setItem('hop_certif_data', JSON.stringify(cache));
+  } catch(e) {}
+}
+
+// Récupère les données stockées pour regénérer le PDF localement
+function getDataCertifLocal(certificatUrl) {
+  if (!certificatUrl) return null;
+  try {
+    const cache = JSON.parse(localStorage.getItem('hop_certif_data') || '{}');
+    return cache[certificatUrl] || null;
+  } catch(e) { return null; }
+}
+
+// Aperçu du certificat : regénère le PDF localement (toujours dispo) OU ouvre l'URL externe en fallback
+function apercuCertificat(urlOuId, dossierData) {
+  // Si on a les données du dossier, on regénère le PDF localement
+  if (dossierData && typeof dossierData === 'object') {
+    const doc = genererBlobCertificatIncapacite(dossierData);
+    if (doc) {
+      const blob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+      return;
+    }
+  }
+  // Sinon tenter de regénérer à partir du cache local
+  const cached = getDataCertifLocal(urlOuId);
+  if (cached) {
+    const doc = genererBlobCertificatIncapacite(cached);
+    if (doc) {
+      const blob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+      setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 60000);
+      return;
+    }
+  }
+  // En dernier recours : ouvrir l'URL externe
+  if (urlOuId && typeof urlOuId === 'string' && urlOuId.startsWith('http')) {
+    window.open(urlOuId, '_blank');
+  } else {
+    hopWarning('Apercu non disponible pour ce certificat.');
+  }
 }
 
 // Copie le lien du certificat dans le presse-papier
 async function copierLienCertificat(url) {
-  if (!url) { hopWarning('Aucun certificat disponible.'); return; }
+  if (!url || !url.startsWith('http')) { hopWarning('Aucun lien partageable disponible pour ce certificat.'); return; }
   try {
     await navigator.clipboard.writeText(url);
     hopSuccess('Lien du certificat copie ! Colle-le sur Discord (Ctrl+V).');
@@ -3644,7 +3692,7 @@ function renderDossiersContent(g) {
             <div style="margin-top:10px;padding:10px 12px;background:rgba(212,119,154,0.06);border:1px solid rgba(212,119,154,0.3);border-radius:8px">
               <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📜 Certificat d'incapacité de terrain</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button onclick="apercuCertificat('${d.certificat_url}')" style="padding:6px 14px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">👁 Aperçu du certificat</button>
+                <button onclick='apercuCertificat("${d.certificat_url}", ${JSON.stringify({patient:d.patient,soignant:d.soignant,blessure:d.blessure,gravite:d.gravite,desc:(d.desc||d.description||''),statut:d.statut,groupe_sanguin:d.groupe_sanguin}).replace(/"/g,'&quot;').replace(/'/g,'&#39;')})' style="padding:6px 14px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">👁 Aperçu du certificat</button>
                 <button onclick="copierLienCertificat('${d.certificat_url}')" style="padding:6px 14px;background:rgba(139,94,131,0.12);color:#8B5E83;border:1px solid rgba(139,94,131,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">🔗 Copier le lien</button>
               </div>
             </div>` : ''}
@@ -3751,15 +3799,16 @@ async function saveDossier() {
 
   // Génération + upload du certificat si demandé
   let certificatUrl = null;
+  let certificatData = null;
   if (certificatVoulu) {
+    certificatData = { patient, soignant, blessure, gravite, desc, statut, groupe_sanguin };
     try {
-      certificatUrl = await uploaderCertificatIncapacite({
-        patient, soignant, blessure, gravite, desc, statut, groupe_sanguin
-      });
+      certificatUrl = await uploaderCertificatIncapacite(certificatData);
     } catch(e) {
       console.warn('certif:', e);
-      hopWarning('Le certificat n\'a pas pu être uploadé. Le dossier sera quand même enregistré.');
     }
+    // Toujours stocker les données du certif en local pour pouvoir le regénérer en aperçu
+    if (certificatUrl) stockerDataCertifLocal(certificatUrl, certificatData);
   }
 
   // Save to Supabase
