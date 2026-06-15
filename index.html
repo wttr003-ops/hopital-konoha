@@ -756,7 +756,9 @@ body {
   cursor:pointer;font-family:inherit;transition:opacity .15s;
 }
 #hop-popup-btns button:hover { opacity:0.85; }
-</style></head><body>
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head><body>
 
 
 <canvas id="petals-canvas"></canvas>
@@ -3092,6 +3094,10 @@ const BLESSURES = [
   "Traumatisme par explosion (Doton)",
   "Noyade / Trauma hydraulique (Suiton)",
   "Empoisonnement (poison ninja)",
+  "Poison léger",
+  "Poison violent / létal",
+  "Poison neurotoxique",
+  "Poison paralysant",
   "Malédiction / Sceau maudit",
   "Épuisement du chakra",
   "Trauma crânien",
@@ -3101,6 +3107,12 @@ const BLESSURES = [
   "Morsure de créature / animal",
   "Infection / Septicémie",
   "Traumatisme psychologique",
+  "Membre sectionné — bras droit",
+  "Membre sectionné — bras gauche",
+  "Membre sectionné — jambe droite",
+  "Membre sectionné — jambe gauche",
+  "Décapitation",
+  "Énucléation (perte d'œil)",
   "Blessures multiples combinées",
   "--- 🏥 Soins généraux ---",
   "Prise de sang",
@@ -3158,6 +3170,286 @@ function filterDossiers() {
   }
   if (emptyEl) {
     emptyEl.style.display = (q && visible === 0) ? 'block' : 'none';
+  }
+}
+
+// ============================================================
+// MULTI-SÉLECTION BLESSURES (popup modal avec checkboxes)
+// ============================================================
+function ouvrirMultiBlessures() {
+  const old = document.getElementById('modal-multi-blessures');
+  if (old) old.remove();
+
+  let dejaSelect = [];
+  try { dejaSelect = JSON.parse(document.getElementById('dos-blessure-selection')?.value || '[]'); } catch(e) {}
+
+  // Récupérer la valeur "Autre" déjà saisie (s'il y en a une dans la sélection actuelle)
+  let autreActuel = '';
+  dejaSelect.forEach(function(b) { if (b.indexOf('Autre : ') === 0) autreActuel = b.substring(8); });
+  const dejaSelectSansAutre = dejaSelect.filter(function(b){ return b.indexOf('Autre : ') !== 0; });
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-multi-blessures';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem';
+  modal.onclick = function(e) { if (e.target === modal) fermerMultiBlessures(); };
+
+  let html = '<div style="background:#0a0a0a;border:1px solid var(--hop-border2);border-radius:14px;max-width:640px;width:100%;padding:1.5rem;color:var(--hop-text);font-family:Nunito,sans-serif">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">';
+  html += '<h3 style="margin:0;font-family:\'Cormorant Garamond\',serif;color:var(--hop-rose2);font-size:22px">📋 Sélection des types / motifs</h3>';
+  html += '<button onclick="fermerMultiBlessures()" style="background:none;border:none;color:var(--hop-muted);font-size:24px;cursor:pointer">×</button>';
+  html += '</div>';
+  html += '<div style="font-size:12px;color:var(--hop-muted);margin-bottom:14px">Coche tous les types qui s\'appliquent. Tu peux en sélectionner plusieurs.</div>';
+
+  let currentGroup = '';
+  BLESSURES.forEach(function(b, idx) {
+    if (b === '-- Choisir (optionnel) --') return; // ignore l'entrée placeholder
+    if (b.indexOf('---') === 0) {
+      const label = b.replace(/---/g,'').trim();
+      html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">' + label + '</div>';
+    } else if (b === 'Autre (préciser dans description)') {
+      // On gère "Autre" séparément en bas
+    } else {
+      const checked = dejaSelectSansAutre.indexOf(b) >= 0 ? 'checked' : '';
+      html += '<label style="display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--hop-text)" onmouseover="this.style.background=\'rgba(212,119,154,0.06)\'" onmouseout="this.style.background=\'\'">';
+      html += '<input type="checkbox" value="' + b.replace(/"/g, '&quot;') + '" ' + checked + ' style="accent-color:var(--hop-rose2);cursor:pointer">' + b;
+      html += '</label>';
+    }
+  });
+
+  // Bloc "Autre" en bas avec champ texte libre
+  html += '<div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px 0;border-bottom:1px solid var(--hop-border);padding-bottom:4px">✏️ Autre</div>';
+  html += '<input type="text" id="multi-blessure-autre" placeholder="Préciser un autre type (optionnel)..." value="' + autreActuel.replace(/"/g,'&quot;') + '" style="width:100%;padding:8px 12px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-text);font-family:Nunito;margin-bottom:14px">';
+
+  html += '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">';
+  html += '<button onclick="fermerMultiBlessures()" style="padding:9px 20px;background:transparent;color:var(--hop-muted);border:1px solid var(--hop-border);border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">Annuler</button>';
+  html += '<button onclick="validerMultiBlessures()" style="padding:9px 24px;background:linear-gradient(135deg,var(--hop-rose),var(--hop-rose2));color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Nunito">✓ Valider</button>';
+  html += '</div>';
+  html += '</div>';
+
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+}
+
+function fermerMultiBlessures() {
+  const m = document.getElementById('modal-multi-blessures');
+  if (m) m.remove();
+}
+
+function validerMultiBlessures() {
+  const modal = document.getElementById('modal-multi-blessures');
+  if (!modal) return;
+  const cocheés = Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(function(cb){ return cb.value; });
+  const autre = document.getElementById('multi-blessure-autre')?.value.trim();
+  if (autre) cocheés.push('Autre : ' + autre);
+
+  const hidden = document.getElementById('dos-blessure-selection');
+  if (hidden) hidden.value = JSON.stringify(cocheés);
+  const btn = document.getElementById('dos-blessure-btn');
+  if (btn) {
+    if (cocheés.length === 0) {
+      btn.innerHTML = '📋 Cliquez pour sélectionner...';
+      btn.style.color = 'var(--hop-muted)';
+    } else {
+      btn.innerHTML = '✓ ' + cocheés.length + ' s\u00e9lection' + (cocheés.length > 1 ? 's' : '') + ' : ' + cocheés.slice(0, 2).join(', ') + (cocheés.length > 2 ? '...' : '');
+      btn.style.color = 'var(--hop-text)';
+    }
+  }
+  fermerMultiBlessures();
+}
+
+// Affiche/cache le champ Autre selon la sélection (dossier médical)
+function onDosAutreChange(champ) {
+  const sel = document.getElementById('dos-' + champ);
+  const txt = document.getElementById('dos-' + champ + '-autre');
+  if (!sel || !txt) return;
+  if (sel.value === 'autre' || sel.value === 'Autre') {
+    txt.style.display = 'block';
+    setTimeout(function(){ txt.focus(); }, 50);
+  } else {
+    txt.style.display = 'none';
+    txt.value = '';
+  }
+}
+
+// ============================================================
+// CERTIFICAT D'INCAPACITÉ DE TERRAIN — PDF + Supabase Storage
+// ============================================================
+function genererBlobCertificatIncapacite(data) {
+  if (typeof window.jspdf === 'undefined') return null;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 20;
+
+  // Couleurs
+  const rose = [212,119,154], mauve = [184,123,168], gris = [120,120,130], noir = [40,40,50];
+
+  // ===== EN-TÊTE =====
+  doc.setFillColor(rose[0], rose[1], rose[2]);
+  doc.rect(0, 0, pageW, 38, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(22);
+  doc.text('CERTIFICAT MEDICAL', marginX, 17);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(12);
+  doc.text("D'incapacite de terrain", marginX, 25);
+  doc.setFontSize(9);
+  doc.text("Hopital de Konoha - Village Cache des Feuilles", marginX, 32);
+
+  // ===== INTRO =====
+  let y = 55;
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(11);
+  const intro = "Je soussigne(e), " + (data.soignant || '...') + ", medecin de l'Hopital de Konoha, certifie avoir examine ce jour :";
+  const introLines = doc.splitTextToSize(intro, pageW - marginX*2);
+  introLines.forEach(function(l){ doc.text(l, marginX, y); y += 6; });
+
+  // ===== BLOC PATIENT =====
+  y += 4;
+  doc.setFillColor(248, 240, 245);
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(marginX, y, pageW - marginX*2, 24, 2, 2, 'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(9);
+  doc.setTextColor(mauve[0], mauve[1], mauve[2]);
+  doc.text('PATIENT', marginX + 4, y + 7);
+  doc.text('GROUPE SANGUIN', marginX + 100, y + 7);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(13);
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.text(data.patient || '--', marginX + 4, y + 16);
+  doc.setTextColor(rose[0], rose[1], rose[2]);
+  doc.setFont('helvetica','bold');
+  doc.text(data.groupe_sanguin || '--', marginX + 100, y + 16);
+  y += 32;
+
+  // ===== DIAGNOSTIC =====
+  doc.setTextColor(rose[0], rose[1], rose[2]);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text('DIAGNOSTIC', marginX, y);
+  doc.setDrawColor(rose[0], rose[1], rose[2]);
+  doc.setLineWidth(0.5);
+  doc.line(marginX, y+1.5, marginX + 30, y+1.5);
+  y += 8;
+
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  if (data.blessure) {
+    const blesLines = doc.splitTextToSize('Type / motif : ' + data.blessure, pageW - marginX*2);
+    blesLines.forEach(function(l){ doc.text(l, marginX, y); y += 5.5; });
+  }
+  if (data.gravite) {
+    doc.text('Gravite : ' + data.gravite, marginX, y);
+    y += 5.5;
+  }
+  y += 2;
+
+  // Description
+  const descLines = doc.splitTextToSize(data.desc || '', pageW - marginX*2);
+  descLines.forEach(function(l) {
+    if (y > pageH - 60) { doc.addPage(); y = 20; }
+    doc.text(l, marginX, y);
+    y += 5.5;
+  });
+
+  // ===== DÉCLARATION D'INCAPACITÉ =====
+  y += 8;
+  doc.setFillColor(255, 240, 240);
+  doc.setDrawColor(192, 57, 43);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(marginX, y, pageW - marginX*2, 28, 2, 2, 'FD');
+  doc.setTextColor(192, 57, 43);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.text("DECLARATION D'INCAPACITE", marginX + 4, y + 8);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(60, 30, 30);
+  const declLines = doc.splitTextToSize("Le patient sus-nomme est declare INAPTE aux missions de terrain jusqu'a nouvel ordre. Tout deploiement operationnel est formellement contre-indique tant que l'etat de sante du patient n'aura pas ete reevalue par un medecin de l'hopital.", pageW - marginX*2 - 8);
+  let dy = y + 14;
+  declLines.forEach(function(l){ doc.text(l, marginX + 4, dy); dy += 5; });
+  y += 36;
+
+  // ===== SIGNATURE =====
+  y = Math.max(y, pageH - 50);
+  doc.setTextColor(noir[0], noir[1], noir[2]);
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(10);
+  const dateLong = new Date().toLocaleDateString('fr-FR', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  doc.text('Fait a Konoha, le ' + dateLong, marginX, y);
+  y += 12;
+  doc.setFont('helvetica','bold');
+  doc.text('Medecin responsable : ' + (data.soignant || '--'), marginX, y);
+
+  // ===== PIED DE PAGE =====
+  doc.setDrawColor(220, 200, 215);
+  doc.setLineWidth(0.3);
+  doc.line(marginX, pageH - 15, pageW - marginX, pageH - 15);
+  doc.setTextColor(gris[0], gris[1], gris[2]);
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(8);
+  doc.text('Hopital de Konoha - Certificat medical officiel - Document confidentiel', marginX, pageH - 10);
+
+  return doc;
+}
+
+async function uploaderCertificatIncapacite(data) {
+  const doc = genererBlobCertificatIncapacite(data);
+  if (!doc) { hopWarning('Module PDF non charge. Recharge la page.'); return null; }
+
+  const blob = doc.output('blob');
+  const nomFich = 'Certificat_' + (data.patient || 'patient').replace(/[^a-zA-Z0-9]/g,'_') + '_' + Date.now() + '.pdf';
+  const cheminStockage = 'certificats/' + nomFich;
+  const BUCKET = 'certificats-pdf';
+
+  try {
+    const res = await fetch(SB_URL + '/storage/v1/object/' + BUCKET + '/' + cheminStockage, {
+      method:'POST',
+      headers:{
+        'apikey': SB_KEY,
+        'Authorization':'Bearer ' + SB_KEY,
+        'Content-Type':'application/pdf',
+        'x-upsert':'true'
+      },
+      body: blob
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      if (res.status === 404 || (t && t.indexOf('Bucket') >= 0)) {
+        hopWarning('Cree le bucket "certificats-pdf" en mode public sur Supabase pour activer le lien partageable.');
+      } else {
+        hopWarning('Echec upload certificat : ' + res.status);
+      }
+      console.warn('Upload certif:', t);
+      return null;
+    }
+    return SB_URL + '/storage/v1/object/public/' + BUCKET + '/' + cheminStockage;
+  } catch(e) {
+    console.warn('uploadCertif:', e);
+    return null;
+  }
+}
+
+// Aperçu d'un certificat à partir de son URL Supabase (ouvre dans nouvel onglet)
+function apercuCertificat(url) {
+  if (!url) { hopWarning('Aucun certificat disponible.'); return; }
+  window.open(url, '_blank');
+}
+
+// Copie le lien du certificat dans le presse-papier
+async function copierLienCertificat(url) {
+  if (!url) { hopWarning('Aucun certificat disponible.'); return; }
+  try {
+    await navigator.clipboard.writeText(url);
+    hopSuccess('Lien du certificat copie ! Colle-le sur Discord (Ctrl+V).');
+  } catch(e) {
+    window.prompt('Copie ce lien (Ctrl+C) :', url);
   }
 }
 
@@ -3228,36 +3520,20 @@ function renderDossiersContent(g) {
             <option>O+</option><option>O-</option>
           </select>
         </div>
-        <div class="form-group-hop" style="margin:0"><label>Type / Motif <span style="font-size:10px;color:var(--hop-muted)">(optionnel)</span></label>
-          <select id="dos-blessure">
-            ${(function() {
-              let out = '';
-              let inGroup = false;
-              BLESSURES.forEach(b => {
-                if (b === '-- Choisir (optionnel) --') {
-                  out += '<option value="">-- Choisir (optionnel) --</option>';
-                } else if (b.startsWith('---')) {
-                  if (inGroup) out += '</optgroup>';
-                  const label = b.replace(/---/g,'').trim();
-                  out += '<optgroup label="' + label + '">';
-                  inGroup = true;
-                } else {
-                  out += '<option>' + b + '</option>';
-                }
-              });
-              if (inGroup) out += '</optgroup>';
-              return out;
-            })()}
-          </select>
+        <div class="form-group-hop" style="margin:0"><label>Type / Motif <span style="font-size:10px;color:var(--hop-muted)">(plusieurs choix possibles)</span></label>
+          <button type="button" onclick="ouvrirMultiBlessures()" id="dos-blessure-btn" style="width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-border);border-radius:6px;color:var(--hop-muted);font-family:Nunito,sans-serif;font-size:13px;text-align:left;cursor:pointer">📋 Cliquez pour sélectionner...</button>
+          <input type="hidden" id="dos-blessure-selection" value="[]">
         </div>
         <div class="form-group-hop" style="margin:0"><label>Gravité</label>
-          <select id="dos-gravite">
+          <select id="dos-gravite" onchange="onDosAutreChange('gravite')">
             <option value="aucune">— Aucune —</option>
             <option value="légère">Légère</option>
             <option value="modérée" selected>Modérée</option>
             <option value="grave">Grave</option>
             <option value="critique">Critique — Urgence vitale</option>
+            <option value="autre">Autre</option>
           </select>
+          <input type="text" id="dos-gravite-autre" placeholder="Précisez la gravité..." style="display:none;width:100%;margin-top:6px;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-rose2);border-radius:6px;color:var(--hop-text);font-family:Nunito">
         </div>
       </div>
       <div class="form-group-hop" style="margin-bottom:0.75rem"><label>Description complète *</label>
@@ -3276,6 +3552,15 @@ function renderDossiersContent(g) {
             <option value="deces">Décédé (RP)</option>
           </select>
         </div>
+      </div>
+      <div style="background:rgba(212,119,154,0.06);border:1px solid rgba(212,119,154,0.25);border-radius:10px;padding:10px 14px;margin-bottom:1rem">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;font-size:13px;color:var(--hop-text)">
+          <input type="checkbox" id="dos-certificat" style="margin-top:3px;cursor:pointer;accent-color:var(--hop-rose2)">
+          <span>
+            <strong style="color:var(--hop-rose2)">📜 Générer un certificat d'incapacité de terrain</strong><br>
+            <span style="font-size:11px;color:var(--hop-muted)">Un certificat PDF officiel sera créé attestant que le patient n'est pas en capacité d'aller sur le terrain. Tu pourras l'aperçu, le télécharger ou copier son lien pour Discord.</span>
+          </span>
+        </label>
       </div>
       <button class="btn-primary" onclick="saveDossier()">💾 Enregistrer dans le dossier</button>
       <div id="dos-ok" class="form-msg-hop success" style="display:none;margin-top:0.5rem">✓ Entrée enregistrée dans le dossier patient !</div>
@@ -3355,6 +3640,14 @@ function renderDossiersContent(g) {
             <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--hop-border);font-size:11px;color:var(--hop-muted)">
               📅 Créé le <strong>${d.date||'—'}</strong>
             </div>
+            ${d.certificat_url ? `
+            <div style="margin-top:10px;padding:10px 12px;background:rgba(212,119,154,0.06);border:1px solid rgba(212,119,154,0.3);border-radius:8px">
+              <div style="font-size:11px;font-weight:700;color:var(--hop-rose2);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📜 Certificat d'incapacité de terrain</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button onclick="apercuCertificat('${d.certificat_url}')" style="padding:6px 14px;background:rgba(212,119,154,0.1);color:var(--hop-rose2);border:1px solid rgba(212,119,154,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">👁 Aperçu du certificat</button>
+                <button onclick="copierLienCertificat('${d.certificat_url}')" style="padding:6px 14px;background:rgba(139,94,131,0.12);color:#8B5E83;border:1px solid rgba(139,94,131,0.4);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;font-family:Nunito,sans-serif">🔗 Copier le lien</button>
+              </div>
+            </div>` : ''}
             ${gradeRankHop(g) <= 1 ? `<button onclick="deleteDossierEntry(${d.id||0},'${safeId}-${i}')" style="margin-top:0.75rem;background:rgba(192,57,43,0.1);color:#C0392B;border:1px solid rgba(192,57,43,0.2);padding:5px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:600">🗑 Supprimer cette entrée</button>` : ''}
           </div>
         </div>`;
@@ -3436,14 +3729,38 @@ function toggleDosDetail(idx) {
 async function saveDossier() {
   const patient        = document.getElementById('dos-patient')?.value.trim();
   const soignant       = document.getElementById('dos-soignant')?.value;
-  const blessure       = document.getElementById('dos-blessure')?.value;
-  const gravite        = document.getElementById('dos-gravite')?.value;
+  // Multi-sélection des blessures (JSON dans le hidden) — fallback chaîne vide
+  let blessure = '';
+  try {
+    const arr = JSON.parse(document.getElementById('dos-blessure-selection')?.value || '[]');
+    if (Array.isArray(arr) && arr.length > 0) blessure = arr.join(', ');
+  } catch(e) {}
+  let gravite          = document.getElementById('dos-gravite')?.value;
+  if (gravite === 'autre') {
+    const txt = document.getElementById('dos-gravite-autre')?.value.trim();
+    if (!txt) { hopWarning('Précisez la gravité (champ Autre vide).'); return; }
+    gravite = 'autre : ' + txt;
+  }
   const desc           = document.getElementById('dos-desc')?.value.trim();
   const traitement     = document.getElementById('dos-traitement')?.value.trim();
   const statut         = document.getElementById('dos-statut')?.value;
   const groupe_sanguin = document.getElementById('dos-sang')?.value || null;
+  const certificatVoulu= document.getElementById('dos-certificat')?.checked;
 
   if (!patient || !soignant || !desc) { hopWarning('Patient, soignant et description sont obligatoires.'); return; }
+
+  // Génération + upload du certificat si demandé
+  let certificatUrl = null;
+  if (certificatVoulu) {
+    try {
+      certificatUrl = await uploaderCertificatIncapacite({
+        patient, soignant, blessure, gravite, desc, statut, groupe_sanguin
+      });
+    } catch(e) {
+      console.warn('certif:', e);
+      hopWarning('Le certificat n\'a pas pu être uploadé. Le dossier sera quand même enregistré.');
+    }
+  }
 
   // Save to Supabase
   let newId = null;
@@ -3457,6 +3774,7 @@ async function saveDossier() {
       traitement: traitement || null,
       statut: statut || 'aucun',
       groupe_sanguin: groupe_sanguin || null,
+      certificat_url: certificatUrl,
       date: new Date().toLocaleDateString('fr-FR'),
       created_by: state.currentUser?.username
     });
@@ -3475,6 +3793,7 @@ async function saveDossier() {
     traitement,
     statut,
     groupe_sanguin,
+    certificat_url: certificatUrl,
     date: new Date().toLocaleDateString('fr-FR'),
     createdBy: state.currentUser?.username
   });
@@ -3484,9 +3803,19 @@ async function saveDossier() {
   ['dos-patient','dos-desc','dos-traitement'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  ['dos-soignant','dos-blessure','dos-sang'].forEach(id => {
+  ['dos-soignant','dos-sang'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  // Reset multi-sélection blessures
+  const selHidden = document.getElementById('dos-blessure-selection');
+  if (selHidden) selHidden.value = '[]';
+  const blBtn = document.getElementById('dos-blessure-btn');
+  if (blBtn) { blBtn.innerHTML = '📋 Cliquez pour sélectionner...'; blBtn.style.color = 'var(--hop-muted)'; }
+  // Reset certificat checkbox
+  const certCk = document.getElementById('dos-certificat');
+  if (certCk) certCk.checked = false;
+  const gravAutre = document.getElementById('dos-gravite-autre');
+  if (gravAutre) { gravAutre.value = ''; gravAutre.style.display = 'none'; }
 
   const ok = document.getElementById('dos-ok');
   if (ok) { ok.style.display='block'; setTimeout(()=>ok.style.display='none', 3000); }
@@ -5255,8 +5584,8 @@ async function renderRapportsHop(g) {
     'Plusieurs patients (2 à 5)',
     'Afflux massif (6+)'
   ];
-  const GRAVITES = ['Légère', 'Modérée', 'Grave', 'Critique'];
-  const STATUTS  = ['Soigné — renvoyé', 'Hospitalisé', 'En observation', 'Décédé', 'Sans objet'];
+  const GRAVITES = ['Légère', 'Modérée', 'Grave', 'Critique', 'Autre'];
+  const STATUTS  = ['Soigné — renvoyé', 'Hospitalisé', 'En observation', 'Décédé', 'Sans objet', 'Autre'];
 
   let html = '<h2 class="dash-section-title-hop">📋 Rapports médicaux</h2>';
 
@@ -5275,9 +5604,13 @@ async function renderRapportsHop(g) {
     // Ligne 2 : Gravité + Statut
     + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">'
     + '<div class="form-group-hop" style="margin:0"><label>Gravit\u00e9 des cas</label>'
-    + '<select id="rap-gravite-hop">' + GRAVITES.map(function(g2){return '<option>'+g2+'</option>';}).join('') + '</select></div>'
+    + '<select id="rap-gravite-hop" onchange="onRapAutreChange(\'gravite\')">' + GRAVITES.map(function(g2){return '<option>'+g2+'</option>';}).join('') + '</select>'
+    + '<input type="text" id="rap-gravite-autre-hop" placeholder="Pr\u00e9cisez la gravit\u00e9..." style="display:none;width:100%;margin-top:6px;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-rose2);border-radius:6px;color:var(--hop-text);font-family:Nunito">'
+    + '</div>'
     + '<div class="form-group-hop" style="margin:0"><label>Statut final</label>'
-    + '<select id="rap-statut-hop">' + STATUTS.map(function(s){return '<option>'+s+'</option>';}).join('') + '</select></div>'
+    + '<select id="rap-statut-hop" onchange="onRapAutreChange(\'statut\')">' + STATUTS.map(function(s){return '<option>'+s+'</option>';}).join('') + '</select>'
+    + '<input type="text" id="rap-statut-autre-hop" placeholder="Pr\u00e9cisez le statut..." style="display:none;width:100%;margin-top:6px;padding:7px 10px;background:#1a1a1a;border:1px solid var(--hop-rose2);border-radius:6px;color:var(--hop-text);font-family:Nunito">'
+    + '</div>'
     + '</div>'
 
     // Description obligatoire
@@ -5364,13 +5697,39 @@ async function supprimerRapportHopDirection(id) {
   await renderRapportsHop(state.currentUser.grade);
 }
 
+// Affiche/cache le champ Autre selon le select Gravité/Statut du rapport
+function onRapAutreChange(champ) {
+  const sel = document.getElementById('rap-' + champ + '-hop');
+  const txt = document.getElementById('rap-' + champ + '-autre-hop');
+  if (!sel || !txt) return;
+  if (sel.value === 'Autre') {
+    txt.style.display = 'block';
+    setTimeout(function(){ txt.focus(); }, 50);
+  } else {
+    txt.style.display = 'none';
+    txt.value = '';
+  }
+}
+
 async function soumettreRapportHop() {
   const u = state.currentUser;
   const type       = document.getElementById('rap-type-hop')?.value;
   const nbPatients = document.getElementById('rap-nb-patients')?.value;
-  const gravite    = document.getElementById('rap-gravite-hop')?.value;
-  const statut     = document.getElementById('rap-statut-hop')?.value;
+  let gravite      = document.getElementById('rap-gravite-hop')?.value;
+  let statut       = document.getElementById('rap-statut-hop')?.value;
   const desc       = document.getElementById('rap-desc-hop')?.value.trim();
+
+  // Si "Autre" est sélectionné, on remplace par le texte saisi
+  if (gravite === 'Autre') {
+    const txt = document.getElementById('rap-gravite-autre-hop')?.value.trim();
+    if (!txt) { hopWarning('Précisez la gravité (champ Autre vide).'); return; }
+    gravite = 'Autre : ' + txt;
+  }
+  if (statut === 'Autre') {
+    const txt = document.getElementById('rap-statut-autre-hop')?.value.trim();
+    if (!txt) { hopWarning('Précisez le statut (champ Autre vide).'); return; }
+    statut = 'Autre : ' + txt;
+  }
 
   if (!desc) { hopWarning('Veuillez rédiger le rapport détaillé.'); return; }
 
