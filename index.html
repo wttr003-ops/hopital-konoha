@@ -1707,28 +1707,16 @@ async function sbGet(t, q='')    { return sbFetch(t,'GET',null,q); }
 async function sbPost(table, body) {
   if (!body || typeof body !== 'object') return sbFetch(table, 'POST', body);
 
-  // Tentative 1 : avec toutes les colonnes
   let cleaned = { ...body };
   let attempts = 0;
-  const maxAttempts = 8;
+  const maxAttempts = 12;
 
   while (attempts < maxAttempts) {
     attempts++;
     try {
       return await sbFetch(table, 'POST', cleaned);
     } catch(e) {
-      const msg = (e.message || '').toLowerCase();
-      // Extrait la colonne inconnue du message d'erreur Supabase/PostgREST
-      // Formats possibles :
-      //   "Could not find the 'certificat_url' column of 'dossiers_hop'"
-      //   "column \"date_debut\" of relation does not exist"
-      //   "Column 'foo' not found"
-      let badCol = null;
-      const m1 = msg.match(/(?:could not find the |column ['"`])([a-z0-9_]+)['"`]/i);
-      const m2 = msg.match(/column ['"`]?([a-z0-9_]+)['"`]? (?:of relation|does not exist|not found)/i);
-      if (m1 && m1[1]) badCol = m1[1];
-      else if (m2 && m2[1]) badCol = m2[1];
-
+      const badCol = extraireColonneFautive(e.message || '');
       if (badCol && Object.prototype.hasOwnProperty.call(cleaned, badCol)) {
         console.warn('[sbPost] Colonne "' + badCol + '" absente sur "' + table + '" → on l\'enleve et on retente.');
         delete cleaned[badCol];
@@ -1739,6 +1727,29 @@ async function sbPost(table, body) {
     }
   }
   throw new Error('sbPost: trop de retries pour ' + table);
+}
+
+// Helper : extrait le nom de la colonne fautive à partir d'un message d'erreur Supabase/PostgREST
+// Supporte plusieurs formats observés en production :
+//   "Could not find the 'certificat_url' column of 'dossiers_hop'"
+//   "column \"date_debut\" of relation does not exist"
+//   "Column 'foo' not found"
+//   "could not find the column 'xyz'"
+function extraireColonneFautive(msg) {
+  if (!msg) return null;
+  const patterns = [
+    /could not find the ['"`]([a-z0-9_]+)['"`] column/i,
+    /could not find the column ['"`]([a-z0-9_]+)['"`]/i,
+    /column ['"`]([a-z0-9_]+)['"`] of relation/i,
+    /column ['"`]([a-z0-9_]+)['"`] does not exist/i,
+    /column ['"`]([a-z0-9_]+)['"`] not found/i,
+    /unknown column ['"`]?([a-z0-9_]+)['"`]?/i
+  ];
+  for (const re of patterns) {
+    const m = msg.match(re);
+    if (m && m[1]) return m[1];
+  }
+  return null;
 }
 
 async function sbPatch(t, q, b)  { return sbFetch(t,'PATCH',b,q); }
@@ -1752,7 +1763,7 @@ async function sbInsertDirect(table, body, opts) {
 
   let cleaned = { ...body };
   let attempts = 0;
-  const maxAttempts = 8;
+  const maxAttempts = 12;
 
   while (attempts < maxAttempts) {
     attempts++;
@@ -1775,15 +1786,9 @@ async function sbInsertDirect(table, body, opts) {
 
     // Tentative de récupération de la colonne fautive
     const errText = await res.text();
-    const msg = (errText || '').toLowerCase();
     console.warn('[sbInsertDirect] HTTP', res.status, errText);
 
-    let badCol = null;
-    const m1 = msg.match(/(?:could not find the |column ['"`])([a-z0-9_]+)['"`]/i);
-    const m2 = msg.match(/column ['"`]?([a-z0-9_]+)['"`]? (?:of relation|does not exist|not found)/i);
-    if (m1 && m1[1]) badCol = m1[1];
-    else if (m2 && m2[1]) badCol = m2[1];
-
+    const badCol = extraireColonneFautive(errText);
     if (badCol && Object.prototype.hasOwnProperty.call(cleaned, badCol)) {
       console.warn('[sbInsertDirect] Colonne "' + badCol + '" absente sur "' + table + '" → on l\'enleve et on retente.');
       delete cleaned[badCol];
